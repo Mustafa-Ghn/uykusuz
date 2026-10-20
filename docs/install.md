@@ -98,9 +98,8 @@ ajanını yükleyebilir, uygulamayı kapatıp yerine başkasını başlatabilir 
 
 ## Yükseltmeler
 
-Ayarlar > Uygulama kurulu sürümü gösterir. Uykusuz güncelleme denetlemez ve
-hiçbir ağ isteği yapmaz; yükseltme, yukarıdaki adımların yeniden
-çalıştırılmasıdır: çalışma kopyasında `git pull` ve ardından
+Ayarlar > Uygulama kurulu sürümü gösterir. Uykusuz güncelleme denetlemez;
+yükseltme, yukarıdaki adımların yeniden çalıştırılmasıdır: çalışma kopyasında `git pull` ve ardından
 `./scripts/install.sh`.
 
 Bir yükseltme çalışan uygulamadan kapanmasını ister ve uygulama reddederse
