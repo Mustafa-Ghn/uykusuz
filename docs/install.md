@@ -197,7 +197,7 @@ sınırlarını anlatır.
 | --- | --- |
 | `~/Applications/Uykusuz.app` | Menü çubuğu uygulaması; `backstop.sh` içine, `Contents/Resources` konumuna mühürlenmiştir |
 | `~/Library/Application Support/Uykusuz/` | Yapılandırma ile oturum ve kurtarma kayıt defterleri |
-| `~/Library/LaunchAgents/com.mustafaghn.uykusuz.backstop.plist` | Kullanıcıya özel kurtarma ajanı: uygulamanın kod imzasını doğrular, ardından mühürlü `backstop.sh` betiğini çalıştırır |
+| `~/Library/LaunchAgents/com.mustafaghn.uykusuz.backstop.plist` | Kullanıcıya özel kurtarma ajanı: uygulamanın kendi programını `--backstop-agent` ile başlatır; o da upstream'in ajan komutunu çalıştırır, uygulamanın kod imzasını doğrular, ardından mühürlü `backstop.sh` betiğini çalıştırır |
 | `~/Library/Logs/Uykusuz/` | `uykusuz.log` ve `handoffs.log`; her biri 1 MiB ile sınırlıdır ve bir eski kopyası `.1` olarak tutulur (dosyayı bir sembolik bağlantıyla değiştirmediyseniz) |
 | `/etc/sudoers.d/uykusuz` | Aşağıdaki dört komut için izin |
 

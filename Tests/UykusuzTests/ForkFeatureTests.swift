@@ -239,7 +239,7 @@ final class VoiceAnnouncerTests: XCTestCase {
 
     func testEndSentences() {
         XCTAssertEqual(VoiceAnnouncer.endSentence(.batteryFloor, batteryPercent: 19), "Pil yüzde 19. Oturum bitiyor, Mac uyuyacak.")
-        XCTAssertEqual(VoiceAnnouncer.endSentence(.agentIdle, batteryPercent: nil), "Claude kapandı. Oturum bitiyor, Mac uyuyacak.")
+        XCTAssertEqual(VoiceAnnouncer.endSentence(.agentIdle, batteryPercent: nil), "Claude çalışmayı bıraktı. Oturum bitiyor, Mac uyuyacak.")
         XCTAssertNotNil(VoiceAnnouncer.endSentence(.thermalCritical, batteryPercent: nil))
         XCTAssertNotNil(VoiceAnnouncer.endSentence(.timer, batteryPercent: nil))
         XCTAssertNil(VoiceAnnouncer.endSentence(.user, batteryPercent: nil), "an end the user asked for is not announced")
@@ -325,5 +325,152 @@ final class ForkConfigTests: XCTestCase {
         c.codeModeKeyboardOffAfter = 45
         let back = try JSONDecoder().decode(Config.self, from: JSONEncoder().encode(c))
         XCTAssertEqual(back, c)
+    }
+}
+
+final class ClaudeHooksSettingsTests: XCTestCase {
+    private var dir: URL!
+
+    override func setUpWithError() throws {
+        dir = FileManager.default.temporaryDirectory.appendingPathComponent("uykusuz-hooks-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    }
+
+    override func tearDown() {
+        try? FileManager.default.removeItem(at: dir)
+    }
+
+    private func json(_ url: URL) throws -> [String: Any] {
+        try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+    }
+
+    func testInstallKeepsEverythingElseBacksUpOnceAndIsIdempotent() throws {
+        let settings = dir.appendingPathComponent("settings.json")
+        let original = #"{"model":"opus","permissions":{"allow":["Bash(ls:*)"]},"hooks":{"Stop":[{"hooks":[{"type":"command","command":"say done"}]}]}}"#
+        try Data(original.utf8).write(to: settings)
+
+        XCTAssertFalse(ClaudeHooks.isInstalled(settingsURL: settings))
+        XCTAssertEqual(try ClaudeHooks.install(settingsURL: settings), .installed)
+        XCTAssertTrue(ClaudeHooks.isInstalled(settingsURL: settings))
+        let root = try json(settings)
+        XCTAssertEqual(root["model"] as? String, "opus")
+        XCTAssertNotNil(root["permissions"])
+        let hooks = try XCTUnwrap(root["hooks"] as? [String: Any])
+        for event in ClaudeHooks.events {
+            let groups = try XCTUnwrap(hooks[event] as? [[String: Any]], event)
+            let commands = groups.flatMap { ($0["hooks"] as? [[String: Any]] ?? []).compactMap { $0["command"] as? String } }
+            XCTAssertTrue(commands.contains(ClaudeHooks.command), event)
+        }
+        let stopCommands = (hooks["Stop"] as? [[String: Any]] ?? []).flatMap { ($0["hooks"] as? [[String: Any]] ?? []).compactMap { $0["command"] as? String } }
+        XCTAssertTrue(stopCommands.contains("say done"), "an existing hook stays")
+        XCTAssertEqual(try String(contentsOf: URL(fileURLWithPath: settings.path + ClaudeHooks.backupSuffix), encoding: .utf8), original)
+
+        let afterInstall = try Data(contentsOf: settings)
+        XCTAssertEqual(try ClaudeHooks.install(settingsURL: settings), .unchanged)
+        XCTAssertEqual(try Data(contentsOf: settings), afterInstall, "a second install writes nothing")
+
+        XCTAssertEqual(try ClaudeHooks.remove(settingsURL: settings), .removed)
+        XCTAssertFalse(ClaudeHooks.isInstalled(settingsURL: settings))
+        let removed = try json(settings)
+        XCTAssertEqual(removed["model"] as? String, "opus")
+        let left = try XCTUnwrap(removed["hooks"] as? [String: Any])
+        XCTAssertEqual(Set(left.keys), ["Stop"], "only the user's own hook is left")
+        XCTAssertEqual(try ClaudeHooks.remove(settingsURL: settings), .unchanged)
+        XCTAssertEqual(try String(contentsOf: URL(fileURLWithPath: settings.path + ClaudeHooks.backupSuffix), encoding: .utf8), original,
+                       "the backup is the file before the first change, never overwritten")
+    }
+
+    func testInstallCreatesAMissingFileAndRefusesOneThatIsNotAnObject() throws {
+        let fresh = dir.appendingPathComponent("new/settings.json")
+        XCTAssertEqual(try ClaudeHooks.install(settingsURL: fresh), .installed)
+        XCTAssertTrue(ClaudeHooks.isInstalled(settingsURL: fresh))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: fresh.path + ClaudeHooks.backupSuffix), "nothing to back up")
+
+        let odd = dir.appendingPathComponent("odd.json")
+        try Data("[1, 2]".utf8).write(to: odd)
+        XCTAssertThrowsError(try ClaudeHooks.install(settingsURL: odd))
+        XCTAssertEqual(try String(contentsOf: odd, encoding: .utf8), "[1, 2]", "a file it cannot read as settings is left alone")
+    }
+
+    func testTheCommandIsSilentAndNeverFails() {
+        XCTAssertTrue(ClaudeHooks.command.contains(">/dev/null 2>&1 || true"), ClaudeHooks.command)
+        XCTAssertTrue(ClaudeHooks.command.contains("Uykusuz.app/Contents/MacOS/Uykusuz\" --claude-hook"))
+    }
+}
+
+final class ClaudeHookCommandTests: XCTestCase {
+    private var root: URL!
+    private var paths: Paths!
+    private let t0 = Date(timeIntervalSince1970: 2_000_000_000)
+    private let identity = ProcessIdentity(startedAt: 1_999_000_000, startedAtMicros: 7, bootSession: "boot")
+
+    override func setUpWithError() throws {
+        root = FileManager.default.temporaryDirectory.appendingPathComponent("uykusuz-hook-\(UUID().uuidString)", isDirectory: true)
+        paths = Paths(root: root)
+    }
+
+    override func tearDown() {
+        try? FileManager.default.removeItem(at: root)
+    }
+
+    @discardableResult
+    private func hook(_ event: String, session: String = "abc-123", at offset: TimeInterval = 0) -> Int32? {
+        let input = Data(#"{"session_id":"\#(session)","hook_event_name":"\#(event)"}"#.utf8)
+        return ClaudeHookCommand.run(["--claude-hook"], readInput: { input }, paths: paths, now: t0.addingTimeInterval(offset)) { (4242, self.identity) }
+    }
+
+    private func marker(_ session: String = "abc-123") throws -> ClaudeTaskMarker? {
+        let file = ClaudeHookCommand.markerDirectory(paths).appendingPathComponent("\(session).json")
+        guard FileManager.default.fileExists(atPath: file.path) else { return nil }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(ClaudeTaskMarker.self, from: Data(contentsOf: file))
+    }
+
+    func testATaskWritesTheMarkerToolUseRefreshesItAndStopRemovesIt() throws {
+        XCTAssertEqual(hook("UserPromptSubmit"), 0)
+        XCTAssertEqual(try marker(), ClaudeTaskMarker(pid: 4242, identity: identity, event: "UserPromptSubmit", updatedAt: t0))
+        hook("PostToolUse", at: 90)
+        XCTAssertEqual(try marker()?.updatedAt, t0.addingTimeInterval(90))
+        XCTAssertEqual(try marker()?.event, "PostToolUse")
+        hook("Stop", at: 120)
+        XCTAssertNil(try marker())
+        hook("UserPromptSubmit", at: 200)
+        hook("SessionEnd", at: 300)
+        XCTAssertNil(try marker(), "the session ending removes it too")
+    }
+
+    func testOtherArgumentsAreNotThisModeAndBadInputChangesNothing() throws {
+        XCTAssertNil(ClaudeHookCommand.run(["--resume-frozen"], readInput: { Data() }, paths: paths, now: t0) { nil })
+        XCTAssertEqual(ClaudeHookCommand.run(["--claude-hook"], readInput: { Data("not json".utf8) }, paths: paths, now: t0) { nil }, 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: ClaudeHookCommand.markerDirectory(paths).path))
+    }
+
+    func testSessionIdsBecomeSafeFileNames() {
+        XCTAssertEqual(ClaudeHookCommand.markerName("dd2097ca-a8bf-495e"), "dd2097ca-a8bf-495e.json")
+        XCTAssertEqual(ClaudeHookCommand.markerName("../x"), "___x.json")
+        XCTAssertNil(ClaudeHookCommand.markerName(""))
+        XCTAssertNil(ClaudeHookCommand.markerName("/.."))
+        XCTAssertNil(ClaudeHookCommand.markerName(nil))
+    }
+
+    func testAMarkerCountsWhileFreshAndItsClaudeIsTheSameProcess() throws {
+        hook("UserPromptSubmit")
+        let alive: (Int32) -> ProcessLookup = { _ in .present(ProcessSignalState(ppid: 1, stopped: false, identity: self.identity)) }
+        XCTAssertTrue(ClaudeActivity.markerBusy(paths: paths, now: t0.addingTimeInterval(60), lookup: alive))
+
+        let reused: (Int32) -> ProcessLookup = { _ in
+            .present(ProcessSignalState(ppid: 1, stopped: false, identity: ProcessIdentity(startedAt: 1, startedAtMicros: 0, bootSession: "boot")))
+        }
+        XCTAssertFalse(ClaudeActivity.markerBusy(paths: paths, now: t0.addingTimeInterval(60), lookup: reused), "a pid another process now has")
+        XCTAssertNil(try marker(), "an orphaned marker is cleared")
+
+        hook("UserPromptSubmit")
+        XCTAssertFalse(ClaudeActivity.markerBusy(paths: paths, now: t0.addingTimeInterval(60)) { _ in .absent }, "Claude has exited")
+
+        hook("UserPromptSubmit")
+        XCTAssertFalse(ClaudeActivity.markerBusy(paths: paths, now: t0.addingTimeInterval(ClaudeActivity.markerMaxAge + 1), lookup: alive),
+                       "no hook for too long: interrupted, which skips Stop")
+        XCTAssertNil(try marker())
     }
 }

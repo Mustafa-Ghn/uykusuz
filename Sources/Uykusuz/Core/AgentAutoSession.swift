@@ -107,7 +107,7 @@ final class AgentAutoSession {
     static let interval: TimeInterval = 15
 
     private let manager: SessionManager
-    private let isAgentActive: @MainActor ([String]) -> Bool
+    private let isAgentActive: @MainActor (Config) -> Bool
     private let readPower: @MainActor () -> (percent: Int?, isCharging: Bool)
     private let thermal: @MainActor () -> ProcessInfo.ThermalState
     private let clock: @MainActor () -> Date
@@ -119,7 +119,7 @@ final class AgentAutoSession {
 
     init(
         manager: SessionManager,
-        isAgentActive: @escaping @MainActor ([String]) -> Bool = { AgentActivity.isActive(bundleIDs: $0) },
+        isAgentActive: @escaping @MainActor (Config) -> Bool = { AgentActivity.isActive(config: $0, paths: .fromEnvironment()) },
         readPower: @escaping @MainActor () -> (percent: Int?, isCharging: Bool) = AgentAutoSession.livePower,
         thermal: @escaping @MainActor () -> ProcessInfo.ThermalState = { ProcessInfo.processInfo.thermalState },
         clock: @escaping @MainActor () -> Date = { Date() }
@@ -153,10 +153,10 @@ final class AgentAutoSession {
         ticking = true
         defer { ticking = false }
         let config = manager.config
-        let active = isAgentActive(config.autoSessionAgents)
+        let active = isAgentActive(config)
         if active != agentActive {
             agentActive = active
-            Log.info("agent \(active ? "at work" : "idle") (\(config.autoSessionAgents.joined(separator: ", ")))")
+            Log.info("agent \(active ? "at work" : "idle")")
             onAgentActivityChange?(active)
         }
         guard config.autoSession else { return }

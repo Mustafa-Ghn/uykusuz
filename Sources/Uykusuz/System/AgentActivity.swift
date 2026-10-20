@@ -37,7 +37,18 @@ enum AgentActivity {
         return pids.contains { bundleOf($0).map(wanted.contains) ?? false }
     }
 
-    /// The live reading: the system's assertions now, against `bundleIDs`.
+    /// The live reading. With this app's Claude Code hooks installed
+    /// (`ClaudeHooks`), an agent is at work only while Claude runs a task
+    /// (`ClaudeActivity`); without them, while an app in
+    /// `config.autoSessionAgents` holds a sleep assertion.
+    static func isActive(config: Config, paths: Paths) -> Bool {
+        if ClaudeHooks.isInstalled() {
+            return ClaudeActivity.isRunningTask(paths: paths)
+        }
+        return isActive(bundleIDs: config.autoSessionAgents)
+    }
+
+    /// The system's assertions now, against `bundleIDs`.
     static func isActive(bundleIDs: [String]) -> Bool {
         isActive(pids: livePids(), bundleIDs: bundleIDs) { pid in
             NSRunningApplication(processIdentifier: pid)?.bundleIdentifier

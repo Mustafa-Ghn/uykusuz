@@ -19,6 +19,21 @@
 > - **Kod modu:** Parlaklığı mevcut ekran ve klavye arayüzleriyle değiştirir.
 >
 > Yeni bir yetki, `sudo` komutu ya da kalıcı bileşen eklenmedi.
+>
+> Sonraki iki değişiklik:
+>
+> - **Kurtarma ajanının başlangıcı.** Ajan artık `/bin/sh` yerine
+>   uygulamanın kendi programıyla başlar (`--backstop-agent`). Böylece
+>   Sistem Ayarları öğeyi Uykusuz olarak gösterir. Program hemen upstream'in
+>   aynı `/bin/sh` doğrulama komutunu çalıştırır. Fark, doğrulamadan önce
+>   paketin içindeki kodun çalışmasıdır; paketi yeniden imzalayabilen biri
+>   ajan dosyasını da değiştirebildiği için pratik bir koruma kaybı yoktur.
+> - **Claude Code hook'ları.** İsteğe bağlıdır ve kullanıcı Ayarlar'dan
+>   kurar. `~/.claude/settings.json` dosyasına hiçbir çıktı vermeyen ve hep
+>   başarılı dönen bir komut ekler; dosyanın eski hâli yedeklenir. Komut,
+>   uygulama destek klasörüne oturum başına 0600 izinli bir işaret dosyası
+>   yazar ya da onu siler. Bash komutlarını algılamak için yalnızca
+>   kullanıcının kendi süreçlerinin adları ve argümanları okunur.
 
 Bu fork'a alınmadan önce [krishhgg/Insomnia](https://github.com/krishhgg/Insomnia)
 kaynak kodu ve yayınlanan derlemesi incelendi. Amaç, uygulamanın saldırgan bir

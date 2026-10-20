@@ -73,6 +73,12 @@ struct Paths: Sendable, Equatable {
     /// scripts/backstop.sh as install.sh seals it into a bundle, under
     /// Contents/Resources, before the bundle is signed. The LaunchAgent
     /// verifies the bundle's signature before running it (LaunchdBackstop).
+    /// The app's executable in `bundle`: what the LaunchAgent starts
+    /// (`BackstopAgentCommand`).
+    static func executable(inBundle bundle: URL) -> URL {
+        bundle.appendingPathComponent("Contents/MacOS/Uykusuz")
+    }
+
     static func backstopScript(inBundle bundle: URL) -> URL {
         bundle.appendingPathComponent("Contents/Resources/backstop.sh")
     }

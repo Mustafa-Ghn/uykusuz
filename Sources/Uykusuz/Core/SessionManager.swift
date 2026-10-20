@@ -19,8 +19,8 @@ enum EndReason: String, Sendable {
     /// may still have been applied, so the start is undone from the journal
     /// like an end rather than rolled back from memory.
     case startFailed
-    /// A session `AgentAutoSession` started for an agent app ended because
-    /// that app stopped holding its sleep assertion (fork addition).
+    /// A session `AgentAutoSession` started for an agent ended because the
+    /// agent stopped working (fork addition).
     case agentIdle
 }
 
@@ -3195,7 +3195,7 @@ final class SessionManager {
             : "Önceki bir oturum geride değişiklikler bıraktı; hepsi geri alındı."
         case .recoveryUnavailable: "Uykusuz, diskte bulunan oturum için kurtarma ajanını etkinleştiremediğinden oturumu bitirdi. Uyku normale döndü."
         case .startFailed: "Uykusuz uykuyu devre dışı bırakamadığından hiçbir oturum başlatılmadı. Uyku normale döndü."
-        case .agentIdle: "Claude kapandı; otomatik oturum bitti. Uyku normale döndü."
+        case .agentIdle: "Claude çalışmayı bıraktı; otomatik oturum bitti. Uyku normale döndü."
         }
     }
 }

@@ -117,7 +117,7 @@ final class VoiceAnnouncer {
         case .batteryFloor: "Pil yüzde \(batteryPercent ?? 0). Oturum bitiyor, Mac uyuyacak."
         case .batteryUnreadable: "Pil düzeyi okunamıyor. Oturum bitiyor, Mac uyuyacak."
         case .thermalCritical: "Mac aşırı ısındı. Oturum bitiyor, Mac uyuyacak."
-        case .agentIdle: "Claude kapandı. Oturum bitiyor, Mac uyuyacak."
+        case .agentIdle: "Claude çalışmayı bıraktı. Oturum bitiyor, Mac uyuyacak."
         case .user, .quit, .backstop, .recoveryUnavailable, .startFailed: nil
         }
     }

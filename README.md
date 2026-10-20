@@ -48,14 +48,22 @@
 
 Upstream Insomnia'dan farklı olarak Uykusuz'da:
 
-- **Claude çalışırken otomatik oturum.** Claude masaüstü uygulaması bir
-  Claude Code oturumu yürüttüğü sürece (uykuyu engelleyen güç kilidini
-  tuttuğu sürece) oturum kendiliğinden 2 saatlik başlar, kalan süre 1 saatin
-  altına indikçe 2 saat uzar ve Claude 5 dakika boşta kalınca biter. Kapak
-  kapansa da Mac uyanık kalır: **Mac'i kapalı bir çantaya koymayın.** Mac
-  ısınıyorsa ya da pil bitiş eşiğine yakınsa otomatik oturum başlamaz.
-  Otomatik oturumu siz bitirirseniz Claude kapanıp yeniden çalışana kadar
-  yenisi başlamaz. Elle başlattığınız oturumlara dokunulmaz.
+- **Claude çalışırken otomatik oturum.** Claude bir görev yürüttüğü sürece
+  oturum kendiliğinden 2 saatlik başlar, kalan süre 1 saatin altına indikçe 2
+  saat uzar ve Claude 5 dakika çalışmayınca biter. Kapak kapansa da Mac
+  uyanık kalır: **Mac'i kapalı bir çantaya koymayın.** Mac ısınıyorsa ya da
+  pil bitiş eşiğinin 5 puan üstüne kadar düşmüşse otomatik oturum başlamaz.
+  Otomatik oturumu siz bitirirseniz Claude bir kez durana kadar yenisi
+  başlamaz. Elle başlattığınız oturumlara dokunulmaz.
+- **Claude'un çalıştığını algılama.** Ayarlar > Claude ve kod modu bölümünden
+  (ya da `~/Applications/Uykusuz.app/Contents/MacOS/Uykusuz
+  --install-claude-hooks` ile) Claude Code hook'ları kurulur. Kuruluyken
+  Claude yalnızca bir görev yürütürken çalışıyor sayılır: bir istek başlayıp
+  Claude yanıtını bitirene kadar ya da Claude'un başlattığı bir komut (arka
+  planda bile) çalışırken. Hook'lar `~/.claude/settings.json` dosyasına
+  eklenir ve dosyanın eski hâli `settings.json.uykusuz-yedek` olarak saklanır.
+  Kurulu değilken Claude masaüstü uygulaması açık olduğu sürece çalışıyor
+  sayılır.
 - **Kod modu.** Bir oturum sürerken kapak açıksa ve Claude çalışıyorsa
   Düşük Güç Modu açılır (pildeyken etkili); 60 sn girdi olmazsa ekran %15
   parlaklığa iner, 30 sn olmazsa klavye ışığı kapanır. Bir tuşa ya da
@@ -68,6 +76,12 @@ Upstream Insomnia'dan farklı olarak Uykusuz'da:
   sonu). "Diğer tüm uygulamaları dondur" açık; dondurma listesinde WhatsApp,
   Word, Excel ve ParaView var. ProtonVPN ve AnyDesk hiç dondurulmaz.
 - **Ağ isteği yok.** Upstream'in "güncellemeleri denetle" düğmesi kaldırıldı.
+- **Arka plan öğesinin adı.** Kurtarma ajanı, Sistem Ayarları > Genel > Giriş
+  Öğeleri ve Uzantılar'da `sh` yerine Uykusuz olarak görünsün diye
+  uygulamanın kendi programından başlar (`--backstop-agent`). Program aynı
+  imza doğrulamasını (`codesign`, sabitlenmiş cdhash) yapan upstream ajan
+  komutunu çalıştırır. "Kimliği belirsiz geliştirici" yazısı ücretli bir
+  Apple Developer ID imzası olmadan kalkmaz.
 
 ## Gereksinimler
 

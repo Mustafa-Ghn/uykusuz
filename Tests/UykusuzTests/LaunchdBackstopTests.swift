@@ -198,14 +198,15 @@ final class LaunchdBackstopTests: XCTestCase {
     }
 
     private var expectedArguments: [String] {
-        ["/bin/sh", "-c", LaunchdBackstop.agentProgram, "sh", Self.requirement, home.paths.appBundle.path]
+        [Paths.executable(inBundle: home.paths.appBundle).path, BackstopAgentCommand.flag, Self.requirement, home.paths.appBundle.path]
     }
 
     func testPlistIsAPersistentPollingAgentThatVerifiesTheBundleFirst() {
         let target = BackstopTarget(bundle: URL(fileURLWithPath: "/x/Uykusuz.app", isDirectory: true), requirement: "cdhash H\"ab\"")
         let d = LaunchdBackstop.plistDictionary(label: "com.mustafaghn.uykusuz.backstop", target: target)
         XCTAssertEqual(d["Label"] as? String, "com.mustafaghn.uykusuz.backstop")
-        XCTAssertEqual(d["ProgramArguments"] as? [String], ["/bin/sh", "-c", LaunchdBackstop.agentProgram, "sh", "cdhash H\"ab\"", "/x/Uykusuz.app"])
+        XCTAssertEqual(d["ProgramArguments"] as? [String], ["/x/Uykusuz.app/Contents/MacOS/Uykusuz", "--backstop-agent", "cdhash H\"ab\"", "/x/Uykusuz.app"],
+                       "launchd starts the app's executable, which execs the verifying agent program")
         XCTAssertEqual(d["RunAtLoad"] as? Bool, true)
         XCTAssertEqual(d["StartInterval"] as? Int, 60)
         XCTAssertNil(d["StartCalendarInterval"], "a per-deadline trigger would need a reload per extension")
@@ -224,23 +225,24 @@ final class LaunchdBackstopTests: XCTestCase {
         XCTAssertTrue(p.hasSuffix("; exit 1"), "a failed verification ends the program: \(p)")
         XCTAssertTrue(p.contains(#">> "$HOME/Library/Logs/Uykusuz/uykusuz.log""#), "the refusal is logged where the app logs")
         XCTAssertFalse(p.contains("'"), "install.sh holds the program in single quotes")
-        XCTAssertFalse(p.contains("\n"), "one line, so install.sh's AGENT_PROGRAM line stays one line")
+        XCTAssertFalse(p.contains("\n"), "one line")
         XCTAssertEqual(p.components(separatedBy: "/bin/bash").count, 2, "exactly one exec target: the sealed script")
     }
 
-    /// install.sh embeds the same program (its AGENT_PROGRAM line). The two
-    /// must be byte for byte equal: otherwise plistOnDiskMatches is never
-    /// true after an install and the app reloads the agent at every start.
-    func testAgentProgramIsByteForByteWhatInstallShWrites() throws {
-        let installSh = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("scripts/install.sh")
-        let lines = try String(contentsOf: installSh, encoding: .utf8).components(separatedBy: "\n")
-        let definitions = lines.filter { $0.hasPrefix("AGENT_PROGRAM='") }
-        XCTAssertEqual(definitions.count, 1, "install.sh defines AGENT_PROGRAM once, single-quoted, on one line")
-        let line = try XCTUnwrap(definitions.first)
-        XCTAssertTrue(line.hasSuffix("'"), line)
-        XCTAssertEqual(String(line.dropFirst("AGENT_PROGRAM='".count).dropLast()), LaunchdBackstop.agentProgram)
+    /// The app's executable in `--backstop-agent` mode execs exactly the
+    /// upstream agent's command line, and nothing for any other arguments.
+    func testBackstopAgentModeExecsTheVerifyingProgram() {
+        var execs: [(String, [String])] = []
+        let status = BackstopAgentCommand.run(["--backstop-agent", "cdhash H\"ab\"", "/x/Uykusuz.app"]) { path, argv in
+            execs.append((path, argv))
+            return ENOENT
+        }
+        XCTAssertEqual(status, 1, "returns only when the exec failed")
+        XCTAssertEqual(execs.count, 1)
+        XCTAssertEqual(execs.first?.0, "/bin/sh")
+        XCTAssertEqual(execs.first?.1, ["/bin/sh", "-c", LaunchdBackstop.agentProgram, "sh", "cdhash H\"ab\"", "/x/Uykusuz.app"])
+        XCTAssertNil(BackstopAgentCommand.run(["--resume-frozen", "1"]) { _, _ in XCTFail("not this mode"); return 0 })
+        XCTAssertEqual(BackstopAgentCommand.run(["--backstop-agent", "only-one"]) { _, _ in XCTFail("no exec on bad arguments"); return 0 }, 64)
     }
 
     /// Running from a bundle pins that bundle; `swift run` falls back to the
@@ -403,7 +405,7 @@ final class LaunchdBackstopTests: XCTestCase {
         let b = try makeBackstop()
         try await b.arm()
         let trusted = try Data(contentsOf: home.paths.backstopPlist)
-        loadedJob.value = ["/bin/sh", "-c", LaunchdBackstop.agentProgram, "sh", "cdhash H\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"", home.paths.appBundle.path]
+        loadedJob.value = [Paths.executable(inBundle: home.paths.appBundle).path, BackstopAgentCommand.flag, "cdhash H\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"", home.paths.appBundle.path]
         calls.value = []
 
         try await b.arm()

@@ -49,16 +49,16 @@ struct LaunchdBackstop: BackstopScheduling {
     static let pollInterval = 60
     static let commandTimeout: TimeInterval = 15
 
-    /// What launchd runs: `/bin/sh -c <agentProgram> sh <requirement> <bundle>`.
+    /// What the agent execs: `/bin/sh -c <agentProgram> sh <requirement>
+    /// <bundle>` (`BackstopAgentCommand`; launchd itself starts the app's
+    /// executable, so System Settings names the item Uykusuz).
     /// The program verifies the bundle ($2) against the requirement ($1) with
     /// codesign and execs the sealed backstop.sh only when that passes; the
     /// resource seal covers the script, so an edited copy fails here. On
     /// failure it appends one line to ~/Library/Logs/Uykusuz/uykusuz.log
     /// (the LaunchAgent only ever exists in the standard layout) and exits 1
-    /// without running anything. install.sh embeds this same text (its
-    /// AGENT_PROGRAM line); LaunchdBackstopTests checks the two are equal so
-    /// the app recognises the plist install.sh wrote. No single quotes, so
-    /// the shell can hold it in one.
+    /// without running anything. One line with no single quotes, as when
+    /// install.sh held it too.
     static let agentProgram = #"r="$(/usr/bin/codesign --verify --strict "-R=$1" "$2" 2>&1)" && exec /bin/bash "$2/Contents/Resources/backstop.sh"; mkdir -p "$HOME/Library/Logs/Uykusuz"; printf "%s [error] backstop agent: %s does not satisfy the pinned code requirement; backstop.sh not run. Reinstall Uykusuz (scripts/install.sh). codesign: %s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$2" "$(printf %s "$r" | tr "\n" " ")" >> "$HOME/Library/Logs/Uykusuz/uykusuz.log"; exit 1"#
 
     let plistURL: URL
@@ -142,7 +142,7 @@ struct LaunchdBackstop: BackstopScheduling {
     static func plistDictionary(label: String, target: BackstopTarget) -> [String: Any] {
         [
             "Label": label,
-            "ProgramArguments": ["/bin/sh", "-c", agentProgram, "sh", target.requirement, target.bundle.path],
+            "ProgramArguments": [Paths.executable(inBundle: target.bundle).path, BackstopAgentCommand.flag, target.requirement, target.bundle.path],
             "RunAtLoad": true,
             "StartInterval": pollInterval,
         ]

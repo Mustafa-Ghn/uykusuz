@@ -21,6 +21,10 @@ struct SettingsView: View {
     /// Names of the apps the automatic lid-close scope would freeze right
     /// now (the freeze list excluded); refreshed on appear and toggle.
     @State private var wouldFreeze: [String] = []
+    /// Whether ~/.claude/settings.json runs this app's hook, and the last
+    /// install or removal error.
+    @State private var claudeHooksInstalled = ClaudeHooks.isInstalled()
+    @State private var claudeHooksError: String?
 
     var body: some View {
         Form {
@@ -261,6 +265,23 @@ struct SettingsView: View {
     /// Fork additions: the automatic session for Claude and code mode.
     private var agentModeSection: some View {
         Section("Claude ve kod modu") {
+            LabeledContent("Claude Code hook'ları") {
+                HStack {
+                    Text(claudeHooksInstalled ? "Kurulu" : "Kurulu değil")
+                        .foregroundStyle(claudeHooksInstalled ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+                    Button(claudeHooksInstalled ? "Kaldır" : "Kur") { toggleClaudeHooks() }
+                }
+            }
+            Text(claudeHooksInstalled
+                 ? "Claude yalnızca bir görev yürütürken çalışıyor sayılır: bir istek başlayıp Claude yanıtını bitirene kadar ya da Claude'un başlattığı bir komut (arka planda bile) çalışırken."
+                 : "Hook'lar kurulu değilken Claude uygulaması açık olduğu sürece çalışıyor sayılır. Kurulum ~/.claude/settings.json dosyasına hook ekler; dosyanın eski hâli settings.json.uykusuz-yedek olarak saklanır.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            if let claudeHooksError {
+                Text(claudeHooksError)
+                    .font(.callout)
+                    .foregroundStyle(.red)
+            }
             Toggle("Claude çalışırken otomatik oturum", isOn: bind(\.autoSession))
             Text("Claude bir Claude Code oturumu yürüttüğü sürece oturum kendiliğinden başlar ve uzar; Claude 5 dakika boşta kalınca biter. Kapak kapansa da Mac uyanık kalır, bu yüzden Mac'i kapalı bir çantaya koymayın. Otomatik oturumu siz bitirirseniz Claude kapanana kadar yenisi başlamaz.")
                 .font(.callout)
@@ -277,6 +298,20 @@ struct SettingsView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private func toggleClaudeHooks() {
+        do {
+            if claudeHooksInstalled {
+                try ClaudeHooks.remove()
+            } else {
+                try ClaudeHooks.install()
+            }
+            claudeHooksError = nil
+        } catch {
+            claudeHooksError = "Claude Code ayarları değiştirilemedi: \(error.localizedDescription)"
+        }
+        claudeHooksInstalled = ClaudeHooks.isInstalled()
     }
 
     private var networkSection: some View {
