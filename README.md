@@ -4,7 +4,8 @@
 > arayüzü, kurulum betiklerinin mesajları ve belgeler Türkçeye çevrilmiştir.
 > Özgün proje MIT lisansıyla yayımlanır; bu çatal da aynı lisansı taşır
 > ([LICENSE](LICENSE)). Bu çatalın GitHub sürümleri (release) yoktur: yalnızca
-> bu depodan kaynak kod derlenerek kurulur.
+> bu depodan kaynak kod derlenerek kurulur. Çatala alınmadan önce yapılan
+> güvenlik incelemesi: [GUVENLIK-INCELEMESI.md](GUVENLIK-INCELEMESI.md).
 
 <p align="center">
   <img src="docs/assets/eye-open.svg" alt="Insomnia: yuvarlak gözbebekli, üstünde beş kirpik olan açık bir göz" width="112">
