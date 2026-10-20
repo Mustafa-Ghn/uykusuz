@@ -107,8 +107,8 @@ final class SessionManager {
     /// Shown in Settings next to the darken toggle.
     var darkenRefusals: [String] {
         [
-            display.refusal().map { "Display: \($0).\(Self.keptLevelNote(state.savedDisplayBrightness))" },
-            keyboard.refusal().map { "Keyboard backlight: \($0).\(Self.keptLevelNote(state.savedKeyboardBrightness))" },
+            display.refusal().map { "Ekran: \($0).\(Self.keptLevelNote(state.savedDisplayBrightness))" },
+            keyboard.refusal().map { "Klavye arka ışığı: \($0).\(Self.keptLevelNote(state.savedKeyboardBrightness))" },
         ].compactMap { $0 }
     }
 
@@ -116,7 +116,7 @@ final class SessionManager {
     /// value saved for it was kept after a refused restore.
     private static func keptLevelNote(_ saved: Float?) -> String {
         guard let saved else { return "" }
-        return " The level saved before the lid closed, \(saved), was not restored; set it with the brightness keys or Control Center."
+        return " Kapak kapanmadan önce kaydedilen düzey (\(saved)) geri yüklenmedi; düzeyi parlaklık tuşlarıyla ya da Denetim Merkezi'nden ayarlayın."
     }
     /// Last failure worth showing in the menu; cleared on the next success.
     private(set) var lastError: String?
@@ -708,14 +708,14 @@ final class SessionManager {
                 case nil:
                     break
                 }
-                self.warnAboutCommand("\(what) skipped, nothing changed: \(stuck.description) is still running and holds the recovery lock until it exits (sudo kill \(stuck.pid) to stop it by hand)")
+                self.warnAboutCommand("\(what) atlandı, hiçbir şey değişmedi: \(stuck.description) hâlâ çalışıyor ve sonlanana dek kurtarma kilidini tutuyor (elle durdurmak için: sudo kill \(stuck.pid))")
                 return .failure(.commandRunning(pid: stuck.pid))
             }
             let handle: RecoveryLockHandle
             do {
                 handle = try await self.recoveryLock.acquire(timeout: self.recoveryLockTimeout)
             } catch {
-                let line = "\(what) skipped, nothing changed: \(error.localizedDescription)\(self.recordedLockHolder(error))"
+                let line = "\(what) atlandı, hiçbir şey değişmedi: \(error.localizedDescription)\(self.recordedLockHolder(error))"
                 self.fail(line)
                 return .failure(.lockBusy(line))
             }
@@ -775,7 +775,7 @@ final class SessionManager {
     /// Returns the line put in the menu.
     private func refuseForUnreadableJournal(_ what: String, _ error: Error) -> String {
         let message = Self.unreadableJournalMessage(error)
-        let line = "\(what) refused, nothing changed: \(message)"
+        let line = "\(what) reddedildi, hiçbir şey değişmedi: \(message)"
         fail(line)
         let detail = error.localizedDescription
         if announcedCorruption != detail {
@@ -786,7 +786,7 @@ final class SessionManager {
     }
 
     private static func unreadableJournalMessage(_ error: Error) -> String {
-        "\(error.localizedDescription). Insomnia has changed nothing and will not start, extend or end sessions until the file is fixed or moved by hand; it is the only record of what a previous run changed."
+        "\(error.localizedDescription). Insomnia hiçbir şeyi değiştirmedi ve dosya elle düzeltilene ya da taşınana dek oturum başlatmayacak, uzatmayacak ya da bitirmeyecek; bu dosya, önceki bir çalıştırmanın neleri değiştirdiğinin tek kaydı."
     }
 
     /// Keep `handle` until `command` exits, then release it and settle what
@@ -857,18 +857,18 @@ final class SessionManager {
                 if state.lowPowerSetByUs { lowPowerWasOurs = true }
                 owedEdits.lowPowerOff = true
                 displayWriteAfterUnreadOff = owed
-                failUncleared("\(command.description) exited 0, but the journal could not be read to clear its entry: \(error.localizedDescription); low power mode is off, and the clear and the display write owed after it (\(owed)) wait for the journal to read again", clear)
+                failUncleared("\(command.description) 0 çıkış koduyla sonlandı, ancak girdisini temizlemek için kayıt defteri okunamadı: \(error.localizedDescription); Düşük Güç Modu kapalı; temizleme ve modun ardından yapılması gereken ekran parlaklığı yazımı (\(owed)), kayıt defteri yeniden okunabilene dek bekliyor", clear)
                 return
             }
-            failUncleared("\(command.description) exited 0, but the journal could not be read to clear its entry: \(error.localizedDescription); it will be retried", clear)
+            failUncleared("\(command.description) 0 çıkış koduyla sonlandı, ancak girdisini temizlemek için kayıt defteri okunamadı: \(error.localizedDescription); yeniden denenecek", clear)
             return
         }
         switch undo {
         case .sleepRestored:
-            guard clearUndone("sleep restored (\(command.description) exited 0)", clear) else { return }
+            guard clearUndone("Uyku geri yüklendi (\(command.description) 0 çıkış koduyla sonlandı)", clear) else { return }
             Log.info("sleep restored: \(command.description) exited 0")
         case .lowPowerOff:
-            clearLowPowerOwnership("low power mode switched off (\(command.description) exited 0)")
+            clearLowPowerOwnership("Düşük Güç Modu kapatıldı (\(command.description) 0 çıkış koduyla sonlandı)")
             Log.info("low power mode off: \(command.description) exited 0")
             settleDisplayAfterLowPower()
         }
@@ -886,7 +886,7 @@ final class SessionManager {
             try journal(mutate)
             return true
         } catch {
-            failUncleared("\(what) but the journal entry could not be cleared: \(error.localizedDescription); it will be retried", mutate)
+            failUncleared("\(what), ancak kayıt defterindeki girdi temizlenemedi: \(error.localizedDescription); yeniden denenecek", mutate)
             return false
         }
     }
@@ -962,22 +962,22 @@ final class SessionManager {
     /// the lock and removes it (`exclusive`). Announced once per command.
     private func recordedLockHolder(_ error: Error) -> String {
         guard case .busy? = error as? RecoveryLockError, let record = store.loadUnfinishedCommand() else { return "" }
-        let command = "`\(record.command)`, left running by Insomnia since \(iso(record.since)),"
+        let command = "Insomnia'nın \(iso(record.since)) tarihinden beri çalışır durumda bıraktığı `\(record.command)` komutu"
         switch (record.identity, processLookup(record.pid)) {
         case let (recorded?, .present(live)) where live.identity == recorded:
-            let line = "\(command) still runs as pid \(record.pid) and holds it; stop it by hand with sudo kill \(record.pid)"
+            let line = "\(command) hâlâ pid \(record.pid) olarak çalışıyor ve kilidi tutuyor; elle durdurmak için: sudo kill \(record.pid)"
             if announcedLockHolder != record.pid {
                 announcedLockHolder = record.pid
                 notifier.post(
                     title: Self.commandRunningTitle,
-                    body: "The recovery lock is busy: \(line). Insomnia changes nothing until the lock is free."
+                    body: "Kurtarma kilidi meşgul: \(line). Kilit serbest kalana dek Insomnia hiçbir şeyi değiştirmez."
                 )
             }
             return "; \(line)"
         case (_?, .absent), (_?, .present):
-            return "; \(command) has exited since, so another process holds it"
+            return "; \(command) o zamandan bu yana sonlanmış, yani kilidi başka bir süreç tutuyor"
         case (nil, _), (_?, .unreadable):
-            return "; \(command) may still hold it, but Insomnia cannot confirm that pid \(record.pid) is still that command, so it names no process to stop"
+            return "; \(command) kilidi hâlâ tutuyor olabilir, ancak Insomnia pid \(record.pid) numaralı sürecin hâlâ o komut olduğunu doğrulayamadığı için durdurulacak bir süreç belirtmiyor"
         }
     }
 
@@ -1020,7 +1020,7 @@ final class SessionManager {
         settleRetry = nil
         guard session != nil, pendingEnd == nil else { return }
         let checked: Bool
-        switch await exclusive("low power check", { await self.performLowPowerCheck() }) {
+        switch await exclusive("Düşük Güç Modu denetimi", { await self.performLowPowerCheck() }) {
         case let .success(settled):
             checked = settled
         case .failure(.lockBusy), .failure(.journalUnreadable):
@@ -1100,7 +1100,7 @@ final class SessionManager {
             Log.error("low power mode reads off after the power command, but lowpowermode 0 failed; ownership kept in the journal and checked again in \(Int(recoveryRetryDelay)) s: \(error.localizedDescription)")
             return false
         }
-        let cleared = clearLowPowerOwnership("low power mode confirmed off after the power command")
+        let cleared = clearLowPowerOwnership("Düşük Güç Modu, güç komutunun ardından kapalı olarak doğrulandı")
         if cleared {
             Log.info("low power mode confirmed off after the power command; ownership cleared from the journal")
         }
@@ -1134,10 +1134,10 @@ final class SessionManager {
         } catch {
             Log.error("could not record the command left running in \(paths.unfinishedCommandFile.path): \(error.localizedDescription)")
         }
-        warnAboutCommand("\(error.localizedDescription); Insomnia holds the recovery lock and will not quit until it exits (sudo kill \(error.command.pid) to stop it by hand)")
+        warnAboutCommand("\(error.localizedDescription); Insomnia kurtarma kilidini tutuyor ve komut sonlanana dek kapanmayacak (elle durdurmak için: sudo kill \(error.command.pid))")
         notifier.post(
             title: Self.commandRunningTitle,
-            body: "\(error.command.description) did not stop on SIGTERM and is left running, because killing it could leave a root pmset changing power settings outside the transaction. Nothing else was changed and the journal keeps its entries. Insomnia holds the recovery lock until it exits and will not quit or start a session before then. To stop it by hand: sudo kill \(error.command.pid)."
+            body: "\(error.command.description) SIGTERM ile durmadı ve çalışır durumda bırakıldı, çünkü onu zorla sonlandırmak işlemin dışında güç ayarlarını değiştiren bir root pmset bırakabilirdi. Başka hiçbir şey değiştirilmedi ve kayıt defteri girdilerini koruyor. Insomnia, komut sonlanana dek kurtarma kilidini tutar; o zamana dek kapanmaz ve oturum başlatmaz. Elle durdurmak için: sudo kill \(error.command.pid)."
         )
         if let reason {
             pendingEnd = reason
@@ -1172,11 +1172,11 @@ final class SessionManager {
             return
         }
         guard pendingEnd == nil else {
-            fail("start refused: the previous session is still being ended; retrying shortly")
+            fail("Oturum başlatma reddedildi: önceki oturum hâlâ bitiriliyor; birazdan yeniden denenecek")
             return
         }
         let ticket = endTicket
-        _ = await exclusive("start") { await self.performStart(duration: duration, ticket: ticket) }
+        _ = await exclusive("Oturum başlatma") { await self.performStart(duration: duration, ticket: ticket) }
         // A start that goes through before a refused launch reconcile runs
         // again drops that reconcile, and takes over its check.
         await settleEarlierCommand()
@@ -1205,7 +1205,7 @@ final class SessionManager {
             // appeared or lost its permissions after reconcile, or reconcile
             // could not move it aside. It may be a valid session, and a
             // rollback could not put it back.
-            fail("start refused, nothing changed: session.json could not be read (\(error.localizedDescription)). Remove it or move it out of \(paths.appSupport.path), then start again")
+            fail("Oturum başlatma reddedildi, hiçbir şey değişmedi: session.json okunamadı (\(error.localizedDescription)). Dosyayı kaldırın ya da \(paths.appSupport.path) klasörünün dışına taşıyın, sonra yeniden başlatın")
             return
         }
 
@@ -1214,7 +1214,7 @@ final class SessionManager {
             keptSessionFile = nil
             try journal { $0.sleepDisabledByUs = true }
         } catch {
-            fail("could not write session: \(error.localizedDescription)")
+            fail("Oturum yazılamadı: \(error.localizedDescription)")
             rollBackStart(journal: journalBefore, session: sessionBefore)
             return
         }
@@ -1225,7 +1225,7 @@ final class SessionManager {
             try await backstop.arm()
         } catch {
             rollBackStart(journal: journalBefore, session: sessionBefore)
-            fail("could not arm backstop: \(error.localizedDescription)")
+            fail("Kurtarma ajanı etkinleştirilemedi: \(error.localizedDescription)")
             return
         }
         guard endTicket == ticket else {
@@ -1244,7 +1244,7 @@ final class SessionManager {
             stopTransaction(for: still, thenEnd: .startFailed)
             return
         } catch {
-            fail("could not disable sleep: \(error.localizedDescription)")
+            fail("Uyku devre dışı bırakılamadı: \(error.localizedDescription)")
             _ = await performEnd(reason: .startFailed)
             return
         }
@@ -1271,7 +1271,7 @@ final class SessionManager {
     func extend(by extra: TimeInterval) async {
         guard session != nil else { return }
         let ticket = endTicket
-        _ = await exclusive("extend") { await self.performExtend(by: extra, ticket: ticket) }
+        _ = await exclusive("Oturum uzatma") { await self.performExtend(by: extra, ticket: ticket) }
     }
 
     private func performExtend(by extra: TimeInterval, ticket: Int) async {
@@ -1282,7 +1282,7 @@ final class SessionManager {
         do {
             try await backstop.arm()
         } catch {
-            fail("could not confirm backstop: \(error.localizedDescription)")
+            fail("Kurtarma ajanı doğrulanamadı: \(error.localizedDescription)")
             return
         }
         guard endTicket == ticket, session == current else {
@@ -1292,7 +1292,7 @@ final class SessionManager {
         do {
             try store.saveSession(updated)
         } catch {
-            fail("could not write session: \(error.localizedDescription)")
+            fail("Oturum yazılamadı: \(error.localizedDescription)")
             return
         }
         session = updated
@@ -1316,7 +1316,7 @@ final class SessionManager {
         retryTimer?.invalidate()
         retryTimer = nil
         let outcome: EndOutcome
-        switch await exclusive("end", owes: .end(reason), { await self.performEnd(reason: reason) }) {
+        switch await exclusive("Oturum bitirme", owes: .end(reason), { await self.performEnd(reason: reason) }) {
         case let .success(o): outcome = o
         case .failure(.lockBusy): outcome = .locked
         case .failure(.journalUnreadable): outcome = .journalUnreadable
@@ -1328,7 +1328,7 @@ final class SessionManager {
         case .locked:
             notifier.post(
                 title: Self.notEndedTitle,
-                body: "The recovery lock is held by another process, so nothing was changed. The session is still active; Insomnia retries in \(Int(recoveryRetryDelay)) s."
+                body: "Kurtarma kilidini başka bir süreç tuttuğu için hiçbir şey değiştirilmedi. Oturum hâlâ etkin; Insomnia \(Int(recoveryRetryDelay)) sn sonra yeniden dener."
             )
             scheduleEndRetry(reason)
         case .incomplete(agentArmed: false), .sessionRetained:
@@ -1377,8 +1377,8 @@ final class SessionManager {
             do {
                 try store.deleteSession()
             } catch {
-                retainedBecause = "session.json could not be removed (\(error.localizedDescription)); a relaunch would hold sleep again for it."
-                fail("could not remove session.json: \(error.localizedDescription)")
+                retainedBecause = "session.json kaldırılamadı (\(error.localizedDescription)); Insomnia yeniden açılırsa bu dosya yüzünden uykuyu yeniden engeller."
+                fail("session.json kaldırılamadı: \(error.localizedDescription)")
             }
         }
         let stuck = await restoreAll()
@@ -1422,16 +1422,16 @@ final class SessionManager {
                     try await backstop.arm()
                 } catch {
                     armed = false
-                    fail("recovery agent could not be confirmed: \(error.localizedDescription)")
+                    fail("Kurtarma ajanı doğrulanamadı: \(error.localizedDescription)")
                 }
             }
             if let retainedBecause {
                 // The agent enforces deadlines, it does not remove a live
                 // session file; only this process can, so it stays to retry.
-                let journalNote = dirty ? " Some changes are also still journaled." : ""
+                let journalNote = dirty ? " Bazı değişiklikler de hâlâ kayıt defterinde." : ""
                 notifier.post(
                     title: Self.incompleteTitle,
-                    body: "\(retainedBecause)\(journalNote) Insomnia retries in \(Int(recoveryRetryDelay)) s; do not quit until it is gone."
+                    body: "\(retainedBecause)\(journalNote) Insomnia \(Int(recoveryRetryDelay)) sn sonra yeniden dener; dosya ortadan kalkana dek uygulamadan çıkmayın."
                 )
                 scheduleEndRetry(reason)
                 return .sessionRetained
@@ -1450,10 +1450,10 @@ final class SessionManager {
                 Log.info("end: the journal has not taken the clear of a brightness kept after a refused restore and settled in this process; a relaunch would read that entry again and could write its saved value over a 0 set since, so Insomnia keeps it and retries")
             }
             let agentCanFinish = armed && !owedEdits.hidesARestore && owedReadLit == nil && !owedSettlement
-            let unrecorded = [owedSettlement ? "that a brightness kept after a refused restore is settled" : nil,
-                              owedReadLit != nil ? "a reading of the display brightness kept after a refused restore" : nil]
-            let detail = dirty ? (lastError ?? "some changes could not be undone")
-                : "state.json could not record \(unrecorded.compactMap { $0 }.joined(separator: ", nor "))"
+            let unrecorded = [owedSettlement ? "geri yüklemesi reddedildikten sonra saklanan bir parlaklığın sonuçlandığını" : nil,
+                              owedReadLit != nil ? "geri yüklemesi reddedildikten sonra saklanan ekran parlaklığına ait bir okumayı" : nil]
+            let detail = dirty ? (lastError ?? "Bazı değişiklikler geri alınamadı")
+                : "state.json, \(unrecorded.compactMap { $0 }.joined(separator: " ve ")) kaydedemedi"
             let retry: String
             if agentCanFinish {
                 // The agent keeps saved output volumes, display brightness
@@ -1467,14 +1467,14 @@ final class SessionManager {
                 let journaled = effectiveState
                 let owesBrightness = journaled.savedDisplayBrightness != nil || journaled.savedKeyboardBrightness != nil
                 var sentences: [String] = []
-                if state.isDirtyApartFromAppOnlyEntries { sentences.append("The recovery agent retries every minute.") }
+                if state.isDirtyApartFromAppOnlyEntries { sentences.append("Kurtarma ajanı her dakika yeniden dener.") }
                 if owesAudio { sentences.append(Self.audioRetrySentence(recoveryRetryDelay)) }
                 if owesBrightness { sentences.append(Self.brightnessRetrySentence) }
                 retry = sentences.joined(separator: " ")
             } else if owedReadLit != nil || owedSettlement {
-                retry = "Insomnia retries in \(Int(recoveryRetryDelay)) s; do not quit until state.json can be written."
+                retry = "Insomnia \(Int(recoveryRetryDelay)) sn sonra yeniden dener; state.json yazılabilene dek uygulamadan çıkmayın."
             } else {
-                retry = "Insomnia retries in \(Int(recoveryRetryDelay)) s; do not quit until it is restored."
+                retry = "Insomnia \(Int(recoveryRetryDelay)) sn sonra yeniden dener; geri yükleme tamamlanana dek uygulamadan çıkmayın."
             }
             notifier.post(title: Self.incompleteTitle, body: "\(detail). \(retry)")
             // Reconcile and a failed start reach here without `end()`; the
@@ -1571,7 +1571,7 @@ final class SessionManager {
     @discardableResult
     func setLowPower(_ on: Bool) async -> Bool {
         let ticket = endTicket
-        if case let .success(changed) = await exclusive("low power", { await self.performSetLowPower(on, ticket: ticket) }) {
+        if case let .success(changed) = await exclusive("Düşük Güç Modu değişikliği", { await self.performSetLowPower(on, ticket: ticket) }) {
             return changed
         }
         return false
@@ -1615,10 +1615,10 @@ final class SessionManager {
                 stopTransaction(for: still, thenEnd: nil)
                 return false
             } catch {
-                fail("could not enable low power mode: \(error.localizedDescription)")
+                fail("Düşük Güç Modu açılamadı: \(error.localizedDescription)")
                 do {
                     try await sleepGuard.setLowPowerMode(false)
-                    clearLowPowerOwnership("low power mode switched off after the failed enable")
+                    clearLowPowerOwnership("Başarısız açma denemesinin ardından Düşük Güç Modu kapatıldı")
                 } catch let still as CommandStillRunningError {
                     // The rollback itself is left running, and the lock
                     // stays with it. Ownership stays journaled until it has
@@ -1626,7 +1626,7 @@ final class SessionManager {
                     // (`performLowPowerCheck`).
                     stopTransaction(for: still, thenEnd: nil, undoes: .lowPowerOff)
                 } catch {
-                    fail("low power mode may be on and could not be switched off: \(error.localizedDescription); kept in the journal to retry")
+                    fail("Düşük Güç Modu açık olabilir ve kapatılamadı: \(error.localizedDescription); yeniden denemek üzere kayıt defterinde tutuluyor")
                     do { try await backstop.arm() } catch { Log.error("recovery agent could not be confirmed: \(error.localizedDescription)") }
                 }
                 return false
@@ -1645,7 +1645,7 @@ final class SessionManager {
             dropDisplayWriteIfMoved()
             do {
                 try await sleepGuard.setLowPowerMode(false)
-                clearLowPowerOwnership("low power mode switched off")
+                clearLowPowerOwnership("Düşük Güç Modu kapatıldı")
                 Log.info("low power mode off")
                 settleDisplayAfterLowPower()
                 return true
@@ -1692,7 +1692,7 @@ final class SessionManager {
     /// Refused while an unfinished command runs, the lid event is replayed
     /// once it has exited.
     func undoLidActions() async {
-        _ = await exclusive("lid open", owes: .lidEvent) { self.undoLidActionsInJournal() }
+        _ = await exclusive("Kapak açılması", owes: .lidEvent) { self.undoLidActionsInJournal() }
     }
 
     // MARK: Restore
@@ -1715,13 +1715,13 @@ final class SessionManager {
         if state.sleepDisabledByUs {
             do {
                 try await sleepGuard.setSleepDisabled(false)
-                clearUndone("sleep restored") { $0.sleepDisabledByUs = false }
+                clearUndone("Uyku geri yüklendi") { $0.sleepDisabledByUs = false }
                 Log.info("sleep restored")
             } catch let still as CommandStillRunningError {
                 stopTransaction(for: still, thenEnd: nil, undoes: .sleepRestored)
                 return still.command
             } catch {
-                fail("could not restore sleep: \(error.localizedDescription)")
+                fail("Uyku geri yüklenemedi: \(error.localizedDescription)")
             }
         }
 
@@ -1731,14 +1731,14 @@ final class SessionManager {
             dropDisplayWriteIfMoved()
             do {
                 try await sleepGuard.setLowPowerMode(false)
-                clearLowPowerOwnership("low power mode cleared")
+                clearLowPowerOwnership("Düşük Güç Modu geri alındı")
                 Log.info("low power mode cleared")
                 lowPowerJustCleared = true
             } catch let still as CommandStillRunningError {
                 stopTransaction(for: still, thenEnd: nil, undoes: .lowPowerOff)
                 return still.command
             } catch {
-                fail("could not clear low power mode: \(error.localizedDescription)")
+                fail("Düşük Güç Modu geri alınamadı: \(error.localizedDescription)")
             }
         } else if effectiveState.displayRestoredUnderLowPower != nil {
             dropDisplayWrite(reason: "the mode was cleared by someone else")
@@ -1790,7 +1790,7 @@ final class SessionManager {
                 do {
                     try journal { $0.appNapOverrides.append(AppNapOverride(bundleId: id, previous: previous)) }
                 } catch {
-                    fail("could not journal the App Nap setting of \(id): \(error.localizedDescription); its preferences are left unchanged")
+                    fail("\(id) için App Nap ayarı kayıt defterine yazılamadı: \(error.localizedDescription); tercihleri değiştirilmeden bırakıldı")
                     break
                 }
             }
@@ -1800,7 +1800,7 @@ final class SessionManager {
             } catch {
                 // Already journaled: the restore puts the recorded value
                 // back whether or not this write landed.
-                fail("app nap: \(error.localizedDescription); kept in the journal to restore")
+                fail("App Nap: \(error.localizedDescription); geri yüklemek üzere kayıt defterinde tutuluyor")
             }
         }
         if written > 0 || alreadyOff > 0 {
@@ -1822,10 +1822,10 @@ final class SessionManager {
                 do {
                     try journal { $0.appNapOverrides.removeAll { $0.bundleId == entry.bundleId } }
                 } catch {
-                    fail("App Nap restored for \(entry.bundleId) but the journal entry could not be cleared: \(error.localizedDescription); it will be retried")
+                    fail("\(entry.bundleId) için App Nap geri yüklendi, ancak kayıt defterindeki girdi temizlenemedi: \(error.localizedDescription); yeniden denenecek")
                 }
             } catch {
-                fail("could not restore App Nap for \(entry.bundleId): \(error.localizedDescription); kept in the journal to retry")
+                fail("\(entry.bundleId) için App Nap geri yüklenemedi: \(error.localizedDescription); yeniden denemek üzere kayıt defterinde tutuluyor")
             }
         }
         Log.info("app nap restored for \(restored) app(s)")
@@ -1868,12 +1868,12 @@ final class SessionManager {
                 }
                 continue
             } catch {
-                failAudio("could not restore audio on \(device): \(error.localizedDescription); kept in the journal to retry")
+                failAudio("\(device) aygıtında ses geri yüklenemedi: \(error.localizedDescription); yeniden denemek üzere kayıt defterinde tutuluyor")
                 retry = true
                 continue
             }
             let uid = entry.deviceUID
-            if !clearUndone("audio restored on \(device)", { $0.savedAudioOutputs.removeAll { $0.deviceUID == uid } }) {
+            if !clearUndone("\(device) aygıtında ses geri yüklendi", { $0.savedAudioOutputs.removeAll { $0.deviceUID == uid } }) {
                 retry = true
             }
         }
@@ -1893,13 +1893,13 @@ final class SessionManager {
                 let m = muted ?? false
                 try audio.apply(volume: v, muted: m, deviceUID: nil)
                 Log.info("audio restored on the default output (volume \(v), muted \(m))")
-                let cleared = clearUndone("audio restored") { s in
+                let cleared = clearUndone("Ses geri yüklendi") { s in
                     s.savedOutputVolume = nil
                     s.savedMuted = nil
                 }
                 if !cleared { retry = true }
             } catch {
-                failAudio("could not restore audio: \(error.localizedDescription)")
+                failAudio("Ses geri yüklenemedi: \(error.localizedDescription)")
                 retry = true
             }
         }
@@ -1936,7 +1936,7 @@ final class SessionManager {
     /// disk: another copy of the app may have saved an output since this
     /// copy last read it.
     func outputDevicesChanged() async {
-        await restoreOwedAudio("output device change", retrying: false)
+        await restoreOwedAudio("Çıkış aygıtı değişikliği", retrying: false)
     }
 
     /// One transaction over the journal as it is on disk: restores the saved
@@ -2008,7 +2008,7 @@ final class SessionManager {
             guard let self, !Task.isCancelled else { return }
             self.audioRetryTask = nil
             Log.info("retrying the restore of saved output volume")
-            await self.restoreOwedAudio("audio retry", retrying: true)
+            await self.restoreOwedAudio("Ses geri yükleme denemesi", retrying: true)
         }
     }
 
@@ -2026,7 +2026,7 @@ final class SessionManager {
     /// that came back gets its volume as usual.
     func stopWaitingForOutput(_ waiting: SavedAudioOutput) async {
         let deviceUID = waiting.deviceUID
-        _ = await exclusive("stop waiting for an output") {
+        _ = await exclusive("Çıkış aygıtını beklemeyi bırakma") {
             guard let entry = self.state.savedAudioOutputs.first(where: { $0.deviceUID == deviceUID }) else { return }
             guard entry == waiting else {
                 Log.info("audio: stop waiting for \(entry.label) not done: the menu item was for an earlier save, already restored or dropped; the save from a later lid close stays")
@@ -2040,7 +2040,7 @@ final class SessionManager {
             } catch is AudioDeviceMissingError {
                 // Still not connected: the request stands.
             } catch {
-                self.fail("could not check whether \(entry.label) is connected: \(error.localizedDescription); its saved volume stays")
+                self.fail("\(entry.label) aygıtının bağlı olup olmadığı denetlenemedi: \(error.localizedDescription); kaydedilen ses düzeyi korunuyor")
                 return
             }
             do {
@@ -2048,7 +2048,7 @@ final class SessionManager {
                 self.audioDevicesNotConnected.remove(deviceUID)
                 Log.info("audio: stopped waiting for \(entry.label) as asked; its saved volume \(entry.volume) and mute \(entry.muted) are dropped, and it stays muted")
             } catch {
-                self.fail("could not drop the saved volume of \(entry.label): \(error.localizedDescription)")
+                self.fail("\(entry.label) aygıtının kaydedilen ses düzeyi silinemedi: \(error.localizedDescription)")
             }
         }
     }
@@ -2066,24 +2066,24 @@ final class SessionManager {
             // Only entries that still need a retry, or that a person has to
             // look at, stay journaled. Gone and resumed entries are done.
             let keep = Set(report.failed + report.unverifiable + report.unobserved)
-            clearUndone("frozen processes resumed") { s in
+            clearUndone("Dondurulmuş süreçler çözüldü") { s in
                 s.frozenProcesses.removeAll { !keep.contains($0.pid) }
                 // Docker Desktop is frozen via its pids too; the flag is only a marker.
                 if s.frozenProcesses.isEmpty { s.dockerFrozen = false }
             }
             Log.info("resumed \(report.resumed.count) frozen pid(s); \(report.gone.count) gone, \(report.failed.count) failed, \(report.unverifiable.count) unverifiable, \(report.unobserved.count) unobserved")
             if !report.failed.isEmpty {
-                errors.append("could not resume pid(s) \(report.failed.map(String.init).joined(separator: ", ")); kept in the journal to retry")
+                errors.append("pid \(report.failed.map(String.init).joined(separator: ", ")) çözülemedi; yeniden denemek üzere kayıt defterinde tutuluyor")
             }
             if !report.unobserved.isEmpty {
-                errors.append("could not read the state of pid(s) \(report.unobserved.map(String.init).joined(separator: ", ")); kept in the journal to retry")
+                errors.append("pid \(report.unobserved.map(String.init).joined(separator: ", ")) için durum okunamadı; yeniden denemek üzere kayıt defterinde tutuluyor")
             }
             if !report.unverifiable.isEmpty {
                 let list = report.unverifiable.map(String.init).joined(separator: ", ")
-                errors.append("pid(s) \(list) are stopped but journaled without identity, so Insomnia cannot prove it froze them and will not resume them. Either an older build recorded the pid alone, or a freeze stopped the pid and Insomnia quit, crashed or failed to write before the stop was confirmed in the journal. Check each one first, for example `ps -o pid,stat,lstart,command -p <pid>`, and only if it is a process you expected Insomnia to freeze run `kill -CONT <pid>`; the entry stays in the journal until resumed or gone")
+                errors.append("pid \(list) durdurulmuş, ancak kayıt defterine kimlik bilgisi olmadan yazılmış; bu yüzden Insomnia bunları kendisinin dondurduğunu kanıtlayamıyor ve çözmeyecek. Ya daha eski bir derleme yalnızca pid'i kaydetti ya da bir dondurma pid'i durdurdu ve Insomnia, durdurma kayıt defterinde onaylanmadan önce kapandı, çöktü ya da yazamadı. Önce her birini denetleyin, örneğin `ps -o pid,stat,lstart,command -p <pid>`; yalnızca Insomnia'nın dondurmasını beklediğiniz bir süreçse `kill -CONT <pid>` komutunu çalıştırın; girdi, süreç çözülene ya da ortadan kalkana dek kayıt defterinde kalır")
             }
         } else if state.dockerFrozen {
-            clearUndone("Docker Desktop has no frozen process left") { $0.dockerFrozen = false }
+            clearUndone("Docker Desktop için dondurulmuş süreç kalmadı") { $0.dockerFrozen = false }
         }
 
         if !state.savedAudioOutputs.isEmpty || state.savedOutputVolume != nil || state.savedMuted != nil {
@@ -2117,19 +2117,19 @@ final class SessionManager {
         var refused: [String] = []
         var waiting: [String] = []
         if let saved = kept.savedDisplayBrightness, let why = display.refusal() {
-            refused.append(keepRefusedRestore("Display brightness", saved: saved, why: why, flag: \.displayRestoreRefused))
+            refused.append(keepRefusedRestore("Ekran parlaklığı", saved: saved, why: why, flag: \.displayRestoreRefused))
         } else if let saved = kept.savedDisplayBrightness {
             restoredDisplay = restoreDisplay(saved: saved, waiting: &waiting, errors: &errors)
         }
         if let saved = kept.savedKeyboardBrightness, let why = keyboard.refusal() {
-            refused.append(keepRefusedRestore("Keyboard backlight", saved: saved, why: why, flag: \.keyboardRestoreRefused))
+            refused.append(keepRefusedRestore("Klavye arka ışığı", saved: saved, why: why, flag: \.keyboardRestoreRefused))
         } else if let saved = kept.savedKeyboardBrightness {
             restoredKeyboard = restoreKeyboard(saved: saved, waiting: &waiting, errors: &errors)
         }
         waiting += owedEdits.clearsWaiting
         if !refused.isEmpty {
             let one = refused.count == 1
-            errors.append("could not restore the brightness saved before the lid closed on this macOS build. \(refused.joined(separator: " ")) Set \(one ? "the level" : "the levels") with the brightness keys or Control Center; the saved \(one ? "value stays" : "values stay") in the journal for a version that can restore \(one ? "it" : "them")")
+            errors.append("Kapak kapanmadan önce kaydedilen parlaklık bu macOS derlemesinde geri yüklenemedi. \(refused.joined(separator: " ")) \(one ? "Düzeyi" : "Düzeyleri") parlaklık tuşlarıyla ya da Denetim Merkezi'nden ayarlayın; kaydedilen \(one ? "değer" : "değerler"), geri yükleyebilen bir sürüm için kayıt defterinde kalıyor")
         }
         if !errors.isEmpty {
             fail(([shownAbove].compactMap { $0 } + errors).joined(separator: ". "))
@@ -2180,7 +2180,7 @@ final class SessionManager {
                     waiting.append("display brightness \(saved), kept after a refused restore, reads \(now) \(doubt); that is not taken as a level set since")
                     return nil
                 }
-                clearSetSince("display brightness", saved: saved, now: now, owed: \.display, errors: &errors) { s in
+                clearSetSince("Ekran parlaklığı", saved: saved, now: now, owed: \.display, errors: &errors) { s in
                     s.savedDisplayBrightness = nil
                     s.displayRestoreRefused = false
                 }
@@ -2200,8 +2200,8 @@ final class SessionManager {
         do {
             try display.setBrightness(saved)
         } catch {
-            errors.append("could not restore display brightness: \(error.localizedDescription)")
-            makeRetryable("display brightness", saved: saved, flag: \.displayRestoreRefused, owed: \.display, errors: &errors)
+            errors.append("Ekran parlaklığı geri yüklenemedi: \(error.localizedDescription)")
+            makeRetryable("Ekran parlaklığı", saved: saved, flag: \.displayRestoreRefused, owed: \.display, errors: &errors)
             return nil
         }
         Log.info("display restored (brightness \(saved))")
@@ -2218,7 +2218,7 @@ final class SessionManager {
         do {
             try journal(clear)
         } catch {
-            errors.append(unclearedLine("display brightness restored but the journal entry could not be cleared: \(error.localizedDescription); it will be retried", clear))
+            errors.append(unclearedLine("Ekran parlaklığı geri yüklendi, ancak kayıt defterindeki girdi temizlenemedi: \(error.localizedDescription); yeniden denenecek", clear))
             settleRestored(saved, underLowPower: underLowPower, flag: \.displayRestoreRefused, owed: \.display)
         }
         return saved
@@ -2233,7 +2233,7 @@ final class SessionManager {
                 waiting.append("keyboard backlight \(saved), kept after a refused restore, not read: \(why)")
                 return nil
             case .setSince(let now):
-                clearSetSince("keyboard backlight", saved: saved, now: now, owed: \.keyboard, errors: &errors) { s in
+                clearSetSince("Klavye arka ışığı", saved: saved, now: now, owed: \.keyboard, errors: &errors) { s in
                     s.savedKeyboardBrightness = nil
                     s.keyboardRestoreRefused = false
                 }
@@ -2246,8 +2246,8 @@ final class SessionManager {
         do {
             try keyboard.setBrightness(saved)
         } catch {
-            errors.append("could not restore keyboard backlight: \(error.localizedDescription)")
-            makeRetryable("keyboard backlight", saved: saved, flag: \.keyboardRestoreRefused, owed: \.keyboard, errors: &errors)
+            errors.append("Klavye arka ışığı geri yüklenemedi: \(error.localizedDescription)")
+            makeRetryable("Klavye arka ışığı", saved: saved, flag: \.keyboardRestoreRefused, owed: \.keyboard, errors: &errors)
             return nil
         }
         Log.info("keyboard backlight restored (brightness \(saved))")
@@ -2259,7 +2259,7 @@ final class SessionManager {
         do {
             try journal(clear)
         } catch {
-            errors.append(unclearedLine("keyboard backlight restored but the journal entry could not be cleared: \(error.localizedDescription); it will be retried", clear))
+            errors.append(unclearedLine("Klavye arka ışığı geri yüklendi, ancak kayıt defterindeki girdi temizlenemedi: \(error.localizedDescription); yeniden denenecek", clear))
             settleRestored(saved, flag: \.keyboardRestoreRefused, owed: \.keyboard)
         }
         return saved
@@ -2280,7 +2280,7 @@ final class SessionManager {
         keptRecheckTask = Task { @MainActor [weak self] in
             try? await Task.sleep(for: delay)
             guard let self, !Task.isCancelled else { return }
-            let result = await self.exclusive("brightness re-check") { await self.recheckKeptBrightness() }
+            let result = await self.exclusive("Parlaklık yeniden denetimi") { await self.recheckKeptBrightness() }
             switch result {
             case .failure(.lockBusy), .failure(.commandRunning):
                 // Another holder of the lock, or a power command left
@@ -2505,7 +2505,7 @@ final class SessionManager {
         // This process removes the record of its own command when that
         // command exits, so a record on disk now was left by an earlier run.
         if store.loadUnfinishedCommand() != nil { earlierCommandCheckOwed = true }
-        let result = await exclusive("reconcile") { () -> Bool in
+        let result = await exclusive("Açılış denetimi") { () -> Bool in
             if isRetry, !self.reconcileIsOwed(since: ticket) { return false }
             await self.performReconcile()
             return true
@@ -2618,7 +2618,7 @@ final class SessionManager {
             do {
                 try await backstop.arm()
             } catch {
-                fail("could not arm recovery agent for the session on disk: \(error.localizedDescription); ending it")
+                fail("Diskteki oturum için kurtarma ajanı etkinleştirilemedi: \(error.localizedDescription); oturum bitiriliyor")
                 _ = await performEnd(reason: .recoveryUnavailable)
                 return
             }
@@ -2626,7 +2626,7 @@ final class SessionManager {
                 do {
                     try journal { $0.sleepDisabledByUs = true }
                 } catch {
-                    fail("could not journal sleep guard: \(error.localizedDescription); ending session")
+                    fail("Uyku engelleme kayıt defterine yazılamadı: \(error.localizedDescription); oturum bitiriliyor")
                     _ = await performEnd(reason: .recoveryUnavailable)
                     return
                 }
@@ -2641,7 +2641,7 @@ final class SessionManager {
                 stopTransaction(for: still, thenEnd: .recoveryUnavailable)
                 return
             } catch {
-                fail("could not re-apply sleep guard: \(error.localizedDescription); ending session")
+                fail("Uyku engelleme yeniden uygulanamadı: \(error.localizedDescription); oturum bitiriliyor")
                 _ = await performEnd(reason: .recoveryUnavailable)
                 return
             }
@@ -2745,17 +2745,17 @@ final class SessionManager {
             Log.error("session.json unreadable (\(detail)); moved to \(moved.path) and treated as no session")
             notifier.post(
                 title: Self.sessionFileTitle,
-                body: "session.json is not a valid session file (\(detail)). It was moved to \(moved.path); Insomnia treats it as no session."
+                body: "session.json geçerli bir oturum dosyası değil (\(detail)). Dosya \(moved.path) konumuna taşındı; Insomnia oturum yokmuş gibi davranıyor."
             )
         } catch let moveError {
             // Kept, not deleted. A start is refused while it is there, and
             // every end restores the journal, tries the rename again, and
             // stays unfinished while it fails.
             keptSessionFile = .notASession
-            fail("session.json unreadable (\(detail)) and could not be moved aside: \(moveError.localizedDescription); left in place and treated as no session")
+            fail("session.json okunamıyor (\(detail)) ve kenara alınamadı: \(moveError.localizedDescription); yerinde bırakıldı ve oturum yokmuş gibi davranılıyor")
             notifier.post(
                 title: Self.sessionFileTitle,
-                body: "session.json is not a valid session file (\(detail)). It could not be moved aside (\(moveError.localizedDescription)) and was left in place; Insomnia treats it as no session. Insomnia retries the rename and will not quit until it is gone. Remove it or move it out of \(paths.appSupport.path)."
+                body: "session.json geçerli bir oturum dosyası değil (\(detail)). Dosya kenara alınamadı (\(moveError.localizedDescription)) ve yerinde bırakıldı; Insomnia oturum yokmuş gibi davranıyor. Insomnia yeniden adlandırmayı tekrar dener ve dosya ortadan kalkana dek kapanmaz. Dosyayı kaldırın ya da \(paths.appSupport.path) klasörünün dışına taşıyın."
             )
         }
     }
@@ -2764,20 +2764,20 @@ final class SessionManager {
     /// opened; a FIFO or a file without read permission moves the same way.
     /// The restore of a dirty journal reports its own outcome.
     private func moveAsideSessionThatCannotBeRead(_ detail: String) {
-        let expired = "session.json could not be read (\(detail)), so its end time is unknown. Insomnia treats the session as expired and undoes what its journal recorded."
+        let expired = "session.json okunamadı (\(detail)), bu yüzden bitiş zamanı bilinmiyor. Insomnia oturumu süresi dolmuş sayıyor ve kayıt defterine yazılanları geri alıyor."
         do {
             let moved = try store.moveAsideUnreadableSession(now: clock())
             Log.error("session.json could not be read (\(detail)); treated as expired and moved, unopened, to \(moved.path)")
-            notifier.post(title: Self.sessionFileTitle, body: "\(expired) The file was moved, unopened, to \(moved.path).")
+            notifier.post(title: Self.sessionFileTitle, body: "\(expired) Dosya açılmadan \(moved.path) konumuna taşındı.")
         } catch let moveError {
             // Kept, not deleted. A start is refused while it is there, and
             // every end restores the journal, tries the rename again, and
             // stays unfinished while it fails.
             keptSessionFile = .cannotBeRead
-            fail("session.json could not be read (\(detail)) and could not be moved aside: \(moveError.localizedDescription); treated as expired and left in place")
+            fail("session.json okunamadı (\(detail)) ve kenara alınamadı: \(moveError.localizedDescription); süresi dolmuş sayıldı ve yerinde bırakıldı")
             notifier.post(
                 title: Self.sessionFileTitle,
-                body: "\(expired) The file could not be moved aside (\(moveError.localizedDescription)) and was left in place. If it became readable there, a relaunch would resume it, so Insomnia retries the rename and will not quit until it is gone. Remove it or move it out of \(paths.appSupport.path)."
+                body: "\(expired) Dosya kenara alınamadı (\(moveError.localizedDescription)) ve yerinde bırakıldı. Orada okunabilir hâle gelirse Insomnia yeniden açıldığında oturumu sürdürür; bu yüzden Insomnia yeniden adlandırmayı tekrar dener ve dosya ortadan kalkana dek kapanmaz. Dosyayı kaldırın ya da \(paths.appSupport.path) klasörünün dışına taşıyın."
             )
         }
     }
@@ -2799,20 +2799,20 @@ final class SessionManager {
             switch kept {
             case .cannotBeRead:
                 Log.info("session.json that could not be read moved, unopened, to \(moved.path)")
-                notifier.post(title: Self.sessionFileTitle, body: "session.json, which could not be read, was moved, unopened, to \(moved.path).")
+                notifier.post(title: Self.sessionFileTitle, body: "Okunamayan session.json, açılmadan \(moved.path) konumuna taşındı.")
             case .notASession:
                 Log.info("session.json that is not a session moved to \(moved.path)")
-                notifier.post(title: Self.sessionFileTitle, body: "session.json, which is not a valid session file, was moved to \(moved.path).")
+                notifier.post(title: Self.sessionFileTitle, body: "Geçerli bir oturum dosyası olmayan session.json, \(moved.path) konumuna taşındı.")
             }
             return nil
         } catch {
             switch kept {
             case .cannotBeRead:
-                fail("session.json could not be read and still could not be moved aside: \(error.localizedDescription)")
-                return "session.json could not be read or moved aside (\(error.localizedDescription)). If it became readable where it is, a relaunch would resume it and hold sleep again. Remove it or move it out of \(paths.appSupport.path)."
+                fail("session.json okunamadı ve hâlâ kenara alınamıyor: \(error.localizedDescription)")
+                return "session.json okunamadı ve kenara alınamadı (\(error.localizedDescription)). Bulunduğu yerde okunabilir hâle gelirse Insomnia yeniden açıldığında oturumu sürdürür ve uykuyu yeniden engeller. Dosyayı kaldırın ya da \(paths.appSupport.path) klasörünün dışına taşıyın."
             case .notASession:
-                fail("session.json is not a session and still could not be moved aside: \(error.localizedDescription); left in place")
-                return "session.json is not a valid session file and could not be moved aside (\(error.localizedDescription)). Where it is, every launch and the recovery agent read it again. Remove it or move it out of \(paths.appSupport.path)."
+                fail("session.json bir oturum değil ve hâlâ kenara alınamıyor: \(error.localizedDescription); yerinde bırakıldı")
+                return "session.json geçerli bir oturum dosyası değil ve kenara alınamadı (\(error.localizedDescription)). Bulunduğu yerde her açılış ve kurtarma ajanı onu yeniden okur. Dosyayı kaldırın ya da \(paths.appSupport.path) klasörünün dışına taşıyın."
             }
         }
     }
@@ -2834,7 +2834,7 @@ final class SessionManager {
         Log.info("reconcile: \(Self.foreignSleepLine)")
         notifier.post(
             title: Self.foreignSleepTitle,
-            body: "pmset reports SleepDisabled 1, but Insomnia has no session and did not set it, so it is left alone. To re-enable sleep: \(Self.foreignSleepCommand). Ending an Insomnia session also sets it to 0."
+            body: "pmset SleepDisabled değerini 1 olarak bildiriyor, ancak Insomnia'nın oturumu yok ve bu değeri o ayarlamadı; bu yüzden değere dokunulmadı. Uykuyu yeniden etkinleştirmek için: \(Self.foreignSleepCommand). Bir Insomnia oturumunu bitirmek de bu değeri 0 yapar."
         )
     }
 
@@ -2901,7 +2901,7 @@ final class SessionManager {
         do {
             try persistState(before)
         } catch {
-            fail("could not restore the journal after a failed start: \(error.localizedDescription)")
+            fail("Başarısız başlatmanın ardından kayıt defteri geri yüklenemedi: \(error.localizedDescription)")
         }
         do {
             if let previous {
@@ -2910,7 +2910,7 @@ final class SessionManager {
                 try store.deleteSession()
             }
         } catch {
-            fail("could not restore session.json after a failed start: \(error.localizedDescription)")
+            fail("Başarısız başlatmanın ardından session.json geri yüklenemedi: \(error.localizedDescription)")
         }
     }
 
@@ -3008,7 +3008,7 @@ final class SessionManager {
             try journal { $0[keyPath: flag] = true }
             return line
         } catch {
-            return "\(what) \(saved): \(why); it could not be marked as refused (\(error.localizedDescription)), so it still counts as not restored."
+            return "\(what) \(saved): \(why); reddedildi olarak işaretlenemedi (\(error.localizedDescription)), bu yüzden hâlâ geri yüklenmemiş sayılıyor."
         }
     }
 
@@ -3081,7 +3081,7 @@ final class SessionManager {
             try journal(clear)
         } catch {
             owedEdits[keyPath: owed] = .clear(saved)
-            errors.append("\(what) was set since its restore was refused, but the saved value could not be cleared: \(error.localizedDescription); it will be retried")
+            errors.append("\(what), geri yüklemesi reddedildikten sonra ayarlanmış, ancak kaydedilen değer temizlenemedi: \(error.localizedDescription); yeniden denenecek")
         }
     }
 
@@ -3117,27 +3117,27 @@ final class SessionManager {
             try journal { $0[keyPath: flag] = false }
         } catch {
             owedEdits[keyPath: owed] = .unflag(saved)
-            errors.append("could not mark the \(what) for retry: \(error.localizedDescription); it still counts as not restored, and Insomnia retries it itself until the journal takes the change")
+            errors.append("\(what) yeniden denenmek üzere işaretlenemedi: \(error.localizedDescription); hâlâ geri yüklenmemiş sayılıyor ve kayıt defteri değişikliği alana dek Insomnia bunu kendisi yeniden deniyor")
         }
     }
     private func iso(_ d: Date) -> String {
         ISO8601DateFormatter().string(from: d)
     }
 
-    static let incompleteTitle = "Restore incomplete"
-    static let notEndedTitle = "Session not ended"
-    static let journalTitle = "Recovery journal unreadable"
-    static let commandRunningTitle = "Power command still running"
-    static let sessionFileTitle = "Session file unreadable"
-    static let foreignSleepTitle = "Sleep is disabled by something else"
+    static let incompleteTitle = "Geri yükleme tamamlanmadı"
+    static let notEndedTitle = "Oturum bitirilmedi"
+    static let journalTitle = "Kurtarma kayıt defteri okunamıyor"
+    static let commandRunningTitle = "Güç komutu hâlâ çalışıyor"
+    static let sessionFileTitle = "Oturum dosyası okunamıyor"
+    static let foreignSleepTitle = "Uykuyu başka bir şey devre dışı bıraktı"
     static let foreignSleepCommand = "sudo pmset -a disablesleep 0"
-    static let foreignSleepLine = "Sleep is disabled by something other than Insomnia; to re-enable it: \(foreignSleepCommand)"
+    static let foreignSleepLine = "Uykuyu Insomnia dışında bir şey devre dışı bıraktı; yeniden etkinleştirmek için: \(foreignSleepCommand)"
 
     private static func endTitle(_ reason: EndReason, had: Bool) -> String {
         switch reason {
-        case .backstop: "Sleep restored"
-        case .startFailed: "Session not started"
-        default: had ? "Session ended" : "Session restored"
+        case .backstop: "Uyku geri yüklendi"
+        case .startFailed: "Oturum başlatılmadı"
+        default: had ? "Oturum bitti" : "Oturum geri alındı"
         }
     }
 
@@ -3151,40 +3151,40 @@ final class SessionManager {
     nonisolated static func stillMutedSentence(_ waiting: [SavedAudioOutput]) -> String {
         let names = waiting.map(\.label)
         if names.count == 1 {
-            return "\(names[0]) was not connected, so it is still muted. Insomnia restores its volume when it reconnects while Insomnia is running, or at the next launch."
+            return "\(names[0]) bağlı değildi, bu yüzden sesi hâlâ kapalı. Aygıt Insomnia çalışırken yeniden bağlandığında ya da bir sonraki açılışta Insomnia ses düzeyini geri yükler."
         }
-        let list = names.dropLast().joined(separator: ", ") + " and " + names[names.count - 1]
-        return "\(list) were not connected, so they are still muted. Insomnia restores each one's volume when it reconnects while Insomnia is running, or at the next launch."
+        let list = names.dropLast().joined(separator: ", ") + " ve " + names[names.count - 1]
+        return "\(list) bağlı değildi, bu yüzden sesleri hâlâ kapalı. Her biri Insomnia çalışırken yeniden bağlandığında ya da bir sonraki açılışta Insomnia ses düzeyini geri yükler."
     }
 
     /// The incomplete-restore notification's sentence about saved output
     /// volume that could not be restored on a connected device.
     nonisolated static func audioRetrySentence(_ delay: TimeInterval) -> String {
-        "The recovery agent cannot restore output volume. Insomnia tries again in \(Int(delay)) s while it runs, and at its next launch."
+        "Kurtarma ajanı çıkış ses düzeyini geri yükleyemez. Insomnia, çalıştığı sürece \(Int(delay)) sn sonra ve bir sonraki açılışında yeniden dener."
     }
 
     /// The same for display brightness or keyboard backlight, which the
     /// next end (`restoreAll`) or the launch reconcile restores.
-    nonisolated static let brightnessRetrySentence = "The recovery agent cannot restore display brightness or keyboard backlight. Insomnia tries again when a later session ends, and at its next launch."
+    nonisolated static let brightnessRetrySentence = "Kurtarma ajanı ekran parlaklığını ya da klavye arka ışığını geri yükleyemez. Insomnia, sonraki bir oturum bittiğinde ve bir sonraki açılışında yeniden dener."
 
     /// The menu line for an output device still waiting for its volume.
     nonisolated static func stillMutedLine(_ output: SavedAudioOutput) -> String {
-        "\(output.label) is still muted from a lid close; Insomnia restores it when it reconnects"
+        "\(output.label): sesi kapak kapandığından beri kapalı; yeniden bağlandığında Insomnia sesi geri yükler"
     }
 
     private func endBody(_ reason: EndReason, outputsWaiting: Bool) -> String {
         switch reason {
-        case .timer: "Time is up. Sleep is back to normal."
-        case .user: "Ended by you. Sleep is back to normal."
-        case .quit: "Insomnia quit. Sleep is back to normal."
-        case .batteryFloor: "Battery fell below \(config.endFloor)%. Sleep is back to normal."
-        case .batteryUnreadable: "The battery level could not be read twice in a row, so the \(config.endFloor)% floor could not be applied. Sleep is back to normal."
-        case .thermalCritical: "Thermal state is critical. Sleep is back to normal."
+        case .timer: "Süre doldu. Uyku normale döndü."
+        case .user: "Oturumu siz bitirdiniz. Uyku normale döndü."
+        case .quit: "Insomnia'dan çıkıldı. Uyku normale döndü."
+        case .batteryFloor: "Pil düzeyi %\(config.endFloor) sınırının altına düştü. Uyku normale döndü."
+        case .batteryUnreadable: "Pil düzeyi art arda iki kez okunamadı, bu yüzden %\(config.endFloor) pil alt sınırı uygulanamadı. Uyku normale döndü."
+        case .thermalCritical: "Isı durumu kritik. Uyku normale döndü."
         case .backstop: outputsWaiting
-            ? "A previous session left changes behind. Sleep is back to normal."
-            : "A previous session left changes behind; everything has been undone."
-        case .recoveryUnavailable: "Insomnia could not arm its recovery agent for the session found on disk, so it ended the session. Sleep is back to normal."
-        case .startFailed: "Insomnia could not disable sleep, so no session was started. Sleep is back to normal."
+            ? "Önceki bir oturum geride değişiklikler bıraktı. Uyku normale döndü."
+            : "Önceki bir oturum geride değişiklikler bıraktı; hepsi geri alındı."
+        case .recoveryUnavailable: "Insomnia, diskte bulunan oturum için kurtarma ajanını etkinleştiremediğinden oturumu bitirdi. Uyku normale döndü."
+        case .startFailed: "Insomnia uykuyu devre dışı bırakamadığından hiçbir oturum başlatılmadı. Uyku normale döndü."
         }
     }
 }

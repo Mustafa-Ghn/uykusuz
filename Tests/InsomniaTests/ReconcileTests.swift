@@ -62,7 +62,7 @@ final class ReconcileTests: XCTestCase {
         XCTAssertEqual(h.guardFake.calls, ["disablesleep 1"])
         XCTAssertEqual(m.scheduledDeadline, s.endsAt)
         XCTAssertEqual(h.backstop.arms, 1)
-        XCTAssertEqual(m.remainingText, "2h 14m")
+        XCTAssertEqual(m.remainingText, "2sa 14dk")
         XCTAssertEqual(try h.store.loadSession(), s)
         XCTAssertEqual(try h.store.loadState()?.sleepDisabledByUs, true)
     }
@@ -120,7 +120,7 @@ final class ReconcileTests: XCTestCase {
         await m.reconcile()
         XCTAssertEqual(h.guardFake.calls, ["lowpowermode 0", "pmset -g"])
         XCTAssertEqual(try h.store.loadState()?.lowPowerSetByUs, true)
-        XCTAssertTrue(try XCTUnwrap(m.lastError).contains("could not clear low power mode"), m.lastError ?? "")
+        XCTAssertTrue(try XCTUnwrap(m.lastError).contains("Düşük Güç Modu geri alınamadı"), m.lastError ?? "")
         XCTAssertEqual(m.foreignSleepWarning, SessionManager.foreignSleepLine)
         XCTAssertEqual(h.notifier.posts.map(\.title), [SessionManager.incompleteTitle, SessionManager.foreignSleepTitle])
     }
@@ -205,7 +205,7 @@ final class ReconcileTests: XCTestCase {
         XCTAssertTrue(h.guardFake.sleepDisabled)
         XCTAssertEqual(try h.store.loadState()?.sleepDisabledByUs, true)
         XCTAssertFalse(h.notifier.posts.contains { $0.title == SessionManager.foreignSleepTitle }, "\(h.notifier.posts)")
-        XCTAssertTrue(try XCTUnwrap(m.lastError).contains("could not restore sleep"), m.lastError ?? "")
+        XCTAssertTrue(try XCTUnwrap(m.lastError).contains("Uyku geri yüklenemedi"), m.lastError ?? "")
     }
 
     // (c') no session, clean state, pmset clean -> nothing but the check
@@ -290,7 +290,7 @@ final class ReconcileTests: XCTestCase {
         XCTAssertEqual(try h.store.loadState(), RuntimeState.clean)
         XCTAssertEqual(h.guardFake.calls, [], "sleep must never be disabled without a backstop")
         let err = try XCTUnwrap(m.lastError)
-        XCTAssertTrue(err.contains("backstop"), err)
+        XCTAssertTrue(err.contains("Kurtarma ajanı"), err)
     }
 
     func testExtendKeepsOldDeadlineWhenBackstopCannotBeConfirmed() async throws {
@@ -318,7 +318,7 @@ final class ReconcileTests: XCTestCase {
         XCTAssertEqual(h.guardFake.calls, ["disablesleep 1"])
         XCTAssertEqual(h.backstop.arms, 1)
         XCTAssertEqual(m.scheduledDeadline, s.endsAt)
-        XCTAssertEqual(m.remainingText, "30m")
+        XCTAssertEqual(m.remainingText, "30dk")
         XCTAssertNil(m.lastError)
     }
 
@@ -338,7 +338,7 @@ final class ReconcileTests: XCTestCase {
         XCTAssertEqual(s.extensions, [3600])
         XCTAssertEqual(try h.store.loadSession(), s)
         XCTAssertEqual(h.backstop.arms, 2)
-        XCTAssertEqual(m.remainingText, "1h 50m")
+        XCTAssertEqual(m.remainingText, "1sa 50dk")
     }
 
     func testEndRestoresFromDiskAndLeavesAgentLoaded() async throws {
@@ -371,12 +371,12 @@ final class ReconcileTests: XCTestCase {
     func testCountdownPauseResume() async throws {
         let m = h.makeManager()
         await m.start(duration: 3600)
-        XCTAssertEqual(m.remainingText, "1h")
+        XCTAssertEqual(m.remainingText, "1sa")
         m.pauseCountdown()
         h.clock.advance(120)
-        XCTAssertEqual(m.remainingText, "1h")
+        XCTAssertEqual(m.remainingText, "1sa")
         m.resumeCountdown()
-        XCTAssertEqual(m.remainingText, "58m")
+        XCTAssertEqual(m.remainingText, "58dk")
     }
 
     func testDeadlineTimerFiresEnd() async throws {
@@ -404,14 +404,14 @@ final class ReconcileTests: XCTestCase {
         // Wait for the end to finish, not for it to start: `isActive` goes
         // false at the top of the end, before `disablesleep 0` and the
         // journal write. The notification is the end's last step.
-        for _ in 0..<1000 where !real.notifier.posts.contains(where: { $0.title == "Session ended" }) {
+        for _ in 0..<1000 where !real.notifier.posts.contains(where: { $0.title == "Oturum bitti" }) {
             try await Task.sleep(for: .milliseconds(10))
         }
         // When the restore was called, not when this loop noticed it: a poll
         // that resumes late would hide an end that came early.
         let restoredAt = try XCTUnwrap(real.guardFake.restoreCalledAt, "the end never restored sleep")
         XCTAssertGreaterThanOrEqual(restoredAt, endsAt, "the session ended before its deadline")
-        XCTAssertEqual(real.notifier.posts.last?.body, "Time is up. Sleep is back to normal.")
+        XCTAssertEqual(real.notifier.posts.last?.body, "Süre doldu. Uyku normale döndü.")
         XCTAssertFalse(m.isActive)
         XCTAssertNil(try real.store.loadSession())
         XCTAssertEqual(try real.store.loadState(), RuntimeState.clean)
@@ -522,7 +522,8 @@ final class ReconcileTests: XCTestCase {
         XCTAssertFalse(h.guardFake.sleepDisabled)
         let moveNotice = h.notifier.posts.filter { $0.title == SessionManager.sessionFileTitle }
         XCTAssertEqual(moveNotice.count, 1)
-        XCTAssertFalse(moveNotice.first?.body.lowercased().contains("restored") == true,
+        let moveBody = moveNotice.first?.body.lowercased() ?? ""
+        XCTAssertFalse(moveBody.contains("geri yüklendi") || moveBody.contains("geri alındı"),
                        "the move notice must not speak for the restore, which has its own outcome: \(moveNotice)")
     }
 
@@ -556,9 +557,9 @@ final class ReconcileTests: XCTestCase {
         let posts = h.notifier.posts.filter { $0.title == SessionManager.sessionFileTitle }
         XCTAssertEqual(posts.count, 1, "\(h.notifier.posts)")
         let body = posts.first?.body ?? ""
-        XCTAssertTrue(body.contains("not a regular file"), body)
-        XCTAssertTrue(body.contains("treats the session as expired"), body)
-        XCTAssertTrue(body.contains("moved, unopened, to \(moved.path)"), body)
+        XCTAssertTrue(body.contains("normal bir dosya değil"), body)
+        XCTAssertTrue(body.contains("oturumu süresi dolmuş sayıyor"), body)
+        XCTAssertTrue(body.contains("açılmadan \(moved.path) konumuna taşındı"), body)
     }
 
     /// A session.json that exists but cannot be read at all (here: it is a
@@ -587,8 +588,8 @@ final class ReconcileTests: XCTestCase {
         XCTAssertEqual(try h.store.loadState(), RuntimeState.clean)
         let posts = h.notifier.posts.filter { $0.title == SessionManager.sessionFileTitle }
         XCTAssertEqual(posts.count, 1, "\(h.notifier.posts)")
-        XCTAssertTrue(posts.first?.body.contains("could not be read") == true, posts.first?.body ?? "")
-        XCTAssertTrue(posts.first?.body.contains("moved, unopened, to \(moved.path)") == true, posts.first?.body ?? "")
+        XCTAssertTrue(posts.first?.body.contains("okunamadı") == true, posts.first?.body ?? "")
+        XCTAssertTrue(posts.first?.body.contains("açılmadan \(moved.path) konumuna taşındı") == true, posts.first?.body ?? "")
 
         let callsBefore = h.guardFake.calls.count
         await m.reconcile()
@@ -658,10 +659,10 @@ final class ReconcileTests: XCTestCase {
         let posts = h.notifier.posts.filter { $0.title == SessionManager.sessionFileTitle }
         XCTAssertEqual(posts.count, 1, "\(h.notifier.posts)")
         let body = posts.first?.body ?? ""
-        XCTAssertTrue(body.contains("treats the session as expired"), body)
-        XCTAssertTrue(body.contains("could not be moved aside"), body)
-        XCTAssertTrue(body.contains("will not quit until it is gone"), body)
-        XCTAssertTrue(body.contains("Remove it or move it out of \(h.home.paths.appSupport.path)"), body)
+        XCTAssertTrue(body.contains("oturumu süresi dolmuş sayıyor"), body)
+        XCTAssertTrue(body.contains("kenara alınamadı"), body)
+        XCTAssertTrue(body.contains("ortadan kalkana dek kapanmaz"), body)
+        XCTAssertTrue(body.contains("Dosyayı kaldırın ya da \(h.home.paths.appSupport.path) klasörünün dışına taşıyın"), body)
 
         h.guardFake.throwOn = []
         let outcome = await m.end(reason: .backstop)
@@ -671,8 +672,8 @@ final class ReconcileTests: XCTestCase {
         XCTAssertEqual(fileType(h.home.paths.sessionFile), S_IFDIR, "session.json was removed, not kept")
         let retained = try XCTUnwrap(h.notifier.posts.last)
         XCTAssertEqual(retained.title, SessionManager.incompleteTitle)
-        XCTAssertTrue(retained.body.contains("could not be read or moved aside"), retained.body)
-        XCTAssertTrue(retained.body.contains("a relaunch would resume it"), retained.body)
+        XCTAssertTrue(retained.body.contains("okunamadı ve kenara alınamadı"), retained.body)
+        XCTAssertTrue(retained.body.contains("yeniden açıldığında oturumu sürdürür"), retained.body)
 
         try FileManager.default.removeItem(at: taken)
         let retried = await m.end(reason: .backstop)
@@ -680,7 +681,7 @@ final class ReconcileTests: XCTestCase {
         XCTAssertEqual(retried, .restored)
         XCTAssertFalse(exists(h.home.paths.sessionFile))
         XCTAssertEqual(fileType(taken), S_IFDIR, "the retry did not move session.json aside")
-        XCTAssertTrue(h.notifier.posts.contains { $0.title == SessionManager.sessionFileTitle && $0.body.contains("moved, unopened, to \(taken.path)") }, "\(h.notifier.posts)")
+        XCTAssertTrue(h.notifier.posts.contains { $0.title == SessionManager.sessionFileTitle && $0.body.contains("açılmadan \(taken.path) konumuna taşındı") }, "\(h.notifier.posts)")
         XCTAssertNil(m.pendingEnd)
     }
 
@@ -764,7 +765,7 @@ final class ReconcileTests: XCTestCase {
         XCTAssertEqual(h.backstop.arms, 0)
         XCTAssertEqual(try h.store.loadState(), RuntimeState.clean)
         XCTAssertEqual(try String(contentsOf: h.home.paths.sessionFile.appendingPathComponent("note"), encoding: .utf8), "inside")
-        XCTAssertTrue(try XCTUnwrap(m.lastError).contains("start refused, nothing changed: session.json could not be read"), m.lastError ?? "")
+        XCTAssertTrue(try XCTUnwrap(m.lastError).contains("Oturum başlatma reddedildi, hiçbir şey değişmedi: session.json okunamadı"), m.lastError ?? "")
     }
 
     /// A session.json that is not a session and cannot be moved aside (the
@@ -787,8 +788,8 @@ final class ReconcileTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: h.home.paths.sessionFile), bytes, "session.json was removed or changed")
         XCTAssertTrue(h.guardFake.calls.contains("disablesleep 0"), "\(h.guardFake.calls)")
         XCTAssertEqual(try h.store.loadState(), RuntimeState.clean)
-        XCTAssertTrue(try XCTUnwrap(m.lastError).contains("could not be moved aside"), m.lastError ?? "")
-        XCTAssertTrue(try XCTUnwrap(m.lastError).contains("left in place"), m.lastError ?? "")
+        XCTAssertTrue(try XCTUnwrap(m.lastError).contains("kenara alınamıyor"), m.lastError ?? "")
+        XCTAssertTrue(try XCTUnwrap(m.lastError).contains("yerinde bırakıldı"), m.lastError ?? "")
     }
 
     /// The same file, not a session and not movable, with a dirty journal:
@@ -814,9 +815,9 @@ final class ReconcileTests: XCTestCase {
         let posts = h.notifier.posts.filter { $0.title == SessionManager.sessionFileTitle }
         XCTAssertEqual(posts.count, 1, "\(h.notifier.posts)")
         let body = posts.first?.body ?? ""
-        XCTAssertTrue(body.contains("is not a valid session file"), body)
-        XCTAssertTrue(body.contains("will not quit until it is gone"), body)
-        XCTAssertTrue(body.contains("Remove it or move it out of \(h.home.paths.appSupport.path)"), body)
+        XCTAssertTrue(body.contains("geçerli bir oturum dosyası değil"), body)
+        XCTAssertTrue(body.contains("ortadan kalkana dek kapanmaz"), body)
+        XCTAssertTrue(body.contains("Dosyayı kaldırın ya da \(h.home.paths.appSupport.path) klasörünün dışına taşıyın"), body)
 
         let outcome = await m.end(reason: .user)
 
@@ -824,7 +825,7 @@ final class ReconcileTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: h.home.paths.sessionFile), bytes)
         let retained = try XCTUnwrap(h.notifier.posts.last)
         XCTAssertEqual(retained.title, SessionManager.incompleteTitle)
-        XCTAssertTrue(retained.body.contains("is not a valid session file and could not be moved aside"), retained.body)
+        XCTAssertTrue(retained.body.contains("geçerli bir oturum dosyası değil ve kenara alınamadı"), retained.body)
 
         try FileManager.default.removeItem(at: taken)
         let retried = await m.end(reason: .user)
@@ -833,7 +834,7 @@ final class ReconcileTests: XCTestCase {
         XCTAssertNil(m.pendingEnd)
         XCTAssertFalse(exists(h.home.paths.sessionFile))
         XCTAssertEqual(try Data(contentsOf: taken), bytes, "the retry did not move session.json aside")
-        XCTAssertTrue(h.notifier.posts.contains { $0.title == SessionManager.sessionFileTitle && $0.body.contains("which is not a valid session file, was moved to \(taken.path)") }, "\(h.notifier.posts)")
+        XCTAssertTrue(h.notifier.posts.contains { $0.title == SessionManager.sessionFileTitle && $0.body.contains("Geçerli bir oturum dosyası olmayan session.json, \(taken.path) konumuna taşındı") }, "\(h.notifier.posts)")
     }
 
     /// With a clean journal reconcile runs no end, and the app goes on with

@@ -131,7 +131,7 @@ final class BrowserThrottleTests: XCTestCase {
         let empty = FakeBrowserProcesses(pids: [42])
         let outcomeOfEmpty = await self.throttle(args: " \n", processes: empty).relaunchUnthrottled(bundleId: "com.google.Chrome")
 
-        XCTAssertEqual(outcomeOfEmpty, .argumentsUnreadable("ps printed nothing for pid 42"))
+        XCTAssertEqual(outcomeOfEmpty, .argumentsUnreadable("ps, pid 42 için hiçbir şey yazdırmadı"))
         XCTAssertEqual(empty.terminated.count, 0)
         XCTAssertEqual(empty.launches.count, 0)
     }
@@ -264,7 +264,7 @@ final class BrowserThrottleTests: XCTestCase {
 
         let outcome = await throttle.relaunchUnthrottled(bundleId: "com.google.Chrome")
 
-        XCTAssertEqual(outcome, .argumentsUnreadable("pid 42 exited while they were read, or could not be checked"))
+        XCTAssertEqual(outcome, .argumentsUnreadable("pid 42 süreci argümanlar okunurken sonlandı ya da denetlenemedi"))
         XCTAssertEqual(processes.terminated, [])
         XCTAssertEqual(processes.launches.count, 0)
         XCTAssertEqual(processes.processes.filter { $0.bundleId == "com.apple.finder" }.map(\.running), [true])
@@ -285,13 +285,13 @@ final class BrowserThrottleTests: XCTestCase {
 
         let outcome = await throttle.relaunchUnthrottled(bundleId: "com.google.Chrome")
 
-        XCTAssertEqual(outcome, .argumentsUnreadable("the start time of pid 42 could not be read to check them"))
+        XCTAssertEqual(outcome, .argumentsUnreadable("bunları doğrulamak için pid 42 sürecinin başlangıç zamanı okunamadı"))
         XCTAssertEqual(reads.value, 0)
         XCTAssertEqual(processes.terminated, [])
         XCTAssertEqual(processes.launches.count, 0)
         XCTAssertEqual(
             outcome.explanation(browser: "Chrome"),
-            "Could not read Chrome's profile arguments (the start time of pid 42 could not be read to check them), so a relaunch could have opened the wrong profile. Chrome was not quit."
+            "Chrome için profil argümanları okunamadı (bunları doğrulamak için pid 42 sürecinin başlangıç zamanı okunamadı), bu yüzden yeniden başlatma yanlış profili açabilirdi. Chrome kapatılmadı."
         )
     }
 
@@ -350,23 +350,23 @@ final class BrowserThrottleTests: XCTestCase {
         XCTAssertNil(RelaunchOutcome.cancelled.explanation(browser: "Chrome"))
         XCTAssertEqual(
             RelaunchOutcome.stillRunning.explanation(browser: "Chrome"),
-            "Chrome did not quit within 10 s, so nothing was relaunched. It may still quit later. If it does, open it again yourself."
+            "Chrome 10 sn içinde kapanmadı, bu yüzden hiçbir şey yeniden başlatılmadı. Daha sonra yine de kapanabilir. Kapanırsa kendiniz yeniden açın."
         )
         XCTAssertEqual(
             RelaunchOutcome.notRunning.explanation(browser: "Arc"),
-            "Arc is not running. Nothing was quit or relaunched."
+            "Arc çalışmıyor. Hiçbir şey kapatılmadı veya yeniden başlatılmadı."
         )
         XCTAssertEqual(
             RelaunchOutcome.argumentsUnreadable("ps timed out").explanation(browser: "Arc"),
-            "Could not read Arc's profile arguments (ps timed out), so a relaunch could have opened the wrong profile. Arc was not quit."
+            "Arc için profil argümanları okunamadı (ps timed out), bu yüzden yeniden başlatma yanlış profili açabilirdi. Arc kapatılmadı."
         )
         XCTAssertEqual(
             RelaunchOutcome.launchFailed("open exited with status 1").explanation(browser: "Chromium"),
-            "Chromium quit but could not be relaunched: open exited with status 1. Open it yourself."
+            "Chromium kapandı ancak yeniden başlatılamadı: open exited with status 1. Kendiniz açın."
         )
         XCTAssertEqual(
             RelaunchOutcome.didNotStart.explanation(browser: "Chromium"),
-            "Chromium quit and was asked to open again, but it was not running after 5 s. Open it yourself."
+            "Chromium kapandı ve yeniden açılması istendi, ancak 5 sn sonra çalışmıyordu. Kendiniz açın."
         )
     }
 }

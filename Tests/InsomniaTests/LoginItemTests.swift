@@ -180,7 +180,7 @@ final class LoginItemTests: XCTestCase {
 
         XCTAssertEqual(service.registers, 0)
         XCTAssertTrue(item.isEnabled)
-        XCTAssertTrue(log().contains("launch at login: enabled"), log())
+        XCTAssertTrue(log().contains("launch at login: etkin"), log())
     }
 
     /// Waiting for approval is registered: registering again would not
@@ -197,7 +197,7 @@ final class LoginItemTests: XCTestCase {
         XCTAssertTrue(item.isRegistered)
         XCTAssertTrue(config.launchAtLogin)
         XCTAssertEqual(config.launchAtLoginInstall, thisInstall)
-        XCTAssertTrue(log().contains("launch at login: waiting for approval"), log())
+        XCTAssertTrue(log().contains("launch at login: onay bekliyor"), log())
     }
 
     /// With the flag off nothing is registered, unregistered or written,
@@ -270,7 +270,7 @@ final class LoginItemTests: XCTestCase {
 
         XCTAssertEqual(item.status, .notFound)
         XCTAssertEqual(config.launchAtLoginInstall, earlierInstall)
-        XCTAssertTrue(log().contains("still not found by macOS after registering again"), log())
+        XCTAssertTrue(log().contains("still macOS tarafından bulunamadı after registering again"), log())
     }
 
     // MARK: Settings switch
@@ -446,8 +446,8 @@ final class LoginItemTests: XCTestCase {
         XCTAssertEqual(LoginItemStatus(.enabled), .enabled)
         XCTAssertEqual(LoginItemStatus(.requiresApproval), .requiresApproval)
         XCTAssertEqual(LoginItemStatus(.notFound), .notFound)
-        XCTAssertEqual(LoginItemStatus.unknown(9).description, "unknown status 9")
-        XCTAssertEqual(LoginItemStatus.requiresApproval.description, "waiting for approval")
+        XCTAssertEqual(LoginItemStatus.unknown(9).description, "bilinmeyen durum 9")
+        XCTAssertEqual(LoginItemStatus.requiresApproval.description, "onay bekliyor")
     }
 
     /// The live install identity has the two parts macOS ties the item

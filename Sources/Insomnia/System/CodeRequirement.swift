@@ -21,7 +21,7 @@ enum CodeRequirement {
         let step: String
         let status: OSStatus
         var errorDescription: String? {
-            "could not read the code requirement of \(path) (\(step)): \(CodeRequirement.message(for: status))"
+            "\(path) için kod gereksinimi okunamadı (\(step)): \(CodeRequirement.message(for: status))"
         }
     }
 
@@ -33,7 +33,7 @@ enum CodeRequirement {
         let requirement: String
         let reason: String
         var errorDescription: String? {
-            "\(path) does not satisfy the code requirement \(requirement): \(reason)"
+            "\(path), \(requirement) kod gereksinimini karşılamıyor: \(reason)"
         }
     }
 
@@ -64,7 +64,7 @@ enum CodeRequirement {
         var parsed: SecRequirement?
         let made = SecRequirementCreateWithString(requirement as CFString, [], &parsed)
         guard made == errSecSuccess, let parsed else {
-            throw VerifyError(path: url.path, requirement: requirement, reason: "the requirement does not parse (\(message(for: made)))")
+            throw VerifyError(path: url.path, requirement: requirement, reason: "gereksinim ayrıştırılamıyor (\(message(for: made)))")
         }
         var error: Unmanaged<CFError>?
         let checked = SecStaticCodeCheckValidityWithErrors(code, strictFlags, parsed, &error)
@@ -87,21 +87,21 @@ enum CodeRequirement {
         var dynamic: SecCode?
         let got = SecCodeCopySelf([], &dynamic)
         guard got == errSecSuccess, let dynamic else {
-            throw ReadError(path: "this process", step: "SecCodeCopySelf", status: got)
+            throw ReadError(path: "bu süreç", step: "SecCodeCopySelf", status: got)
         }
         var code: SecStaticCode?
         let copied = SecCodeCopyStaticCode(dynamic, [], &code)
         guard copied == errSecSuccess, let code else {
-            throw ReadError(path: "this process", step: "SecCodeCopyStaticCode", status: copied)
+            throw ReadError(path: "bu süreç", step: "SecCodeCopyStaticCode", status: copied)
         }
         var cfPath: CFURL?
         let located = SecCodeCopyPath(code, [], &cfPath)
         guard located == errSecSuccess, let path = cfPath as URL? else {
-            throw ReadError(path: "this process", step: "SecCodeCopyPath", status: located)
+            throw ReadError(path: "bu süreç", step: "SecCodeCopyPath", status: located)
         }
         let valid = SecCodeCheckValidity(dynamic, SecCSFlags(rawValue: UInt32(kSecCSStrictValidate)), nil)
         guard valid == errSecSuccess else {
-            throw ReadError(path: path.path, step: "SecCodeCheckValidity, the code on disk is not the code that is running", status: valid)
+            throw ReadError(path: path.path, step: "SecCodeCheckValidity, diskteki kod çalışan kod değil", status: valid)
         }
         return RunningCode(path: path, requirement: try designated(ofCodeAt: path))
     }
@@ -129,7 +129,7 @@ enum CodeRequirement {
         if mainBundle.pathExtension == "app" {
             let me = try running()
             guard me.path.resolvingSymlinksInPath() == bundle.resolvingSymlinksInPath() else {
-                throw VerifyError(path: bundle.path, requirement: me.requirement, reason: "this process runs from \(me.path.path), not from that bundle")
+                throw VerifyError(path: bundle.path, requirement: me.requirement, reason: "bu süreç o paketten değil, şuradan çalışıyor: \(me.path.path)")
             }
             requirement = me.requirement
         } else {
@@ -169,7 +169,7 @@ enum CodeRequirement {
     private static func reason(for status: OSStatus, _ error: CFError?) -> String {
         var text = message(for: status)
         if let info = error.map({ CFErrorCopyUserInfo($0) as NSDictionary }) {
-            for (key, label) in [(kSecCFErrorResourceAltered, "altered"), (kSecCFErrorResourceMissing, "missing"), (kSecCFErrorResourceAdded, "added")] {
+            for (key, label) in [(kSecCFErrorResourceAltered, "değiştirilmiş"), (kSecCFErrorResourceMissing, "eksik"), (kSecCFErrorResourceAdded, "eklenmiş")] {
                 if let named = info[key as String] {
                     text += " (\(label): \(named))"
                 }

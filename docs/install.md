@@ -1,58 +1,69 @@
-# Install, upgrade and uninstall
+# Kurulum, yükseltme ve kaldırma
 
-The [README](../README.md#install) has the short version. This page has every
-step and what each one checks. A coding agent can follow
-[skills/install-insomnia](../skills/install-insomnia/SKILL.md), which uses the
-steps on this page.
+> **Bu çatal hakkında:** Bu Türkçe çatal
+> ([Mustafa-Ghn/insomnia-tr](https://github.com/Mustafa-Ghn/insomnia-tr))
+> yalnızca kaynak koddan derlenerek kurulur ve GitHub sürümü (release) yoktur.
+> Aşağıdaki [Kanallar](#kanallar), [v0.1.0 farklıdır](#v010-farklıdır) ve
+> [Bir sürümü kendiniz kurma](#bir-sürümü-kendiniz-kurma) bölümleri, özgün
+> projenin ([krishhgg/Insomnia](https://github.com/krishhgg/Insomnia))
+> yayımladığı İngilizce derlemeleri anlatır. Bu çatalı kurmak için
+> [Kaynaktan derleme](#kaynaktan-derleme) bölümünü izleyin.
 
-Requires **macOS 26 or later on an Apple Silicon Mac**.
+[README](../README.md#kurulum) kısa sürümü içerir. Bu sayfa her adımı ve her
+adımın neyi denetlediğini anlatır. Bir kodlama ajanı, bu sayfadaki adımları
+kullanan [skills/install-insomnia](../skills/install-insomnia/SKILL.md)
+talimatlarını izleyebilir.
 
-## Channels
+**macOS 26 ya da üstü ve Apple Silicon bir Mac** gerekir.
 
-Insomnia is published on two channels on the
-[releases page](https://github.com/krishhgg/Insomnia/releases):
+## Kanallar
 
-- Stable: the release GitHub marks Latest, tagged `v<version>`. Use this one
-  unless you want to try changes that are not in a stable release yet.
-- Nightly: prereleases tagged `nightly-<date>-<commit>`, built automatically
-  from `main` once a day when it has new commits. Newest code, experimental,
-  and possibly broken. A nightly is never marked Latest.
+Özgün Insomnia,
+[sürümler sayfasında](https://github.com/krishhgg/Insomnia/releases) iki
+kanalda yayımlanır:
 
-## v0.1.0 is different
+- Kararlı: GitHub'ın Latest olarak işaretlediği, `v<version>` etiketli sürüm.
+  Henüz kararlı bir sürümde olmayan değişiklikleri denemek istemiyorsanız bunu
+  kullanın.
+- Gecelik: `main` dalında yeni commit olduğunda günde bir kez otomatik olarak
+  derlenen, `nightly-<date>-<commit>` etiketli ön sürümler (prerelease). En yeni
+  koddur; deneyseldir ve bozuk olabilir. Gecelik bir sürüm hiçbir zaman Latest
+  olarak işaretlenmez.
 
-Each release's notes give the exact commands for that release. One release
-differs from the steps below: `v0.1.0`, the first stable release, was packaged
-by hand from the maintainer's installed app, not by the Release workflow. It
-has no attestation, and its zip installs with
-`./scripts/install.sh --app ./Insomnia.app`. If the release you picked is
-`v0.1.0` (its zip is `Insomnia-0.1.0-macos-arm64.zip`), follow the install
-steps in its release notes instead of steps 2 and 3.
+## v0.1.0 farklıdır
 
-The rest of this page describes releases built by the Release workflow and
-builds of the current source, not `v0.1.0`. The `README.md` in the `v0.1.0`
-zip describes what that release installs, how its recovery works and its
-limits. In particular, the installer's version check, the recovery script
-sealed inside the app and the code requirement the recovery agent pins,
-described below, are not in `v0.1.0`.
+Her sürümün notları o sürüme özgü komutları verir. Bir sürüm aşağıdaki
+adımlardan ayrılır: ilk kararlı sürüm olan `v0.1.0`, Release iş akışıyla değil,
+bakımcının kurulu uygulamasından elle paketlenmiştir. Kanıt kaydı (attestation)
+yoktur ve zip dosyası `./scripts/install.sh --app ./Insomnia.app` ile kurulur.
+Seçtiğiniz sürüm `v0.1.0` ise (zip dosyası `Insomnia-0.1.0-macos-arm64.zip`),
+2. ve 3. adımlar yerine sürüm notlarındaki kurulum adımlarını izleyin.
 
-## Install a release yourself
+Bu sayfanın geri kalanı `v0.1.0` sürümünü değil, Release iş akışıyla derlenen
+sürümleri ve güncel kaynak koddan yapılan derlemeleri anlatır. `v0.1.0` zip
+dosyasındaki `README.md`, o sürümün neleri kurduğunu, kurtarmasının nasıl
+çalıştığını ve sınırlarını anlatır. Özellikle kurulum betiğinin sürüm denetimi,
+uygulamanın içine mühürlenen kurtarma betiği ve kurtarma ajanının sabitlediği
+kod gereksinimi (aşağıda anlatılanlar) `v0.1.0` sürümünde yoktur.
 
-You need `gh`, the [GitHub CLI](https://cli.github.com).
+## Bir sürümü kendiniz kurma
 
-1. Download the zip and `SHA256SUMS` of the release you chose into an empty
-   folder, from the releases page or with `gh`. For the stable release, the
-   one marked Latest:
+`gh`, yani [GitHub CLI](https://cli.github.com) gerekir.
+
+1. Seçtiğiniz sürümün zip dosyasını ve `SHA256SUMS` dosyasını boş bir klasöre,
+   sürümler sayfasından ya da `gh` ile indirin. Latest olarak işaretlenen
+   kararlı sürüm için:
 
    ```bash
    gh release download --repo krishhgg/Insomnia --pattern '*.zip' --pattern SHA256SUMS
    ```
 
-   For the newest nightly, paste this whole block. It reads every page of
-   the release list and picks the most recently published nightly. It
-   downloads nothing, and returns an error, when it cannot read the list,
-   when no nightly has been published yet, or when the tag it picked is not
-   in the `nightly-<YYYYMMDD>-<12-character commit>` form. It never falls
-   back to the stable release.
+   En yeni gecelik sürüm için bu bloğun tamamını yapıştırın. Blok, sürüm
+   listesinin her sayfasını okur ve en son yayımlanan gecelik sürümü seçer.
+   Listeyi okuyamadığında, henüz hiçbir gecelik sürüm yayımlanmamışsa ya da
+   seçtiği etiket `nightly-<YYYYMMDD>-<12 karakterlik commit>` biçiminde değilse
+   hiçbir şey indirmez ve hata döndürür. Hiçbir zaman kararlı sürüme geri
+   dönmez.
 
    ```bash
    insomnia_nightly() {
@@ -77,12 +88,13 @@ You need `gh`, the [GitHub CLI](https://cli.github.com).
    insomnia_nightly
    ```
 
-   If the releases page has no release yet, build from source (below).
-2. Verify the download. `<zip>` is the zip's file name. `<ref>` is
-   `refs/tags/v<version>` for a stable release or `refs/heads/main` for a
-   nightly. `<commit>` is the full 40-character commit the release was built
-   from: its release notes name it after "Built from" and carry this command
-   filled in. A nightly's tag ends with the first 12 characters of it.
+   Sürümler sayfasında henüz bir sürüm yoksa kaynaktan derleyin (aşağıda).
+2. İndirilen dosyayı doğrulayın. `<zip>`, zip dosyasının adıdır. `<ref>`,
+   kararlı bir sürüm için `refs/tags/v<version>`, gecelik bir sürüm için
+   `refs/heads/main` olur. `<commit>`, sürümün derlendiği 40 karakterlik tam
+   commit kimliğidir: sürüm notları onu "Built from" ifadesinden sonra verir ve
+   bu komutu doldurulmuş olarak içerir. Gecelik bir sürümün etiketi bu kimliğin
+   ilk 12 karakteriyle biter.
 
    ```bash
    shasum -a 256 -c SHA256SUMS
@@ -91,44 +103,55 @@ You need `gh`, the [GitHub CLI](https://cli.github.com).
      --source-ref <ref> --source-digest <commit>
    ```
 
-   The first command checks the zip against the `SHA256SUMS` downloaded with
-   it. The second checks that this repository's Release workflow built this
-   exact zip from that commit for that ref, so a nightly cannot pass for a
-   stable release. Every nightly is built for `refs/heads/main`, so only
-   `--source-digest` keeps another nightly's zip from passing: do not leave
-   it out, and do not shorten the commit to the 12 characters in the tag.
+   İlk komut zip dosyasını onunla birlikte indirilen `SHA256SUMS` dosyasına
+   göre denetler. İkincisi, özgün deponun Release iş akışının tam olarak bu zip
+   dosyasını o commit'ten ve o ref için derlediğini denetler; böylece gecelik
+   bir sürüm kararlı bir sürümün yerine geçemez. Her gecelik sürüm
+   `refs/heads/main` için derlendiğinden, başka bir gecelik sürümün zip
+   dosyasının bu denetimden geçmesini yalnızca `--source-digest` engeller: onu
+   atlamayın ve commit kimliğini etiketteki 12 karaktere kısaltmayın.
 
-3. Unzip and run the installer that comes in the zip:
+3. Zip dosyasını açın ve içinden çıkan kurulum betiğini çalıştırın:
 
    ```bash
    ditto -x -k <zip> .
-   cd <the zip's name without .zip>
+   cd <.zip uzantısı olmadan zip dosyasının adı>
    ./install.sh --allow-unverified-origin --app ./Insomnia.app
    open "$HOME/Applications/Insomnia.app"
    ```
 
-   Releases are ad-hoc signed and not notarized. The installer can check that
-   the bundle is intact but not who made it, so it refuses to install without
-   `--allow-unverified-origin`, which says you ran the two commands in step 2.
-   macOS blocks the first launch of a downloaded copy until you allow it in
-   System Settings > Privacy & Security.
+   Sürümler ad-hoc imzalıdır ve Apple'ın onay sürecinden (notarization)
+   geçmez. Kurulum betiği paketin bozulmadığını denetleyebilir ama onu kimin
+   yaptığını denetleyemez; bu yüzden 2. adımdaki iki komutu çalıştırdığınızı
+   belirten `--allow-unverified-origin` olmadan kurmayı reddeder. macOS,
+   indirilen bir kopyanın ilk açılışını siz Sistem Ayarları > Gizlilik ve
+   Güvenlik bölümünde izin verene dek engeller.
 
-The installer checks the bundle's signature, identifier and version before it
-asks for anything (the `v0.1.0` installer checks the signature and
-identifier, not the version). It then installs the app and a background recovery agent,
-and asks for administrator access to install a narrowly scoped sudoers rule. It grants
-**your user account**, not just Insomnia, passwordless access to four
-power-setting commands. Review that permission before installing.
+Kurulum betiği, sizden herhangi bir şey istemeden önce paketin imzasını,
+tanımlayıcısını ve sürümünü denetler (`v0.1.0` kurulum betiği imzayı ve
+tanımlayıcıyı denetler, sürümü denetlemez). Ardından uygulamayı ve arka planda
+çalışan bir kurtarma ajanını kurar ve kapsamı dar tutulmuş bir sudoers kuralını
+kurmak için yönetici erişimi ister. Bu kural, yalnızca Insomnia'ya değil,
+**kullanıcı hesabınıza** dört güç ayarı komutunu parolasız çalıştırma izni
+verir. Kurmadan önce bu izni gözden geçirin.
 
-Release zips are built for arm64 only, and their `install.sh --app` stops on
-an Intel Mac. On Intel, building from source (below) is the only option, and
-it is untested there.
+Sürüm zip dosyaları yalnızca arm64 için derlenir ve içlerindeki
+`install.sh --app` Intel bir Mac'te durur. Intel'de tek seçenek kaynaktan
+derlemedir (aşağıda) ve bu derleme orada denenmemiştir.
 
-## Build from source
+## Kaynaktan derleme
 
-Requires **Xcode with Swift 6.2 or later**. Clone the latest stable tag, or a
-nightly tag for the newest code, rather than `main`. If the releases page has
-no release yet, leave out `--branch v<version>` to build `main`:
+**Swift 6.2 ya da üstünü içeren Xcode** gerekir. Bu çatal şöyle kurulur:
+
+```bash
+git clone https://github.com/Mustafa-Ghn/insomnia-tr.git && cd insomnia-tr && ./scripts/install.sh
+open "$HOME/Applications/Insomnia.app"
+```
+
+Özgün projenin İngilizce kaynak kodunu derlemek için `main` yerine en son
+kararlı etiketi ya da en yeni kod için bir gecelik etiketi klonlayın.
+Sürümler sayfasında henüz bir sürüm yoksa `main` dalını derlemek için
+`--branch v<version>` kısmını çıkarın:
 
 ```bash
 git clone --branch v<version> --depth 1 https://github.com/krishhgg/Insomnia.git
@@ -137,43 +160,46 @@ cd Insomnia
 open "$HOME/Applications/Insomnia.app"
 ```
 
-`scripts/install.sh` builds the same bundle the release workflow builds
-(`scripts/build-app.sh`), ad-hoc signed, and installs it the same way. It
-builds only when it runs from a checkout's `scripts` folder, with
-`Package.swift` one level up, and then runs the `build-app.sh` beside it. The
-`install.sh` from a release zip stops and asks for `--app` instead, even when
-a `build-app.sh` was added to its folder after unpacking. A checkout of
-`v0.1.0` has the installer of that release; its README describes it.
-[docs/releasing.md](releasing.md) describes the release pipeline.
+`scripts/install.sh`, Release iş akışının derlediği paketin aynısını
+(`scripts/build-app.sh`) ad-hoc imzalı olarak derler ve aynı şekilde kurar.
+Yalnızca bir çalışma kopyasının `scripts` klasöründen, bir üst klasörde
+`Package.swift` varken çalıştığında derleme yapar ve yanındaki `build-app.sh`
+betiğini çalıştırır. Bir sürüm zip dosyasındaki `install.sh` ise, zip
+açıldıktan sonra klasörüne bir `build-app.sh` eklenmiş olsa bile durur ve
+`--app` ister. `v0.1.0` çalışma kopyasında o sürümün kurulum betiği vardır;
+o sürümün README dosyası onu anlatır. Sürüm hattını
+[docs/releasing.md](releasing.md) (İngilizce) anlatır.
 
-If the build stops in `Package.swift` with "reference to member 'v26' cannot
-be resolved" or "has no member 'swiftLanguageMode'" although `swift --version`
-reports 6.2 or later, the toolchain read a PackageDescription interface from an
-older Swift. An update of the Command Line Tools or Xcode can leave the
-previous version's `.private.swiftinterface` files beside the new ones, and
-Swift reads those first. After a failed build, `build-app.sh` lists any it finds
-and prints the `sudo rm` command that deletes exactly those files; reinstalling
-the Command Line Tools or Xcode removes them too.
+Derleme, `swift --version` 6.2 ya da üstünü bildirdiği hâlde `Package.swift`
+içinde "reference to member 'v26' cannot be resolved" ya da "has no member
+'swiftLanguageMode'" hatasıyla durursa, araç zinciri PackageDescription
+arayüzünü daha eski bir Swift sürümünden okumuştur. Command Line Tools ya da
+Xcode güncellemesi, önceki sürümün `.private.swiftinterface` dosyalarını
+yenilerinin yanında bırakabilir ve Swift önce bunları okur. Başarısız bir
+derlemeden sonra `build-app.sh` bulduğu bu dosyaları listeler ve tam olarak
+bu dosyaları silen `sudo rm` komutunu yazdırır; Command Line Tools ya da
+Xcode'u yeniden kurmak da onları kaldırır.
 
-## What gets installed
+## Neler kurulur
 
-This describes releases built by the Release workflow and builds of the
-current source. `v0.1.0` installs an older layout. Its app has no
-`backstop.sh` inside it: its installer copies `backstop.sh` into
-`~/Library/Application Support/Insomnia/`, and its recovery agent runs that
-copy with `/bin/bash` without checking any code signature. The sealed script,
-the pinned code requirement and the refusal of an edited or re-signed bundle
-described below do not apply to it, and neither does the upgrade procedure.
-Its sudoers rule grants the same four commands. The `README.md` in its zip
-describes what it installs and its limits.
+Bu bölüm, Release iş akışıyla derlenen sürümleri ve güncel kaynak koddan
+yapılan derlemeleri (bu çatal dahil) anlatır. `v0.1.0` daha eski bir düzen
+kurar. Onun uygulamasının içinde `backstop.sh` yoktur: kurulum betiği
+`backstop.sh` dosyasını `~/Library/Application Support/Insomnia/` konumuna
+kopyalar ve kurtarma ajanı bu kopyayı hiçbir kod imzasını denetlemeden
+`/bin/bash` ile çalıştırır. Aşağıda anlatılan mühürlü betik, sabitlenen kod
+gereksinimi ve düzenlenmiş ya da yeniden imzalanmış bir paketin reddedilmesi
+ona uygulanmaz; yükseltme yordamı da uygulanmaz. sudoers kuralı aynı dört
+komuta izin verir. Zip dosyasındaki `README.md`, neleri kurduğunu ve
+sınırlarını anlatır.
 
-| Location | Purpose |
+| Konum | Amaç |
 | --- | --- |
-| `~/Applications/Insomnia.app` | The menu bar app, with `backstop.sh` sealed inside it at `Contents/Resources` |
-| `~/Library/Application Support/Insomnia/` | Configuration and the session/recovery journals |
-| `~/Library/LaunchAgents/com.insomnia.backstop.plist` | Per-user recovery agent: verifies the app's code signature, then runs the sealed `backstop.sh` |
-| `~/Library/Logs/Insomnia/` | `insomnia.log` and `handoffs.log`, each capped at 1 MiB with one older copy kept as `.1`, unless you replace it with a symlink |
-| `/etc/sudoers.d/insomnia` | Permission for the four commands below |
+| `~/Applications/Insomnia.app` | Menü çubuğu uygulaması; `backstop.sh` içine, `Contents/Resources` konumuna mühürlenmiştir |
+| `~/Library/Application Support/Insomnia/` | Yapılandırma ile oturum ve kurtarma kayıt defterleri |
+| `~/Library/LaunchAgents/com.insomnia.backstop.plist` | Kullanıcıya özel kurtarma ajanı: uygulamanın kod imzasını doğrular, ardından mühürlü `backstop.sh` betiğini çalıştırır |
+| `~/Library/Logs/Insomnia/` | `insomnia.log` ve `handoffs.log`; her biri 1 MiB ile sınırlıdır ve bir eski kopyası `.1` olarak tutulur (dosyayı bir sembolik bağlantıyla değiştirmediyseniz) |
+| `/etc/sudoers.d/insomnia` | Aşağıdaki dört komut için izin |
 
 ```text
 /usr/bin/pmset -a disablesleep 1
@@ -182,105 +208,118 @@ describes what it installs and its limits.
 /usr/bin/pmset -b lowpowermode 0
 ```
 
-The grant is available to other processes running as your user. Insomnia is not
-sandboxed. The app, scripts, and journals are local; hotspot passwords use the
-login Keychain, not the configuration file.
+Bu izni, sizin hesabınızla çalışan diğer süreçler de kullanabilir. Insomnia
+korumalı alanda (sandbox) çalışmaz. Uygulama, betikler ve kayıt defterleri
+yereldir; hotspot parolaları yapılandırma dosyasında değil, giriş anahtar
+zincirinde tutulur.
 
-The recovery agent runs at login and every 60 seconds. Its command line pins
-the installed bundle's code requirement (for an ad-hoc build, the cdhash of
-that build) and runs `codesign --verify --strict` against it before executing
-the `backstop.sh` sealed inside the bundle. An edited bundle or script fails
-that check: the agent writes one line to `insomnia.log` and runs nothing until
-you reinstall. So no other account can edit it, the installer removes group
-and other write permission and every ACL from the bundle it installs. The
-signature covers neither, so the bundle still verifies, and extended
-attributes such as a download's quarantine flag are kept. No executable is
-kept in a writable support directory. The plist in `~/Library/LaunchAgents`
-is still a per-user file that any program running as you can edit, like
-every LaunchAgent; the app rewrites it at the next session start when it does
-not match, which is a repair, not a tamper check.
+Kurtarma ajanı girişte ve her 60 saniyede bir çalışır. Komut satırı, kurulu
+paketin kod gereksinimini (ad-hoc bir derleme için o derlemenin cdhash
+değerini) sabitler ve paketin içine mühürlenmiş `backstop.sh` betiğini
+çalıştırmadan önce bu gereksinime karşı `codesign --verify --strict`
+çalıştırır. Düzenlenmiş bir paket ya da betik bu denetimden geçemez: ajan
+`insomnia.log` dosyasına tek bir satır yazar ve siz yeniden kurana kadar hiçbir
+şey çalıştırmaz. Başka bir hesap paketi düzenleyemesin diye kurulum betiği,
+kurduğu paketten grup ve diğer kullanıcıların yazma iznini ve tüm ACL'leri
+kaldırır. İmza bunların hiçbirini kapsamadığından paket yine doğrulanır;
+indirilmiş bir dosyanın karantina bayrağı gibi genişletilmiş öznitelikler
+korunur. Yazılabilir bir destek klasöründe hiçbir yürütülebilir dosya
+tutulmaz. `~/Library/LaunchAgents` içindeki plist dosyası ise her LaunchAgent
+gibi, sizin hesabınızla çalışan herhangi bir programın düzenleyebileceği
+kullanıcıya özel bir dosyadır; eşleşmediğinde uygulama bir sonraki oturum
+başlangıcında onu yeniden yazar. Bu bir onarımdır, kurcalama denetimi değildir.
 
-What the app pins is the requirement of the code it is itself running, read
-through the Security framework after checking that the bundle on disk is still
-that code and still passes the agent's check. A bundle whose sealed script was
-edited, or that was re-signed under the running app, is refused rather than
-pinned: the app does not start a session, or reports the end as incomplete,
-and names the reason, until you reinstall. With ad-hoc signatures this guards
-against accidental edits and against the app relaying a tampered bundle into
-the agent, not against a process running as you: that process can edit the
-plist, load its own agent, quit the app and launch a replacement, and run the
-four `pmset` commands itself.
+Uygulamanın sabitlediği şey, kendisinin çalıştırdığı kodun gereksinimidir; bu
+gereksinim, diskteki paketin hâlâ o kod olduğu ve ajanın denetiminden hâlâ
+geçtiği doğrulandıktan sonra Security çerçevesi üzerinden okunur. Mühürlü
+betiği düzenlenmiş ya da çalışan uygulamanın altında yeniden imzalanmış bir
+paket sabitlenmez, reddedilir: siz yeniden kurana kadar uygulama oturum
+başlatmaz ya da oturumun bitişini tamamlanmamış olarak bildirir ve nedenini
+söyler. Ad-hoc imzalarla bu, kazara yapılan düzenlemelere ve uygulamanın
+kurcalanmış bir paketi ajana aktarmasına karşı korur; sizin hesabınızla çalışan
+bir sürece karşı korumaz: böyle bir süreç plist dosyasını düzenleyebilir, kendi
+ajanını yükleyebilir, uygulamayı kapatıp yerine başkasını başlatabilir ve dört
+`pmset` komutunu kendisi çalıştırabilir.
 
-## Upgrades
+## Yükseltmeler
 
-Settings > App shows the installed version. "Check for updates" there asks
-GitHub once, when you click, for the release marked Latest and for the
-newest nightly, and tells you both tags and whether a newer stable release
-exists. It installs nothing; an upgrade is the steps above run again.
+Ayarlar > Uygulama kurulu sürümü gösterir. Oradaki "Orijinal projede
+güncellemeleri denetle" düğmesi, siz tıkladığınızda GitHub'a bir kez özgün
+projenin (krishhgg/Insomnia) Latest olarak işaretlenen sürümünü ve en yeni
+gecelik sürümünü sorar; iki etiketi ve daha yeni bir kararlı sürüm olup
+olmadığını söyler. Hiçbir şey kurmaz; yükseltme, yukarıdaki adımların yeniden
+çalıştırılmasıdır. Bu çatalda bu, çalışma kopyasında `git pull` ve ardından
+`./scripts/install.sh` demektir.
 
-An upgrade asks the running app to quit and stops if it refuses. The new
-bundle is built in a staging directory next to the app and moved into place in
-the same step that replaces the recovery agent. That step starts only after
-`launchctl print` confirms the previous agent is unloaded; otherwise nothing is
-replaced. If the new agent cannot be loaded, or its plist cannot be saved, the
-installer unloads it, waits for `launchctl print` to confirm that, and puts the
-previous bundle back, so the loaded agent always matches the installed app. A
-bundle that cannot be moved during that step is handled the same way: the
-previous bundle goes back and its agent is loaded again. If the previous bundle
-itself cannot be moved back, nothing is deleted: it stays at
-`~/Applications/.Insomnia.app.previous`, the installer prints the two commands
-that put it back and load its agent, and until then the agent finds no app, so
-run them or rerun the installer before you log out. If
-the unload is not confirmed, the new bundle stays with the agent that pins it
-and the installer asks you to rerun it. After that, or after an install killed
-in the middle of that step, the next run keeps whichever bundle the agent's
-plist on disk pins. It does that only after its own recovery step succeeds:
-while recovery is unresolved, an agent the earlier run left loaded may be the
-one retrying it, so the installer stops without unloading that agent or
-moving either bundle. Once recovery succeeds, it unloads that agent, moves the
-bundle back and loads the plist on disk again, and it stops if `launchctl
-print` does not confirm the unload or the reload. Unresolved recovery prevents
-replacing either; follow the reported instructions before retrying. The
-installer checks the sudoers rule again once it holds the recovery lock, and
-stops if the rule is gone, as after an `uninstall.sh` that took the lock first.
-Each call it makes to `sudo`, `pgrep`, `launchctl` or `codesign` while it
-holds the lock has a 30 s limit, which a supervising process enforces even
-if the installer is killed meanwhile. The call keeps the lock until it has
-exited or been stopped, so no `launchctl bootout` it started is still
-running once the lock is released. A call that does not answer in time gets SIGTERM, then SIGKILL
-one to two seconds later, and the install stops, so the lock is released and the app
-and the agent's backstop can take it again to undo a session. `sudo` only
-ever gets SIGTERM: one that ignores it keeps the lock until it ends, and the
-installer prints its pid.
+Bir yükseltme çalışan uygulamadan kapanmasını ister ve uygulama reddederse
+durur. Yeni paket, uygulamanın yanındaki bir hazırlık klasöründe oluşturulur ve
+kurtarma ajanını değiştiren adımla aynı adımda yerine taşınır. Bu adım ancak
+`launchctl print` önceki ajanın devreden çıkarıldığını doğruladıktan sonra
+başlar; aksi hâlde hiçbir şey değiştirilmez. Yeni ajan yüklenemezse ya da plist
+dosyası kaydedilemezse kurulum betiği ajanı devreden çıkarır, `launchctl print`
+bunu doğrulayana kadar bekler ve önceki paketi geri koyar; böylece yüklü ajan
+her zaman kurulu uygulamayla eşleşir. O adım sırasında taşınamayan bir paket de
+aynı şekilde ele alınır: önceki paket geri konur ve ajanı yeniden yüklenir.
+Önceki paketin kendisi geri taşınamazsa hiçbir şey silinmez: paket
+`~/Applications/.Insomnia.app.previous` konumunda kalır, kurulum betiği onu
+geri koyan ve ajanını yükleyen iki komutu yazdırır ve o zamana kadar ajan
+hiçbir uygulama bulamaz; bu yüzden macOS oturumunuzu kapatmadan önce o
+komutları çalıştırın ya da kurulum betiğini yeniden çalıştırın. Devreden
+çıkarma doğrulanmazsa yeni paket, onu sabitleyen ajanla birlikte kalır ve
+kurulum betiği yeniden çalıştırılmasını ister. Bundan sonra ya da o adımın
+ortasında öldürülen bir kurulumdan sonra, bir sonraki çalıştırma ajanın
+diskteki plist dosyasının sabitlediği paketi tutar. Bunu ancak kendi kurtarma
+adımı başarılı olduktan sonra yapar: kurtarma çözülmemişken, önceki
+çalıştırmanın yüklü bıraktığı bir ajan kurtarmayı yeniden deneyen ajan
+olabilir; bu yüzden kurulum betiği o ajanı devreden çıkarmadan ve iki paketten
+hiçbirini taşımadan durur. Kurtarma başarılı olunca o ajanı devreden çıkarır,
+paketi geri taşır ve diskteki plist dosyasını yeniden yükler; `launchctl
+print` devreden çıkarmayı ya da yeniden yüklemeyi doğrulamazsa durur.
+Çözülmemiş bir kurtarma, ikisinin de değiştirilmesini engeller; yeniden
+denemeden önce bildirilen talimatları izleyin. Kurulum betiği, kurtarma
+kilidini aldıktan sonra sudoers kuralını yeniden denetler ve kural gitmişse
+durur (örneğin kilidi ondan önce alan bir `uninstall.sh` çalıştırmasından
+sonra). Kilidi tutarken `sudo`, `pgrep`, `launchctl` ya da `codesign` için
+yaptığı her çağrının 30 saniyelik bir sınırı vardır; bu sınırı, kurulum betiği
+bu arada öldürülse bile gözetmen bir süreç uygular. Çağrı, bitene ya da
+durdurulana kadar kilidi tutar; böylece kilit bırakıldığında başlattığı hiçbir
+`launchctl bootout` hâlâ çalışıyor olmaz. Zamanında yanıt vermeyen bir çağrıya
+SIGTERM, bir iki saniye sonra da SIGKILL gönderilir ve kurulum durur; böylece
+kilit bırakılır ve uygulama ile ajanın backstop betiği kilidi yeniden alıp bir
+oturumu geri alabilir. `sudo` yalnızca SIGTERM alır: bunu yok sayan bir `sudo`
+bitene kadar kilidi tutar ve kurulum betiği onun pid değerini yazdırır.
 
-## Uninstall
+## Kaldırma
 
-From your checkout:
+Çalışma kopyanızdan:
 
 ```bash
 ./scripts/uninstall.sh
-# Also remove Insomnia-owned configuration and logs:
+# Insomnia'ya ait yapılandırma ve günlükleri de kaldırmak için:
 ./scripts/uninstall.sh --purge
 ```
 
-From the unpacked release zip, run `./uninstall.sh` (or `./uninstall.sh
---purge`) in its folder (`Insomnia-<version>-macos`, or the nightly name). A
-checkout's uninstaller (in `scripts`, with `Package.swift` one level up) runs
-the `backstop.sh` beside it. Anywhere else, such as the zip's folder, the
-uninstaller runs only the copy sealed in the installed app, after `codesign
---verify --strict` passes on the app, and stops without removing anything
-when there is none. The zip has no `backstop.sh`, so one added beside its
-uninstaller is not run. Neither looks in the folder above its own.
+Açılmış bir sürüm zip dosyasından kurduysanız, zip klasöründe
+(`Insomnia-<version>-macos` ya da gecelik sürümün adı) `./uninstall.sh` (ya da
+`./uninstall.sh --purge`) çalıştırın. Bir çalışma kopyasının kaldırma betiği
+(`scripts` içinde, bir üst klasörde `Package.swift` varken) yanındaki
+`backstop.sh` betiğini çalıştırır. Başka her yerde, örneğin zip klasöründe,
+kaldırma betiği yalnızca kurulu uygulamanın içinde mühürlü kopyayı ve onu da
+ancak uygulama `codesign --verify --strict` denetiminden geçtikten sonra
+çalıştırır; böyle bir kopya yoksa hiçbir şey kaldırmadan durur. Zip dosyasında
+`backstop.sh` yoktur; bu yüzden kaldırma betiğinin yanına eklenmiş bir kopya
+çalıştırılmaz. İki betik de kendi klasörünün üstündeki klasöre bakmaz.
 
-The `v0.1.0` zip is different: run `./scripts/uninstall.sh` in its unpacked
-`Insomnia-0.1.0-macos-arm64` folder, as its release notes say. That older
-uninstaller runs the `scripts/backstop.sh` in the same folder.
+`v0.1.0` zip dosyası farklıdır: sürüm notlarında yazdığı gibi, açılmış
+`Insomnia-0.1.0-macos-arm64` klasöründe `./scripts/uninstall.sh` çalıştırın. O
+eski kaldırma betiği aynı klasördeki `scripts/backstop.sh` betiğini çalıştırır.
 
-The uninstaller requests cleanup before removing the app, agent, and sudoers
-rule. If recovery is incomplete or the app refuses to quit, it stops; resolve
-the reported problem and retry. With the app it removes what an interrupted
-install left beside it: `~/Applications/.Insomnia.app.previous`, and
-`.Insomnia.app.staging.*` directories of installs that are no longer running.
-Nothing else in `~/Applications` is touched. Purge removes owned files, not arbitrary
-directory contents. A small shared lock file is retained to keep concurrent
-recovery operations coordinated.
+Kaldırma betiği uygulamayı, ajanı ve sudoers kuralını kaldırmadan önce temizlik
+ister. Kurtarma tamamlanmamışsa ya da uygulama kapanmayı reddederse durur;
+bildirilen sorunu çözüp yeniden deneyin. Uygulamayla birlikte, yarıda kalmış
+bir kurulumun onun yanında bıraktıklarını da kaldırır:
+`~/Applications/.Insomnia.app.previous` ve artık çalışmayan kurulumların
+`.Insomnia.app.staging.*` klasörleri. `~/Applications` içindeki başka hiçbir
+şeye dokunulmaz. `--purge`, rastgele klasör içeriğini değil, Insomnia'ya ait
+dosyaları kaldırır. Eşzamanlı kurtarma işlemlerinin eşgüdümünü korumak için
+küçük bir ortak kilit dosyası bırakılır.

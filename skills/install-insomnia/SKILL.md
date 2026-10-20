@@ -1,44 +1,76 @@
 ---
 name: install-insomnia
-description: Install or upgrade Insomnia, the macOS menu bar app that keeps a Mac awake for a timed session, from a GitHub release or from source. Use when the user asks to install, update or reinstall Insomnia.
+description: Insomnia'nın Türkçe çatalını (bir Mac'i süreli bir oturum boyunca uyanık tutan macOS menü çubuğu uygulaması) Mustafa-Ghn/insomnia-tr deposunun bir çalışma kopyasından kaynak koddan derleyerek kurar ya da yükseltir. Kullanıcı Insomnia'yı kurmak, güncellemek ya da yeniden kurmak istediğinde kullanın.
 ---
 
-# Install Insomnia
+# Insomnia'yı kurma (Türkçe çatal)
 
-The exact commands are in
-[docs/install.md](https://github.com/krishhgg/Insomnia/blob/main/docs/install.md).
-Read that page, then follow these steps. Never run `sudo` yourself and never
-pass a password to it. When a step needs the administrator password, give the
-user the exact command to run in Terminal and wait for them to say it finished.
+Bu çatalın GitHub sürümleri (release) yoktur; yalnızca
+https://github.com/Mustafa-Ghn/insomnia-tr deposunun bir çalışma kopyasından
+`./scripts/install.sh` ile derlenerek kurulur. Özgün projenin
+(krishhgg/Insomnia) sürüm zip dosyalarını indirmeyin. Ayrıntılar çalışma
+kopyasındaki `docs/install.md` dosyasının "Kaynaktan derleme", "Neler kurulur"
+ve "Yükseltmeler" bölümlerindedir. O sayfayı okuyun, ardından bu adımları
+izleyin. `sudo` komutunu asla kendiniz çalıştırmayın ve ona asla parola
+vermeyin. Bir adım yönetici parolası gerektirdiğinde kullanıcıya Terminal'de
+çalıştıracağı komutun tam hâlini verin ve bittiğini söylemesini bekleyin.
 
-1. **Check the Mac.** Insomnia needs macOS 26 or later (`sw_vers -productVersion`).
-   Release zips run only on Apple Silicon: `sysctl -n hw.optional.arm64` prints
-   `1`. On an Intel Mac, use "Build from source" and tell the user that build is
-   untested on Intel.
-2. **Pick the channel.** Use the latest stable release unless the user asked
-   for the newest nightly. If the release is `v0.1.0`, follow its release notes
-   instead of docs/install.md.
-3. **Download and verify.** Follow "Install a release yourself", steps 1 and
-   2. Run both checks. Keep `--source-digest` and the full 40-character commit.
-   If either check fails, stop and tell the user. Do not download a different
-   file to get past it.
-4. **Install.** Step 3 of the same section runs `install.sh`, which asks for
-   the administrator password, so hand that command to the user. Before they
-   run it, tell them the installer adds a sudoers rule. That rule lets their
-   account run four `pmset` power commands without a password, and the page's
-   "What gets installed" section lists them. `--allow-unverified-origin`
-   tells the installer that both download checks passed. Never suggest it
-   when they did not.
-5. **First launch.** macOS blocks the first launch of a downloaded app until
-   the user allows it in System Settings > Privacy & Security.
-6. **Confirm.** The eye shows in the menu bar, and
-   `launchctl print gui/$(id -u)/com.insomnia.backstop` finds the recovery
-   agent. Ask the user to review the lid-close options in Settings before the
-   first session.
+1. **Mac'i denetleyin.** Insomnia macOS 26 ya da üstünü gerektirir
+   (`sw_vers -productVersion`). Apple Silicon bir Mac'te
+   `sysctl -n hw.optional.arm64` komutu `1` yazdırır. Intel bir Mac'te
+   kaynaktan derleme denenmemiştir; kullanıcıya bunu söyleyin. Derleme için
+   Swift 6.2 ya da üstünü içeren Xcode gerekir (`swift --version`).
+2. **Çalışma kopyasını hazırlayın.** Kullanıcının bu deponun bir çalışma
+   kopyası zaten varsa onu kullanın ve `git pull` ile güncelleyin. Yoksa
+   klonlayın:
 
-An upgrade is the same steps. The installer asks the running app to quit and
-stops if a session is still waiting to be undone. Then use the
-maintain-insomnia skill to find out why.
+   ```bash
+   git clone https://github.com/Mustafa-Ghn/insomnia-tr.git
+   cd insomnia-tr
+   ```
 
-To build from source, follow "Build from source" on the same page. Its
-`./scripts/install.sh` also needs the password.
+   Depo özeldir. Klonlama GitHub kimlik doğrulaması isterse bunu kullanıcının
+   kendisinin yapmasını isteyin (örneğin `gh auth login`); kimlik bilgilerini
+   sormayın ve hiçbir yere girmeyin.
+3. **Kurulumu kullanıcıya bırakın.** `./scripts/install.sh` uygulamayı
+   derler ve sudoers kuralı için yönetici parolasını sorar; bu yüzden bu komutu
+   kullanıcıya verin, kendiniz çalıştırmayın. Kullanıcı çalıştırmadan önce ona
+   kurulum betiğinin bir sudoers kuralı eklediğini söyleyin. Bu kural, hesabının
+   şu dört `pmset` güç komutunu parolasız çalıştırmasına izin verir (sayfanın
+   "Neler kurulur" bölümü de bunları listeler):
+
+   ```text
+   /usr/bin/pmset -a disablesleep 1
+   /usr/bin/pmset -a disablesleep 0
+   /usr/bin/pmset -b lowpowermode 1
+   /usr/bin/pmset -b lowpowermode 0
+   ```
+
+   Kuralı yalnızca Insomnia değil, kullanıcının hesabıyla çalışan her program
+   kullanabilir; bunu da söyleyin. Kullanıcının çalışma kopyasının kök
+   klasöründe çalıştıracağı komut:
+
+   ```bash
+   ./scripts/install.sh
+   ```
+
+   `--app` ya da `--allow-unverified-origin` önermeyin: bu çatalda doğrulanacak
+   bir indirme yoktur ve bu bayraklar yalnızca özgün projenin sürüm zip
+   dosyaları içindir.
+4. **İlk açılış.** Kullanıcı uygulamayı
+   `open "$HOME/Applications/Insomnia.app"` ile açar. macOS ilk açılışı
+   engellerse kullanıcı Sistem Ayarları > Gizlilik ve Güvenlik bölümünden izin
+   verir.
+5. **Doğrulayın.** Göz simgesi menü çubuğunda görünür ve
+   `launchctl print gui/$(id -u)/com.insomnia.backstop` kurtarma ajanını bulur.
+   Kullanıcıdan ilk oturumdan önce Ayarlar'daki "Kapak kapanınca yapılacaklar"
+   seçeneklerini gözden geçirmesini isteyin.
+
+Yükseltme aynı adımlardır: çalışma kopyasında `git pull`, ardından kullanıcının
+çalıştıracağı `./scripts/install.sh`. Kurulum betiği çalışan uygulamadan
+kapanmasını ister ve geri alınmayı bekleyen bir oturum değişikliği varsa durur.
+O zaman nedenini bulmak için maintain-insomnia becerisini kullanın.
+
+Kullanıcı özgün projedeki değişiklikleri de almak isterse README'deki
+"Upstream değişikliklerini alma" bölümünü izleyin. Çevrilmiş metinler
+çakışacağından çakışmaları kullanıcıyla birlikte, elle çözün.

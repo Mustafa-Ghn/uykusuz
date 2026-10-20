@@ -29,8 +29,8 @@ enum StatusMenu {
         let kind: Kind
     }
 
-    static let settingsTitle = "Settings\u{2026}"
-    static let quitTitle = "Quit Insomnia"
+    static let settingsTitle = "Ayarlar\u{2026}"
+    static let quitTitle = "Insomnia'dan Çık"
 
     /// Disabled status lines, a separator, then Settings… and Quit. Empty
     /// lines are dropped, and the separator only appears when something
@@ -79,7 +79,7 @@ enum StatusMenu {
             // live item so the relaunch is still one click away, as it was
             // from the popover this menu replaced.
             for browser in throttledBrowsers {
-                out.append(Item(title: "Relaunch \(browser.name) unthrottled", kind: .relaunchBrowser(browser)))
+                out.append(Item(title: "Kısıtlamasız yeniden başlat: \(browser.name)", kind: .relaunchBrowser(browser)))
             }
         }
         for problem in relaunchProblems.compactMap(present) {
@@ -104,7 +104,7 @@ enum StatusMenu {
         }
         for waiting in outputsWaiting {
             out.append(Item(title: "\u{26A0} \(SessionManager.stillMutedLine(waiting))", kind: .warning))
-            out.append(Item(title: "Stop waiting for \(waiting.label)", kind: .stopWaitingForOutput(waiting)))
+            out.append(Item(title: "Beklemeyi bırak: \(waiting.label)", kind: .stopWaitingForOutput(waiting)))
         }
         if !out.isEmpty {
             out.append(Item(title: "", kind: .separator))
@@ -176,18 +176,18 @@ enum StatusMenu {
     }
 }
 
-/// What the menu asks before "Relaunch <browser> unthrottled" quits
-/// anything. Pure so the copy is testable; the controller shows it as an
-/// NSAlert.
+/// What the menu asks before "Kısıtlamasız yeniden başlat: <browser>"
+/// quits anything. Pure so the copy is testable; the controller shows it
+/// as an NSAlert.
 struct RelaunchPrompt: Equatable {
-    static let confirmTitle = "Quit and relaunch"
-    static let cancelTitle = "Cancel"
+    static let confirmTitle = "Kapat ve yeniden aç"
+    static let cancelTitle = "Vazgeç"
 
     let title: String
     let message: String
 
     init(browser name: String) {
-        title = "Quit and relaunch \(name)?"
-        message = "Insomnia quits \(name) and opens it again with the two flags that stop it throttling hidden windows. Your windows and tabs come back only if \(name) is set to reopen them on startup. If \(name) has not quit after \(Int(BrowserThrottle.quitTimeout)) s, nothing is relaunched."
+        title = "\(name) kapatılıp yeniden açılsın mı?"
+        message = "Insomnia, \(name) uygulamasını kapatır ve gizli pencerelerini yavaşlatmasını engelleyen iki bayrakla yeniden açar. Pencereleriniz ve sekmeleriniz yalnızca \(name) açılışta bunları yeniden açacak şekilde ayarlıysa geri gelir. \(name) \(Int(BrowserThrottle.quitTimeout)) sn içinde kapanmazsa hiçbir şey yeniden başlatılmaz."
     }
 }

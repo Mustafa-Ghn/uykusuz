@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
+	<string>tr</string>
 	<key>CFBundleExecutable</key>
 	<string>Insomnia</string>
 	<key>CFBundleIdentifier</key>
@@ -29,9 +29,9 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSLocationUsageDescription</key>
-	<string>Insomnia needs your location permission so macOS lets it see Wi-Fi network names and rejoin your hotspot.</string>
+	<string>Insomnia'nın Wi-Fi ağ adlarını görebilmesi ve kişisel erişim noktanıza (hotspot) yeniden katılabilmesi için macOS konum izni gerektirir.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Insomnia needs your location permission so macOS lets it see Wi-Fi network names and rejoin your hotspot.</string>
+	<string>Insomnia'nın Wi-Fi ağ adlarını görebilmesi ve kişisel erişim noktanıza (hotspot) yeniden katılabilmesi için macOS konum izni gerektirir.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>InsomniaResumeFrozenVersion</key>

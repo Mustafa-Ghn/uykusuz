@@ -27,7 +27,7 @@ struct AppNapError: Error, LocalizedError, Sendable {
     let bundleId: String
     let detail: String
 
-    var errorDescription: String? { "\(AppNap.key) for \(bundleId) \(detail)" }
+    var errorDescription: String? { "\(bundleId) için \(AppNap.key) \(detail)" }
 }
 
 enum AppNap {
@@ -42,7 +42,7 @@ enum AppNap {
     static func sleepDisabled(from value: CFPropertyList?, bundleId: String) throws -> Bool? {
         guard let value else { return nil }
         guard CFGetTypeID(value) == CFBooleanGetTypeID() else {
-            throw AppNapError(bundleId: bundleId, detail: "is not a boolean; left alone")
+            throw AppNapError(bundleId: bundleId, detail: "bir Boolean değer değil; olduğu gibi bırakıldı")
         }
         return CFEqual(value, kCFBooleanTrue)
     }
@@ -78,7 +78,7 @@ struct CFAppNapPreferences: AppNapPreferencing {
         let cfValue: CFBoolean? = value.map { $0 ? kCFBooleanTrue : kCFBooleanFalse }
         CFPreferencesSetValue(AppNap.key as CFString, cfValue, app, kCFPreferencesCurrentUser, kCFPreferencesAnyHost)
         guard CFPreferencesSynchronize(app, kCFPreferencesCurrentUser, kCFPreferencesAnyHost) else {
-            throw AppNapError(bundleId: bundleId, detail: "could not be written")
+            throw AppNapError(bundleId: bundleId, detail: "yazılamadı")
         }
     }
 }

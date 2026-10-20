@@ -636,7 +636,7 @@ final class LaunchdBackstopTests: XCTestCase {
             try await b.arm()
             XCTFail("arm succeeded although the plist launchd loads at login is stale")
         } catch {
-            XCTAssertTrue(error.localizedDescription.contains("published"), error.localizedDescription)
+            XCTAssertTrue(error.localizedDescription.contains("yayımlanamadı"), error.localizedDescription)
         }
         XCTAssertNil(try plistOnDisk()["StartInterval"], "stale plist replaced although publishing failed")
 

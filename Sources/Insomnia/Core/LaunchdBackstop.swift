@@ -99,7 +99,7 @@ struct LaunchdBackstop: BackstopScheduling {
 
     func arm() async throws {
         guard FileManager.default.fileExists(atPath: scriptPath) else {
-            throw BackstopError(message: "backstop.sh is not sealed in the app bundle at \(scriptPath); run scripts/install.sh")
+            throw BackstopError(message: "backstop.sh uygulama paketinde mühürlü değil (\(scriptPath)); scripts/install.sh betiğini çalıştırın")
         }
         // Before trusting a loaded agent: the bundle it would verify must
         // pass that verification now. A sealed script edited after signing
@@ -109,7 +109,7 @@ struct LaunchdBackstop: BackstopScheduling {
         do {
             requirement = try pin(bundle)
         } catch {
-            throw BackstopError(message: "the recovery agent cannot pin \(bundle.path): \(error.localizedDescription). Reinstall with scripts/install.sh")
+            throw BackstopError(message: "kurtarma ajanı \(bundle.path) paketini sabitleyemiyor: \(error.localizedDescription). scripts/install.sh ile yeniden yükleyin")
         }
         let desired = Self.plistDictionary(label: label, target: BackstopTarget(bundle: bundle, requirement: requirement))
         // Armed when the plist the next login loads is this build's and the
@@ -184,7 +184,7 @@ struct LaunchdBackstop: BackstopScheduling {
     private func publish(_ candidate: URL) throws {
         guard rename(candidate.path, plistURL.path) == 0 else {
             let reason = String(cString: strerror(errno))
-            throw BackstopError(message: "backstop agent loaded but its plist could not be published to \(plistURL.path): \(reason)")
+            throw BackstopError(message: "kurtarma ajanı yüklendi ancak plist dosyası \(plistURL.path) konumuna yayımlanamadı: \(reason)")
         }
     }
 
@@ -290,7 +290,7 @@ struct LaunchdBackstop: BackstopScheduling {
         _ = try await run(Self.launchctl, ["bootout", "\(domain)/\(label)"])
         let r = try await run(Self.launchctl, ["bootstrap", domain, candidate.path])
         if !r.succeeded {
-            throw BackstopError(message: "launchctl bootstrap failed (\(r.status)): \(r.stderr.trimmingCharacters(in: .whitespacesAndNewlines))")
+            throw BackstopError(message: "launchctl bootstrap başarısız oldu (\(r.status)): \(r.stderr.trimmingCharacters(in: .whitespacesAndNewlines))")
         }
     }
 }

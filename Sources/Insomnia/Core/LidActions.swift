@@ -71,7 +71,7 @@ final class LidActions {
         }
         // One lifecycle transaction: journal writes and SIGSTOPs happen
         // under the recovery lock, after any end already in flight.
-        let ran = await manager.runExclusive("lid close") { [self, manager] in
+        let ran = await manager.runExclusive("Kapak kapanması") { [self, manager] in
             guard manager.isActive, !Task.isCancelled else { return }
             guard lidEvents == event else {
                 Log.info("lid close actions skipped: the lid opened again before they ran")
@@ -390,7 +390,7 @@ final class LidActions {
                 if docker { s.dockerFrozen = true }
             }
         } catch {
-            manager.fail("lid close: could not journal the freeze of \(group.name) (\(group.bundleId)): \(error.localizedDescription); its \(candidates.count) pid(s) were left running")
+            manager.fail("Kapak kapanması: \(group.name) (\(group.bundleId)) için dondurma kayıt defterine yazılamadı: \(error.localizedDescription); \(candidates.count) pid çalışır durumda bırakıldı")
             return
         }
         if let beforeSignal, await !beforeSignal() {
@@ -444,9 +444,9 @@ final class LidActions {
                 docker: setsDockerFlag && stuck.isEmpty
             ))
             let outcome = stuck.isEmpty
-                ? "so this freeze of \(group.name) is undone"
-                : "and pid(s) \(stuck.map(String.init).joined(separator: ", ")) may still be stopped; they stay journaled without identity, so Insomnia will not resume them, and lid open reports the ones still stopped"
-            manager.fail("lid close: could not confirm the freeze of \(group.name) (\(group.bundleId)) in the journal: \(error.localizedDescription); resumed \(undo.resumed.count) of the \(confirmed.count) pid(s) it had just stopped, \(outcome)")
+                ? "böylece \(group.name) için yapılan dondurma geri alındı"
+                : "ancak pid \(stuck.map(String.init).joined(separator: ", ")) hâlâ durdurulmuş olabilir; bunlar kayıt defterinde kimlik bilgisi olmadan kalır, bu yüzden Insomnia onları çözmez ve kapak açılınca hâlâ durdurulmuş olanları bildirir"
+            manager.fail("Kapak kapanması: \(group.name) (\(group.bundleId)) için dondurma kayıt defterinde doğrulanamadı: \(error.localizedDescription); az önce durdurulan \(confirmed.count) pid içinden \(undo.resumed.count) tanesi çözüldü, \(outcome)")
             return
         }
         Log.info("froze \(group.name) (\(report.suspended.count) pid(s), \(report.skipped.count) skipped)")

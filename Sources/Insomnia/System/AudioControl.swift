@@ -37,14 +37,14 @@ struct AudioControlError: Error, LocalizedError, Sendable {
     let what: String
     let status: OSStatus
 
-    var errorDescription: String? { "\(what) failed (OSStatus \(status))" }
+    var errorDescription: String? { "\(what) başarısız oldu (OSStatus \(status))" }
 }
 
 /// The output device a journal entry is for is not connected.
 struct AudioDeviceMissingError: Error, LocalizedError, Sendable {
     let deviceUID: String
 
-    var errorDescription: String? { "output device \(deviceUID) is not connected" }
+    var errorDescription: String? { "çıkış aygıtı \(deviceUID) bağlı değil" }
 }
 
 /// Does nothing; the default for SessionManager so tests and non-audio
@@ -71,15 +71,15 @@ struct CoreAudioControl: AudioControlling {
     func apply(volume: Float, muted: Bool, deviceUID: String?) throws {
         let device = try deviceUID.map { try self.device(withUID: $0) } ?? defaultOutputDevice()
         var v = Float32(min(max(volume, 0), 1))
-        try set(device, Self.volumeAddress, &v, "set volume")
+        try set(device, Self.volumeAddress, &v, "ses düzeyini ayarlama")
         var m: UInt32 = muted ? 1 : 0
-        try set(device, Self.muteAddress, &m, "set mute")
+        try set(device, Self.muteAddress, &m, "sessiz durumunu ayarlama")
     }
 
     func mute(deviceUID: String) throws {
         let device = try device(withUID: deviceUID)
         var m: UInt32 = 1
-        try set(device, Self.muteAddress, &m, "mute")
+        try set(device, Self.muteAddress, &m, "sesi kapatma")
     }
 
     func onDevicesChanged(_ handler: @escaping @Sendable () -> Void) throws {
@@ -91,7 +91,7 @@ struct CoreAudioControl: AudioControlling {
         let status = AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &address, DispatchQueue.main) { _, _ in
             handler()
         }
-        guard status == noErr else { throw AudioControlError(what: "watch output devices", status: status) }
+        guard status == noErr else { throw AudioControlError(what: "çıkış aygıtlarını izleme", status: status) }
     }
 
     // MARK: CoreAudio plumbing
@@ -109,12 +109,12 @@ struct CoreAudioControl: AudioControlling {
 
     private func output(of device: AudioObjectID) throws -> AudioOutput {
         var volume: Float32 = 0
-        try get(device, Self.volumeAddress, &volume, "read volume")
+        try get(device, Self.volumeAddress, &volume, "ses düzeyini okuma")
         var muted: UInt32 = 0
-        try get(device, Self.muteAddress, &muted, "read mute")
+        try get(device, Self.muteAddress, &muted, "sessiz durumunu okuma")
         return AudioOutput(
-            deviceUID: try string(kAudioDevicePropertyDeviceUID, of: device, "read device UID"),
-            name: try? string(kAudioObjectPropertyName, of: device, "read device name"),
+            deviceUID: try string(kAudioDevicePropertyDeviceUID, of: device, "aygıt UID değerini okuma"),
+            name: try? string(kAudioObjectPropertyName, of: device, "aygıt adını okuma"),
             volume: Float(volume),
             muted: muted != 0
         )
@@ -130,7 +130,7 @@ struct CoreAudioControl: AudioControlling {
         var size = UInt32(MemoryLayout<AudioObjectID>.size)
         let status = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, &device)
         guard status == noErr, device != kAudioObjectUnknown else {
-            throw AudioControlError(what: "default output device", status: status)
+            throw AudioControlError(what: "varsayılan çıkış aygıtını okuma", status: status)
         }
         return device
     }
@@ -172,7 +172,7 @@ struct CoreAudioControl: AudioControlling {
                 UInt32(MemoryLayout<CFString>.size), q, &size, &device
             )
         }
-        guard status == noErr else { throw AudioControlError(what: "look up output device", status: status) }
+        guard status == noErr else { throw AudioControlError(what: "çıkış aygıtını arama", status: status) }
         guard device != kAudioObjectUnknown else { throw AudioDeviceMissingError(deviceUID: uid) }
         return device
     }

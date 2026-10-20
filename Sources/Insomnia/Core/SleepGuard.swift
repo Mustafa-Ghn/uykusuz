@@ -18,10 +18,11 @@ struct SleepGuardError: Error, LocalizedError, Sendable {
 
     var errorDescription: String? {
         let detail = stderr.trimmingCharacters(in: .whitespacesAndNewlines)
-        var msg = "`\(command)` failed with status \(status)"
+        var msg = "`\(command)` başarısız oldu (çıkış kodu \(status))"
         if !detail.isEmpty { msg += ": \(detail)" }
+        // "password" and "sudo" match sudo's own stderr, not this message.
         if detail.contains("password") || detail.contains("sudo") {
-            msg += " (run scripts/install.sh to install /etc/sudoers.d/insomnia)"
+            msg += " (/etc/sudoers.d/insomnia dosyasını kurmak için scripts/install.sh betiğini çalıştırın)"
         }
         return msg
     }
@@ -33,7 +34,7 @@ struct SleepDisableRevertedError: Error, LocalizedError, Sendable {
     let settle: TimeInterval
 
     var errorDescription: String? {
-        "SleepDisabled read 0 again within \(Int(settle)) s of `pmset -a disablesleep 1`; another process may be resetting it, so closing the lid would still sleep this Mac"
+        "SleepDisabled, `pmset -a disablesleep 1` komutundan sonraki \(Int(settle)) sn içinde yeniden 0 okundu; başka bir süreç onu sıfırlıyor olabilir, bu yüzden kapak kapatılınca bu Mac yine de uykuya geçer"
     }
 }
 
@@ -99,7 +100,7 @@ struct PmsetSleepGuard: SleepGuarding {
         case false?:
             throw SleepDisableRevertedError(settle: settleDelay)
         case nil:
-            throw SleepGuardError(command: "pmset -g", status: 0, stderr: "no SleepDisabled line reading 0 or 1, so `pmset -a disablesleep 1` could not be read back")
+            throw SleepGuardError(command: "pmset -g", status: 0, stderr: "0 ya da 1 okunan bir SleepDisabled satırı yok, bu yüzden `pmset -a disablesleep 1` geri okunamadı")
         }
     }
 
@@ -236,7 +237,7 @@ struct PmsetSleepGuard: SleepGuarding {
         let options = sudoOptions + ["-n"]
         let command = "sudo \(options.joined(separator: " ")) \(full.joined(separator: " "))"
         guard let lock = RecoveryLock.held else {
-            throw SleepGuardError(command: command, status: -1, stderr: "not run: no recovery transaction holds the lock")
+            throw SleepGuardError(command: command, status: -1, stderr: "çalıştırılmadı: kilidi tutan bir kurtarma işlemi yok")
         }
         // CancellableCommand, not Shell.run(timeout:): it reports a child
         // that had to be stopped at the deadline as a timeout even if the

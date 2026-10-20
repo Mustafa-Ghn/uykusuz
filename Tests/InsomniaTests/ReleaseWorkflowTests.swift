@@ -397,45 +397,54 @@ final class ReleaseWorkflowTests: XCTestCase {
     }
 
     /// Release bundles are arm64 only (no universal build), so the notes'
-    /// first line and the README's Install section say a release needs an
-    /// Apple Silicon Mac. RecoveryScriptTests checks that install.sh --app
-    /// stops on any other Mac.
+    /// first line says a release needs an Apple Silicon Mac. The fork's
+    /// README (Turkish, source builds only) states the same requirement in
+    /// its Requirements section ("Gereksinimler"), right above Install.
+    /// RecoveryScriptTests checks that install.sh --app stops on any other
+    /// Mac.
     func testTheNotesAndTheReadmeStateTheAppleSiliconRequirement() throws {
         for id in ["stable", "nightly"] {
             XCTAssertTrue(try job(id).joined(separator: "\n").contains(#"echo "Insomnia $VERSION for Apple Silicon Macs with macOS 26 or later."#), "the \(id) notes' first line")
         }
-        XCTAssertTrue(try readmeInstallSection().contains("Apple Silicon"), "the README's Install section")
+        XCTAssertTrue(try readmeSection("Gereksinimler").contains("Apple Silicon"), "the README's Requirements section")
     }
 
-    /// The README's Install section gives the coding agent prompt for either
-    /// channel and points at docs/install.md, which lets a reader choose a
-    /// channel and sends v0.1.0, which no workflow built, to its own release
-    /// notes.
+    /// The fork's README has no release channels: its Install section
+    /// ("Kurulum") says the fork is installed from source only, gives the
+    /// clone-and-run command for ./scripts/install.sh in place of upstream's
+    /// coding agent prompts, and points at docs/install.md. That page still
+    /// lets a reader choose an upstream channel and sends v0.1.0, which no
+    /// workflow built, to its own release notes.
     func testTheReadmeOffersBothChannelsAndSetsV010Apart() throws {
-        let install = try readmeInstallSection().split(whereSeparator: \.isWhitespace).joined(separator: " ")
-        for phrase in ["Install the latest stable Insomnia release by following https://github.com/krishhgg/Insomnia/blob/main/skills/install-insomnia/SKILL.md",
-                       "the newest Insomnia nightly prerelease", "](docs/install.md)"] {
+        let install = try readmeSection("Kurulum").split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        for phrase in ["git clone https://github.com/Mustafa-Ghn/insomnia-tr.git && cd insomnia-tr && ./scripts/install.sh",
+                       "Bu çatal yalnızca kaynak koddan kurulur.", "](docs/install.md)"] {
             XCTAssertTrue(install.contains(phrase), "the README's Install section lacks: \(phrase)")
         }
         let skill = try String(contentsOf: repoRoot.appendingPathComponent("skills/install-insomnia/SKILL.md"), encoding: .utf8)
         XCTAssertTrue(skill.contains("docs/install.md"), "the install skill follows docs/install.md")
         let guide = try String(contentsOf: repoRoot.appendingPathComponent("docs/install.md"), encoding: .utf8)
             .split(whereSeparator: \.isWhitespace).joined(separator: " ")
-        for phrase in ["Stable: the release GitHub marks Latest", "Nightly: prereleases tagged `nightly-", "A nightly is never marked Latest",
-                       "`refs/tags/v<version>` for a stable release or `refs/heads/main` for a nightly",
+        for phrase in ["Kararlı: GitHub'ın Latest olarak işaretlediği",
+                       "Gecelik: `main` dalında yeni commit olduğunda günde bir kez otomatik olarak derlenen, `nightly-<date>-<commit>` etiketli ön sürümler",
+                       "Gecelik bir sürüm hiçbir zaman Latest olarak işaretlenmez",
+                       "kararlı bir sürüm için `refs/tags/v<version>`, gecelik bir sürüm için `refs/heads/main`",
                        "--source-ref <ref> --source-digest <commit>",
-                       "If the release you picked is `v0.1.0`"] {
+                       "Seçtiğiniz sürüm `v0.1.0` ise"] {
             XCTAssertTrue(guide.contains(phrase), "docs/install.md lacks: \(phrase)")
         }
     }
 
     private var repoRoot: URL { workflowsDir.deletingLastPathComponent().deletingLastPathComponent() }
 
-    private func readmeInstallSection() throws -> String {
+    /// The README section under `## <title>`, up to the next `## ` heading.
+    /// The fork's README is Turkish: Install is "Kurulum", Requirements is
+    /// "Gereksinimler".
+    private func readmeSection(_ title: String) throws -> String {
         let readme = try String(contentsOf: repoRoot.appendingPathComponent("README.md"), encoding: .utf8)
-        let install = try XCTUnwrap(readme.range(of: "\n## Install\n"), "README has no Install section")
-        let end = readme.range(of: "\n## ", range: install.upperBound..<readme.endIndex)?.lowerBound ?? readme.endIndex
-        return String(readme[install.upperBound..<end])
+        let section = try XCTUnwrap(readme.range(of: "\n## \(title)\n"), "README has no \(title) section")
+        let end = readme.range(of: "\n## ", range: section.upperBound..<readme.endIndex)?.lowerBound ?? readme.endIndex
+        return String(readme[section.upperBound..<end])
     }
 
     /// The scripts the zip carries sit at its top level, so the folder above

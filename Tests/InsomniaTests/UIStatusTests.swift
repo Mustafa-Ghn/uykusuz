@@ -79,7 +79,7 @@ final class UIStatusTests: XCTestCase {
         XCTAssertEqual(MenuBarModel.projectedStartCountdown(now: now, duration: 90 * 60, maxDuration: month), "1:30:00")
         let twoDays = MenuBarModel.projectedStartCountdown(now: now, duration: 2 * 86400, maxDuration: month)
         XCTAssertEqual(twoDays, SessionMath.formatCountdown(remaining: 2 * 86400, shape: .days))
-        XCTAssertTrue(twoDays.hasPrefix("2d "))
+        XCTAssertTrue(twoDays.hasPrefix("2g "))
         // The projection ticks: eight seconds into the wait it reads eight
         // seconds less, in the shape it was projected in.
         let projection = MenuBarModel.projectedStart(now: now, duration: 90 * 60, maxDuration: month)
@@ -219,12 +219,12 @@ final class UIStatusTests: XCTestCase {
         let m = h.makeManager()
         await m.start(duration: 4 * 3600)
         XCTAssertEqual(m.countdownText, "4:00:00")
-        XCTAssertEqual(m.remainingText, "4h")
+        XCTAssertEqual(m.remainingText, "4sa")
 
         h.clock.advance(3 * 3600 + 55 * 60 + 53)
         m.refreshCountdown()
         XCTAssertEqual(m.countdownText, "0:04:07")
-        XCTAssertEqual(m.remainingText, "4m")
+        XCTAssertEqual(m.remainingText, "4dk")
 
         m.pauseCountdown()
         h.clock.advance(60)
@@ -251,15 +251,15 @@ final class UIStatusTests: XCTestCase {
     func testSleepHeldLine() {
         XCTAssertEqual(
             SleepHeldLine.line(sessionActive: true, sleepHeld: true),
-            SleepHeldLine.Line(text: "Sleep held per journal \u{2014} not verified live", isWarning: false)
+            SleepHeldLine.Line(text: "Kayıt defterine göre uyku engelleniyor \u{2014} canlı olarak doğrulanmadı", isWarning: false)
         )
         XCTAssertEqual(
             SleepHeldLine.line(sessionActive: true, sleepHeld: false),
-            SleepHeldLine.Line(text: "Sleep is not held \u{2014} this session is not keeping the Mac awake", isWarning: true)
+            SleepHeldLine.Line(text: "Uyku engellenmiyor \u{2014} bu oturum Mac'i uyanık tutmuyor", isWarning: true)
         )
         XCTAssertEqual(
             SleepHeldLine.line(sessionActive: false, sleepHeld: true),
-            SleepHeldLine.Line(text: "Sleep still held with no session", isWarning: true)
+            SleepHeldLine.Line(text: "Oturum yokken uyku hâlâ engelleniyor", isWarning: true)
         )
         XCTAssertNil(SleepHeldLine.line(sessionActive: false, sleepHeld: false))
     }
@@ -285,30 +285,30 @@ final class UIStatusTests: XCTestCase {
     func testMachineLine() {
         XCTAssertEqual(
             StatusLines.machine(lidClosed: true, watts: 4.12, wifiSSID: "iPhone", batteryPercent: nil, isCharging: false),
-            "Lid: closed \u{00B7} 4.1 W \u{00B7} Wi-Fi: iPhone"
+            "Kapak: kapalı \u{00B7} 4.1 W \u{00B7} Wi-Fi: iPhone"
         )
         XCTAssertEqual(
             StatusLines.machine(lidClosed: false, watts: nil, wifiSSID: nil, batteryPercent: nil, isCharging: false),
-            "Lid: open"
+            "Kapak: açık"
         )
         XCTAssertEqual(
             StatusLines.machine(lidClosed: false, watts: nil, wifiSSID: "", batteryPercent: 82, isCharging: true),
-            "Lid: open \u{00B7} 82% charging"
+            "Kapak: açık \u{00B7} %82 şarj oluyor"
         )
     }
 
     func testActionsLine() {
         XCTAssertNil(StatusLines.actions(frozenCount: 0, dockerPaused: false, lastGap: nil))
-        XCTAssertEqual(StatusLines.actions(frozenCount: 3, dockerPaused: true, lastGap: nil), "3 apps frozen \u{00B7} Docker paused")
-        XCTAssertEqual(StatusLines.actions(frozenCount: 1, dockerPaused: false, lastGap: 12.4), "1 app frozen \u{00B7} last gap 12s")
-        XCTAssertEqual(StatusLines.actions(frozenCount: 0, dockerPaused: true, lastGap: 0), "Docker paused")
+        XCTAssertEqual(StatusLines.actions(frozenCount: 3, dockerPaused: true, lastGap: nil), "3 uygulama donduruldu \u{00B7} Docker duraklatıldı")
+        XCTAssertEqual(StatusLines.actions(frozenCount: 1, dockerPaused: false, lastGap: 12.4), "1 uygulama donduruldu \u{00B7} son kesinti 12sn")
+        XCTAssertEqual(StatusLines.actions(frozenCount: 0, dockerPaused: true, lastGap: 0), "Docker duraklatıldı")
     }
 
     func testThrottleWarning() {
         XCTAssertNil(StatusLines.throttleWarning([]))
-        XCTAssertEqual(StatusLines.throttleWarning(["Chrome"]), "\u{26A0} Chrome is throttled")
-        XCTAssertEqual(StatusLines.throttleWarning(["Chrome", "Arc"]), "\u{26A0} Chrome and Arc are throttled")
-        XCTAssertEqual(StatusLines.throttleWarning(["Chrome", "Arc", "Chromium"]), "\u{26A0} Chrome, Arc, and Chromium are throttled")
+        XCTAssertEqual(StatusLines.throttleWarning(["Chrome"]), "\u{26A0} Chrome kısıtlanıyor")
+        XCTAssertEqual(StatusLines.throttleWarning(["Chrome", "Arc"]), "\u{26A0} Chrome ve Arc kısıtlanıyor")
+        XCTAssertEqual(StatusLines.throttleWarning(["Chrome", "Arc", "Chromium"]), "\u{26A0} Chrome, Arc ve Chromium kısıtlanıyor")
     }
 
     func testMenuListsStatusThenSettingsAndQuit() {
@@ -321,11 +321,11 @@ final class UIStatusTests: XCTestCase {
             error: nil
         )
         XCTAssertEqual(items, [
-            StatusMenu.Item(title: "Sleep held per journal \u{2014} not verified live", kind: .info),
+            StatusMenu.Item(title: "Kayıt defterine göre uyku engelleniyor \u{2014} canlı olarak doğrulanmadı", kind: .info),
             StatusMenu.Item(title: "Lid: closed \u{00B7} 82%", kind: .info),
             StatusMenu.Item(title: "3 apps frozen", kind: .info),
-            StatusMenu.Item(title: "\u{26A0} Chrome is throttled", kind: .warning),
-            StatusMenu.Item(title: "Relaunch Chrome unthrottled", kind: .relaunchBrowser(Self.chrome)),
+            StatusMenu.Item(title: "\u{26A0} Chrome kısıtlanıyor", kind: .warning),
+            StatusMenu.Item(title: "Kısıtlamasız yeniden başlat: Chrome", kind: .relaunchBrowser(Self.chrome)),
             StatusMenu.Item(title: "", kind: .separator),
             StatusMenu.Item(title: StatusMenu.settingsTitle, kind: .settings),
             StatusMenu.Item(title: StatusMenu.quitTitle, kind: .quit),
@@ -379,7 +379,7 @@ final class UIStatusTests: XCTestCase {
             [.info, .warning, .relaunchBrowser(Self.chrome), .warning, .warning, .separator, .settings, .quit]
         )
         XCTAssertEqual(items[3], StatusMenu.Item(
-            title: "\u{26A0} Hotspot password unreadable by this build: enter it again in Settings",
+            title: "\u{26A0} Bu derleme hotspot parolasını okuyamıyor: Ayarlar'da yeniden girin",
             kind: .warning
         ))
         XCTAssertEqual(
@@ -392,16 +392,16 @@ final class UIStatusTests: XCTestCase {
     /// Settings notice except for a missing item, where the empty field is
     /// the notice.
     func testHotspotPasswordProblemCopy() {
-        XCTAssertEqual(HotspotPasswordProblem.missing.menuLine, "\u{26A0} Hotspot password not saved: enter it in Settings")
+        XCTAssertEqual(HotspotPasswordProblem.missing.menuLine, "\u{26A0} Hotspot parolası kayıtlı değil: Ayarlar'da girin")
         XCTAssertNil(HotspotPasswordProblem.missing.settingsNotice)
-        XCTAssertTrue(HotspotPasswordProblem.unreadable.settingsNotice?.contains("Enter it again and save") ?? false)
-        XCTAssertTrue(HotspotPasswordProblem.unreadable.explanation.hasSuffix("Enter it again in Settings."))
-        XCTAssertEqual(HotspotPasswordProblem.error("keychain: boom").menuLine, "\u{26A0} Hotspot password unreadable: keychain: boom")
-        XCTAssertEqual(HotspotPasswordProblem.error("keychain: boom").settingsNotice, "The saved password can't be read: keychain: boom")
+        XCTAssertTrue(HotspotPasswordProblem.unreadable.settingsNotice?.contains("Parolayı yeniden girip kaydedin") ?? false)
+        XCTAssertTrue(HotspotPasswordProblem.unreadable.explanation.hasSuffix("Parolayı Ayarlar'da yeniden girin."))
+        XCTAssertEqual(HotspotPasswordProblem.error("keychain: boom").menuLine, "\u{26A0} Hotspot parolası okunamıyor: keychain: boom")
+        XCTAssertEqual(HotspotPasswordProblem.error("keychain: boom").settingsNotice, "Kayıtlı parola okunamıyor: keychain: boom")
         XCTAssertEqual(KeychainError(status: errSecAuthFailed).problem, .unreadable)
         XCTAssertEqual(KeychainError(status: errSecInteractionNotAllowed).problem, .unreadable)
         XCTAssertEqual(KeychainError(status: errSecInvalidOwnerEdit).problem, .unreadable)
-        XCTAssertEqual(KeychainError(status: errSecParam).problem, .error("keychain: \(securityMessage(errSecParam))"))
+        XCTAssertEqual(KeychainError(status: errSecParam).problem, .error("Anahtar Zinciri: \(securityMessage(errSecParam))"))
     }
 
     /// The relaunch item asks first, since the browser is quit and its
@@ -445,13 +445,13 @@ final class UIStatusTests: XCTestCase {
     /// browser's own startup setting, and gives the 10 s rule.
     func testRelaunchPromptCopy() {
         let prompt = RelaunchPrompt(browser: "Chrome")
-        XCTAssertEqual(prompt.title, "Quit and relaunch Chrome?")
+        XCTAssertEqual(prompt.title, "Chrome kapatılıp yeniden açılsın mı?")
         XCTAssertEqual(
             prompt.message,
-            "Insomnia quits Chrome and opens it again with the two flags that stop it throttling hidden windows. Your windows and tabs come back only if Chrome is set to reopen them on startup. If Chrome has not quit after 10 s, nothing is relaunched."
+            "Insomnia, Chrome uygulamasını kapatır ve gizli pencerelerini yavaşlatmasını engelleyen iki bayrakla yeniden açar. Pencereleriniz ve sekmeleriniz yalnızca Chrome açılışta bunları yeniden açacak şekilde ayarlıysa geri gelir. Chrome 10 sn içinde kapanmazsa hiçbir şey yeniden başlatılmaz."
         )
-        XCTAssertEqual(RelaunchPrompt.confirmTitle, "Quit and relaunch")
-        XCTAssertEqual(RelaunchPrompt.cancelTitle, "Cancel")
+        XCTAssertEqual(RelaunchPrompt.confirmTitle, "Kapat ve yeniden aç")
+        XCTAssertEqual(RelaunchPrompt.cancelTitle, "Vazgeç")
     }
 
     /// Greptile caught this as a regression: replacing the popover with a

@@ -1,89 +1,94 @@
+> **Bu depo hakkında:** Bu depo, Krish Garg'ın geliştirdiği
+> [Insomnia](https://github.com/krishhgg/Insomnia) uygulamasının kişisel
+> kullanım için hazırlanmış özel (private) Türkçe çatalıdır (fork). Uygulama
+> arayüzü, kurulum betiklerinin mesajları ve belgeler Türkçeye çevrilmiştir.
+> Özgün proje MIT lisansıyla yayımlanır; bu çatal da aynı lisansı taşır
+> ([LICENSE](LICENSE)). Bu çatalın GitHub sürümleri (release) yoktur: yalnızca
+> bu depodan kaynak kod derlenerek kurulur.
+
 <p align="center">
-  <img src="docs/assets/eye-open.svg" alt="Insomnia: an open eye with a round pupil and five lashes above it" width="112">
+  <img src="docs/assets/eye-open.svg" alt="Insomnia: yuvarlak gözbebekli, üstünde beş kirpik olan açık bir göz" width="112">
 </p>
 
 <h1 align="center">Insomnia</h1>
 
 <p align="center">
-  <strong>Keep your Mac awake. Give the session an end time.</strong>
+  <strong>Mac'inizi uyanık tutun. Oturuma bir bitiş zamanı verin.</strong>
 </p>
 
 <p align="center">
-  A macOS menu bar app for timed awake sessions. Insomnia is an eye icon that
-  lives in your MacBook menu bar. It has no Dock icon and no main window. Set
-  how long your Mac stays awake, choose what happens when the lid closes, and
-  see when something could not be undone.
+  Süreli uyanık kalma oturumları için bir macOS menü çubuğu uygulaması.
+  Insomnia, MacBook'unuzun menü çubuğunda duran bir göz simgesidir. Dock simgesi
+  ve ana penceresi yoktur. Mac'inizin ne kadar süre uyanık kalacağını ayarlayın,
+  kapak kapanınca ne olacağını seçin ve geri alınamayan bir şey olduğunda bunu
+  görün.
 </p>
 
 <p align="center">
-  <a href="https://getinsomnia.app"><strong>Website</strong></a> ·
-  <a href="#install"><strong>Install</strong></a> ·
-  <a href="#using-it"><strong>Using it</strong></a> ·
-  <a href="#what-happens-when-the-lid-closes"><strong>Lid close</strong></a> ·
-  <a href="#how-recovery-works"><strong>Recovery</strong></a> ·
-  <a href="SECURITY.md"><strong>Security</strong></a>
+  <a href="#kurulum"><strong>Kurulum</strong></a> ·
+  <a href="#kullanım"><strong>Kullanım</strong></a> ·
+  <a href="#kapak-kapanınca-neler-olur"><strong>Kapak kapanınca</strong></a> ·
+  <a href="#kurtarma-nasıl-çalışır"><strong>Kurtarma</strong></a> ·
+  <a href="#kaldırma"><strong>Kaldırma</strong></a> ·
+  <a href="https://github.com/krishhgg/Insomnia"><strong>Özgün proje</strong></a>
 </p>
+
+> **Mac'i kapalı bir çantada değil, sabit ve iyi havalanan bir yüzeyde
+> kullanın.** Insomnia deneyseldir. Kurtarma başarısız olabilir ve çalışan bir
+> zamanlayıcı bir güvenlik garantisi değildir.
+> [Doğrulama durumu](docs/release-validation.md) (İngilizce) · [Apple'ın havalandırma önerileri](https://support.apple.com/en-us/102336)
 
 <p align="center">
-  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/License-MIT-536D78?style=flat-square"></a>
-  <img alt="macOS 26 or later" src="https://img.shields.io/badge/macOS-26%2B-303336?style=flat-square">
-  <img alt="Experimental source build" src="https://img.shields.io/badge/Status-experimental-536D78?style=flat-square">
+  <img src="docs/assets/session-flow.svg" alt="Menü çubuğu denetimlerinin çizimi: Gün, Saat ve Dakika girin, geri sayımı izleyin ve erken bitirmek için bitirme denetimini basılı tutun. Süre eklemek için göze ya da geri sayıma tıklayın. Kapağı kapatmak isteğe bağlıdır; tamamlanmamış bir kurtarma ilgilenmenizi gerektirir." width="880">
 </p>
 
-> **Use a stable, well-ventilated surface, not a closed bag.** Insomnia is
-> experimental. Recovery can fail, and a running timer is not a safety
-> guarantee.
-> [Validation status](docs/release-validation.md) · [Apple's ventilation guidance](https://support.apple.com/en-us/102336)
+## Gereksinimler
 
-<p align="center">
-  <img src="docs/assets/session-flow.svg" alt="Illustrated menu-bar controls: enter Days, Hours, and Minutes, watch the countdown, and hold the end control to finish early. Click the eye or countdown to add time. Closing the lid is optional, and incomplete recovery needs attention." width="880">
-</p>
+- macOS 26 ya da üstü.
+- Apple Silicon (Apple çipli) bir Mac. Intel bir Mac'te kaynaktan derleme
+  denenmemiştir.
+- Swift 6.2 ya da üstünü içeren Xcode.
+- `git` ve bu özel depoya erişimi olan bir GitHub hesabı.
 
-## Install
+## Kurulum
 
-Requires macOS 26 or later on an Apple Silicon Mac.
-
-Paste this into your coding agent:
-
-```text
-Install the latest stable Insomnia release by following https://github.com/krishhgg/Insomnia/blob/main/skills/install-insomnia/SKILL.md. If a step needs my password, give me the command to run in Terminal.
-```
-
-For the newest nightly, write "the newest Insomnia nightly prerelease" in
-place of "the latest stable Insomnia release". Nightlies are built from `main`
-on each day it has new commits. They have the newest code and may be broken.
-
-To install a release yourself, follow [docs/install.md](docs/install.md). It
-covers both channels, how to check the download, and `v0.1.0`, which installs
-differently. Settings > App shows the installed version, and "Check for
-updates" there tells you whether a newer release exists without installing
-anything.
-
-### Build from source
-
-Needs Xcode with Swift 6.2 or later. Replace `v<version>` with the latest
-stable tag, or a nightly tag for the newest code:
+Bu çatal yalnızca kaynak koddan kurulur. Depoyu klonlayın, kurulum betiğini
+çalıştırın ve uygulamayı açın:
 
 ```bash
-git clone --branch v<version> --depth 1 https://github.com/krishhgg/Insomnia.git
-cd Insomnia
-./scripts/install.sh
+git clone https://github.com/Mustafa-Ghn/insomnia-tr.git && cd insomnia-tr && ./scripts/install.sh
 open "$HOME/Applications/Insomnia.app"
 ```
 
+Depo özel olduğu için `git clone` sırasında GitHub kimlik doğrulaması gerekir
+(örneğin önce `gh auth login` çalıştırarak; SSH anahtarı kullanıyorsanız
+`git@github.com:Mustafa-Ghn/insomnia-tr.git` adresiyle klonlayın).
+
+`./scripts/install.sh`, uygulamayı bu çalışma kopyasından derler
+(`scripts/build-app.sh`, ad-hoc imzalı) ve kurar. sudoers kuralı için
+parolanızı bir kez sorar; bu istem, derleme bittikten sonra ve önceki
+kurulumdaki hiçbir şeye dokunulmadan önce gelir. Her adımın neyi denetlediği
+[docs/install.md](docs/install.md) sayfasında anlatılır.
+
+Ayarlar > Uygulama kurulu sürümü gösterir. Oradaki "Orijinal projede
+güncellemeleri denetle" düğmesi yalnızca özgün projenin (krishhgg/Insomnia)
+İngilizce sürümlerini sorar ve hiçbir şey kurmaz. Bu çatalı güncellemek için
+[Güncelleme](#güncelleme) bölümündeki adımları izleyin.
+
 <details>
-<summary><strong>What the installer changes on your Mac</strong></summary>
+<summary><strong>Kurulumun Mac'inizde değiştirdikleri</strong></summary>
 
-The installer needs your password, because the sudoers rule is a system
-file. It installs:
+sudoers kuralı bir sistem dosyası olduğu için kurulum betiği parolanızı ister.
+Şunları kurar:
 
-- The app, at `~/Applications/Insomnia.app`.
-- A **recovery agent**, a `launchd` job that runs every minute. If the app is
-  gone when a session should have ended, the agent tries to undo the
-  session's changes.
-- A **sudoers rule** at `/etc/sudoers.d/insomnia`. A sudoers rule decides who
-  can run what with `sudo`. This one lets your user account, not just
-  Insomnia, run these four commands without a password:
+- Uygulamayı, `~/Applications/Insomnia.app` konumuna.
+- Bir **kurtarma ajanı**: her dakika çalışan bir `launchd` görevi. Bir oturumun
+  bitmesi gerektiği hâlde uygulama artık çalışmıyorsa ajan, oturumun yaptığı
+  değişiklikleri geri almaya çalışır.
+- `/etc/sudoers.d/insomnia` konumunda bir **sudoers kuralı**. Bir sudoers kuralı,
+  kimin neyi `sudo` ile çalıştırabileceğini belirler. Bu kural, yalnızca
+  Insomnia'ya değil, kullanıcı hesabınıza şu dört komutu parolasız çalıştırma
+  izni verir:
 
 ```text
 /usr/bin/pmset -a disablesleep 1
@@ -92,175 +97,208 @@ file. It installs:
 /usr/bin/pmset -b lowpowermode 0
 ```
 
-Any program running as you can use that rule too, so review it before you
-install. [docs/install.md](docs/install.md#what-gets-installed) lists every
-file and explains how upgrades replace them.
+Sizin hesabınızla çalışan her program da bu kuralı kullanabilir; bu yüzden
+kurmadan önce kuralı gözden geçirin.
+[docs/install.md](docs/install.md#neler-kurulur) her dosyayı listeler ve
+yükseltmelerin onları nasıl değiştirdiğini açıklar.
 
 </details>
 
-## Using it
+## Güncelleme
 
-1. **Start.** Click the eye in the menu bar, enter days, hours and minutes,
-   and press Enter.
-2. **Add time.** Click the eye or the countdown during a session.
-3. **End early.** Press and hold the end control next to the countdown.
-4. **Settings and status.** Right-click the eye. Quit asks Insomnia to undo
-   the session first, and it refuses while a change is still waiting to be
-   undone. Saved audio for an output that isn't connected doesn't hold it up.
-   Insomnia restores that output if it reconnects while the app runs, or at
-   the next launch.
-
-You don't have to close the lid, and opening it doesn't end the session.
-
-On battery power, Insomnia turns on Low Power Mode below 40% and ends the
-session below 10%. Those are the defaults. You can change both in Settings,
-and an end floor of 0 turns the battery end off. The heat rules turn on Low Power
-Mode when the Mac gets seriously hot and end the session at critical heat.
-They are on by default, and Settings can turn them off. All of these rules
-only work while the app runs.
-
-Before your first session, check Settings. Then run a short session you can
-watch, and read `~/Library/Logs/Insomnia/insomnia.log` afterward.
-
-## What happens when the lid closes
-
-<p align="center">
-  <img src="docs/assets/lid-actions.svg" alt="Illustrated Settings defaults: Slack, WhatsApp, and Discord on the freeze list, Docker's idle rule off, mute on. During a session, lid close applies configured actions; reopening attempts to resume verified owned freezes and restore saved audio. The session continues. Without an active session, lid changes do nothing." width="880">
-</p>
-
-During a session, closing the lid does each of these, and opening it tries
-to undo them. The timer keeps counting down while the lid is closed.
-
-- **Display and keyboard light go off.** Insomnia saves their brightness
-  first. With sleep turned off, macOS no longer does this by itself.
-- **Apps on the freeze list are frozen.** Freezing sends an app's processes
-  `SIGSTOP`, which pauses them until `SIGCONT` on lid open. The list starts
-  with Slack, WhatsApp and Discord. "Freeze every other app" is off by
-  default. Even when on, it skips meeting, recording and dictation apps: Zoom,
-  Teams, Webex, FaceTime, Wispr Flow, Granola, Otter, OBS and Loom.
-- **Audio is muted.** Lid open unmutes each output Insomnia muted, even if you
-  switched to another one.
-- **Low Power Mode turns on.** It turns off when the lid opens, unless a
-  battery or heat rule still needs it.
-- **Docker Desktop is frozen when no container runs.** This one is off by
-  default.
-
-On Mac laptops with Apple silicon or a T2 chip, closing the lid disconnects
-the built-in microphone in hardware. Recording a meeting with the lid closed
-needs AirPods or an external mic.
-
-[docs/lid-close.md](docs/lid-close.md) has the details: how Docker is checked,
-how brightness is restored, the one-time settings change when you upgrade,
-and how to test lid actions without closing the lid.
-
-## How recovery works
-
-<p align="center">
-  <img src="docs/assets/recovery-flow.svg" alt="The app and a launchd backstop coordinate through a shared lock and recovery journal. The app handles normal cleanup. The backstop checks every minute and attempts due recovery, leaving valid active sessions alone. Failed or unreadable recovery evidence stays on disk; saved audio needs the app and unconfirmed stopped processes need inspection." width="880">
-</p>
-
-Insomnia writes each change to a **recovery journal**, a file on disk, before
-it makes the change. Ending the session tries to undo what the journal lists.
-If the app crashes or quits, the recovery agent tries the same once the
-session's end time has passed.
-
-Some things need you:
-
-- The recovery agent can't restore audio. Open Insomnia again for that.
-- The recovery agent doesn't watch the battery or the temperature.
-- Insomnia only unfreezes a process it can prove it froze. A frozen process
-  it can't prove stays frozen until you check it.
-
-If the menu shows a recovery warning, deal with it before you leave the Mac
-alone. [docs/recovery.md](docs/recovery.md) explains each case.
-
-## Optional extras
-
-<details>
-<summary><strong>iPhone hotspot handoff and tmux</strong></summary>
-
-If the Wi-Fi drops during a session, Insomnia can join your iPhone's hotspot.
-Set System Settings > Wi-Fi > Ask to join hotspots to Automatically, then enter
-the hotspot's name and password in Insomnia's Settings. The password stays in
-your login Keychain. Insomnia asks for Location Services access, because
-macOS requires it to read Wi-Fi network names. It never reads your location.
-After you reinstall Insomnia, enter the password again.
-
-After 90 seconds without a network, Insomnia can also type `continue` into a
-tmux pane running a coding agent. It only types into panes you list in
-Settings and mark yourself:
+Yeni değişiklikleri çekin ve kurulum betiğini yeniden çalıştırın:
 
 ```bash
-tmux set-option -p -t <session:window.pane> @insomnia-nudge on
+cd insomnia-tr
+git pull
+./scripts/install.sh
 ```
 
-It doesn't press Enter unless you turn that on. Mark a pane you don't type in.
-[docs/extras.md](docs/extras.md) has the details.
+Kurulum betiği çalışan uygulamadan kapanmasını ister. Geri alınmayı bekleyen
+bir değişiklik varken uygulama kapanmayı reddeder; betik o zaman durur ve
+uygulamaya da kurtarma ajanına da dokunmaz. Parolanız her çalıştırmada bir kez
+istenir. Ayrıntılar: [docs/install.md](docs/install.md#yükseltmeler).
 
-</details>
+## Upstream değişikliklerini alma
 
-<details>
-<summary><strong>Chrome, Chromium, Arc and Comet throttling</strong></summary>
-
-These browsers slow down windows that macOS reports as hidden, which includes
-every window while the lid is closed. If a running browser lacks
-`--disable-backgrounding-occluded-windows` or
-`--disable-renderer-backgrounding`, the right-click menu offers "Relaunch
-[browser] unthrottled". It asks first, because relaunching quits the browser,
-and tabs come back only if the browser reopens them on startup. Some web apps
-may still stop with the lid closed.
-[docs/extras.md](docs/extras.md#chrome-chromium-arc-and-comet-throttling) has the
-details.
-
-</details>
-
-<details>
-<summary><strong>Configuration and privacy</strong></summary>
-
-Settings live in `~/Library/Application Support/Insomnia/config.json` and logs
-in `~/Library/Logs/Insomnia/`. Insomnia sets both folders and their files to
-owner-only permissions. It leaves symlinks and access control lists (ACLs,
-extra per-account permission entries) as they are, so another account can
-still have access through one. Logs can contain Wi-Fi names, process details
-and tmux targets, so check them before you share one.
-[docs/extras.md](docs/extras.md#configuration-and-privacy) has the details.
-
-</details>
-
-## Uninstall
-
-From your checkout:
+Özgün projedeki (upstream) yenilikleri bu çatala almak için:
 
 ```bash
-./scripts/uninstall.sh          # removes the app, the agent and the sudoers rule
-./scripts/uninstall.sh --purge  # also removes settings and logs
+git remote add upstream https://github.com/krishhgg/Insomnia.git   # yalnızca ilk seferde
+git fetch upstream
+git merge upstream/main
 ```
 
-From an unpacked release zip, run `./uninstall.sh` in its folder instead. The
-uninstaller undoes any open session first and stops if it can't.
-[docs/install.md](docs/install.md#uninstall) has the details.
+> **Uyarı:** Bu çatalda arayüz metinleri (`Sources/`), betik mesajları
+> (`scripts/install.sh`, `scripts/uninstall.sh`) ve belgeler Türkçeye
+> çevrildiği için upstream'in bu satırlarda yaptığı değişiklikler birleştirme
+> çakışmalarına (merge conflict) yol açar. Çakışan dosyaları elle birleştirin:
+> Türkçe metni koruyun, upstream'in getirdiği yeni davranışı alın ve yeni ya da
+> değişmiş İngilizce metinleri çevirin. Birleştirmeden sonra uygulamayı
+> `./scripts/install.sh` ile yeniden derleyip kurun.
 
-## Development
+## Kullanım
+
+1. **Başlatın.** Menü çubuğundaki göze tıklayın, gün, saat ve dakikayı girin ve
+   Enter'a basın.
+2. **Süre ekleyin.** Oturum sırasında göze ya da geri sayıma tıklayın.
+3. **Erken bitirin.** Geri sayımın yanındaki bitirme denetimini basılı tutun.
+4. **Ayarlar ve durum.** Göze sağ tıklayın. "Insomnia'dan Çık", Insomnia'nın
+   önce oturumu geri almasını ister; geri alınmayı bekleyen bir değişiklik
+   varken Insomnia kapanmayı reddeder. Bağlı olmayan bir çıkış aygıtı için
+   kaydedilmiş ses bunu engellemez. Insomnia o aygıtı, uygulama çalışırken
+   yeniden bağlanırsa ya da bir sonraki açılışta geri yükler.
+
+Kapağı kapatmanız gerekmez; kapağı açmak da oturumu bitirmez.
+
+Pil gücündeyken Insomnia, pil düzeyi %40 eşiğinin altına inince Düşük Güç
+Modu'nu açar ve %10 eşiğinin altında oturumu bitirir. Bunlar varsayılan
+değerlerdir. İkisini de Ayarlar'da değiştirebilirsiniz; bitirme alt sınırını 0
+yapmak pil nedeniyle bitirmeyi kapatır. Isı kuralları, Mac ciddi ölçüde
+ısındığında Düşük Güç Modu'nu açar ve kritik ısıda oturumu bitirir. Bu kurallar
+varsayılan olarak açıktır ve Ayarlar'dan kapatılabilir. Bu kuralların hepsi
+yalnızca uygulama çalışırken işler.
+
+İlk oturumunuzdan önce Ayarlar'ı gözden geçirin. Ardından başında
+durabileceğiniz kısa bir oturum çalıştırın ve sonrasında
+`~/Library/Logs/Insomnia/insomnia.log` dosyasını okuyun.
+
+## Kapak kapanınca neler olur
+
+<p align="center">
+  <img src="docs/assets/lid-actions.svg" alt="Ayarlar varsayılanlarının çizimi: dondurma listesinde Slack, WhatsApp ve Discord var, Docker'ın boşta kuralı kapalı, sesi kapatma açık. Oturum sırasında kapağın kapanması ayarlanan eylemleri uygular; kapağı yeniden açmak, Insomnia'nın yaptığı doğrulanmış dondurmaları çözmeye ve kaydedilmiş sesi geri yüklemeye çalışır. Oturum sürer. Etkin bir oturum yokken kapak değişiklikleri hiçbir şey yapmaz." width="880">
+</p>
+
+Oturum sırasında kapağı kapatmak aşağıdakilerin her birini yapar; kapağı açmak
+bunları geri almaya çalışır. Kapak kapalıyken zamanlayıcı geri saymayı sürdürür.
+
+- **Ekran ve klavye ışığı kapanır.** Insomnia önce parlaklıklarını kaydeder.
+  Uyku kapalıyken macOS bunu artık kendiliğinden yapmaz.
+- **Dondurma listesindeki uygulamalar dondurulur.** Dondurma, bir uygulamanın
+  süreçlerine `SIGSTOP` gönderir; süreçler kapak açılınca `SIGCONT`
+  gönderilene kadar duraklar. Liste Slack, WhatsApp ve Discord ile başlar.
+  "Diğer tüm uygulamaları dondur" varsayılan olarak kapalıdır. Açıkken bile
+  toplantı, kayıt ve dikte uygulamalarını atlar: Zoom, Teams, Webex, FaceTime,
+  Wispr Flow, Granola, Otter, OBS ve Loom.
+- **Ses kapatılır.** Kapağı açmak, Insomnia'nın sesini kapattığı her çıkışın
+  sesini, siz başka bir çıkışa geçmiş olsanız bile yeniden açar.
+- **Düşük Güç Modu açılır.** Bir pil ya da ısı kuralı hâlâ gerektirmiyorsa
+  kapak açılınca kapanır.
+- **Çalışan kapsayıcı yoksa Docker Desktop duraklatılır.** Bu seçenek
+  varsayılan olarak kapalıdır.
+
+Apple çipli ya da T2 çipli Mac dizüstü bilgisayarlarda kapağı kapatmak,
+yerleşik mikrofonun bağlantısını donanım düzeyinde keser. Kapak kapalıyken bir
+toplantıyı kaydetmek için AirPods ya da harici bir mikrofon gerekir.
+
+[docs/lid-close.md](docs/lid-close.md) ayrıntıları içerir: Docker'ın nasıl
+denetlendiği, parlaklığın nasıl geri yüklendiği, yükseltmede bir kez yapılan
+ayar değişikliği ve kapak eylemlerinin kapağı kapatmadan nasıl denendiği.
+
+## Kurtarma nasıl çalışır
+
+<p align="center">
+  <img src="docs/assets/recovery-flow.svg" alt="Uygulama ve bir launchd kurtarma ajanı, ortak bir kilit ve kurtarma kayıt defteri üzerinden eşgüdüm sağlar. Normal temizliği uygulama yapar. Ajan her dakika denetler ve zamanı gelmiş kurtarmayı dener; geçerli ve etkin oturumlara dokunmaz. Başarısız ya da okunamayan kurtarma kanıtı diskte kalır; kaydedilmiş ses için uygulama gerekir, doğrulanamayan durdurulmuş süreçler ise incelenmelidir." width="880">
+</p>
+
+Insomnia her değişikliği yapmadan önce bir **kurtarma kayıt defterine**, yani
+diskteki bir dosyaya yazar. Oturumu bitirmek, kayıt defterinde listelenenleri
+geri almayı dener. Uygulama çökerse ya da kapanırsa, oturumun bitiş zamanı
+geçtikten sonra kurtarma ajanı aynısını dener.
+
+Bazı durumlarda sizin ilgilenmeniz gerekir:
+
+- Kurtarma ajanı sesi geri yükleyemez. Bunun için Insomnia'yı yeniden açın.
+- Kurtarma ajanı pili ya da sıcaklığı izlemez.
+- Insomnia yalnızca dondurduğunu kanıtlayabildiği bir süreci çözer.
+  Kanıtlayamadığı dondurulmuş bir süreç, siz denetleyene kadar donmuş kalır.
+
+Menüde bir kurtarma uyarısı görünürse Mac'i başında kimse olmadan bırakmadan
+önce onunla ilgilenin. [docs/recovery.md](docs/recovery.md) her durumu
+açıklar.
+
+## Ek özellikler
+
+<details>
+<summary><strong>iPhone kişisel erişim noktasına geçiş ve tmux</strong></summary>
+
+Oturum sırasında Wi-Fi bağlantısı koparsa Insomnia, iPhone'unuzun kişisel
+erişim noktasına (hotspot) katılabilir. Sistem Ayarları > Wi-Fi >
+"Erişim noktalarına katılmak için sor" (Ask to join hotspots) seçeneğini
+Otomatik yapın, ardından hotspot adını ve parolasını Insomnia'nın Ayarlar
+penceresine girin. Parola giriş anahtar zincirinizde saklanır. macOS, Wi-Fi
+ağ adlarını okumak için Konum Servisleri iznini şart koştuğundan Insomnia bu
+izni ister. Konumunuzu hiçbir zaman okumaz. Insomnia'yı yeniden kurduktan sonra
+parolayı yeniden girin.
+
+Ağ 90 saniye boyunca kesik kalırsa Insomnia, bir kodlama ajanının çalıştığı bir
+tmux bölmesine `continue` da yazabilir. Yalnızca Ayarlar'da listelediğiniz ve
+kendiniz işaretlediğiniz bölmelere yazar:
+
+```bash
+tmux set-option -p -t <oturum:pencere.bölme> @insomnia-nudge on
+```
+
+Siz açmadıkça Enter'a basmaz. İçine yazı yazmadığınız bir bölmeyi işaretleyin.
+[docs/extras.md](docs/extras.md) ayrıntıları içerir.
+
+</details>
+
+<details>
+<summary><strong>Chrome, Chromium, Arc ve Comet kısıtlaması</strong></summary>
+
+Bu tarayıcılar, macOS'in gizli olarak bildirdiği pencereleri yavaşlatır; kapak
+kapalıyken bu, tüm pencereler demektir. Çalışan bir tarayıcıda
+`--disable-backgrounding-occluded-windows` ya da
+`--disable-renderer-backgrounding` yoksa sağ tıklama menüsü "Kısıtlamasız
+yeniden başlat: [tarayıcı]" seçeneğini sunar. Yeniden başlatma tarayıcıyı
+kapattığı için önce sorar; sekmeler yalnızca tarayıcı açılışta onları yeniden
+açıyorsa geri gelir. Bazı web uygulamaları kapak kapalıyken yine de durabilir.
+[docs/extras.md](docs/extras.md#chrome-chromium-arc-ve-comet-kısıtlaması)
+ayrıntıları içerir.
+
+</details>
+
+<details>
+<summary><strong>Yapılandırma ve gizlilik</strong></summary>
+
+Ayarlar `~/Library/Application Support/Insomnia/config.json` dosyasında,
+günlükler `~/Library/Logs/Insomnia/` klasöründe tutulur. Insomnia iki klasörü
+ve içlerindeki dosyaları yalnızca sahibinin erişebileceği izinlere ayarlar.
+Sembolik bağlantılara ve erişim denetim listelerine (ACL'ler, hesap başına ek
+izin girdileri) dokunmaz; bu yüzden başka bir hesap bunlardan biri aracılığıyla
+yine de erişebilir. Günlükler Wi-Fi adları, süreç ayrıntıları ve tmux hedefleri
+içerebilir; bu yüzden bir günlüğü paylaşmadan önce gözden geçirin.
+[docs/extras.md](docs/extras.md#yapılandırma-ve-gizlilik) ayrıntıları içerir.
+
+</details>
+
+## Kaldırma
+
+Çalışma kopyanızdan:
+
+```bash
+./scripts/uninstall.sh          # uygulamayı, ajanı ve sudoers kuralını kaldırır
+./scripts/uninstall.sh --purge  # ayarları ve günlükleri de kaldırır
+```
+
+Kaldırma betiği önce açık kalan oturumu geri alır ve bunu yapamazsa hiçbir şey
+kaldırmadan durur. sudoers kuralını kaldırmak için parolanızı ister.
+[docs/install.md](docs/install.md#kaldırma) ayrıntıları içerir.
+
+## Geliştirme
 
 ```bash
 swift build
 swift test
 ```
 
-The tests use fakes and temporary folders, so they never change your power
-settings. See [Contributing](CONTRIBUTING.md), [Security reporting](SECURITY.md),
-[Release validation](docs/release-validation.md) and [Design notes](docs/spec.md).
+Testler sahte araçlar ve geçici klasörler kullanır; bu yüzden güç ayarlarınızı
+hiçbir zaman değiştirmez. Tasarım notları [docs/spec.md](docs/spec.md),
+gerçek Mac doğrulamaları [docs/release-validation.md](docs/release-validation.md)
+dosyasındadır (ikisi de İngilizce).
 
-## Star history
+## Lisans
 
-<a href="https://www.star-history.com/?repos=krishhgg%2FInsomnia&amp;type=date&amp;legend=top-left">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=krishhgg/insomnia&amp;type=date&amp;theme=dark&amp;legend=top-left" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=krishhgg/insomnia&amp;type=date&amp;legend=top-left" />
-    <img alt="Star history for krishhgg/Insomnia" src="https://api.star-history.com/svg?repos=krishhgg/insomnia&amp;type=date&amp;legend=top-left" />
-  </picture>
-</a>
-
-## License
-
-[MIT](LICENSE)
+[MIT](LICENSE). Telif hakkı © 2026 Krish Garg. Bu Türkçe çatal da aynı lisans
+altındadır.

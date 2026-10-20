@@ -38,8 +38,8 @@ set -euo pipefail
 # INSOMNIA_HOME would make the backstop run here act on one tree while the
 # app is installed against another, so refuse rather than guess.
 if [[ -n "${INSOMNIA_HOME:-}" ]]; then
-  echo "INSOMNIA_HOME is set ($INSOMNIA_HOME). install.sh only supports the standard layout under ~/Library;" >&2
-  echo "unset INSOMNIA_HOME and rerun. Nothing was changed." >&2
+  echo "INSOMNIA_HOME ayarlanmış ($INSOMNIA_HOME). install.sh yalnızca ~/Library altındaki standart düzeni destekler;" >&2
+  echo "INSOMNIA_HOME değişkenini kaldırıp (unset) yeniden çalıştırın. Hiçbir şey değiştirilmedi." >&2
   exit 1
 fi
 
@@ -108,7 +108,7 @@ CANDIDATE_DIR=""
 WORK=""
 
 step() { printf '\n==> %s\n' "$*"; }
-usage() { echo "usage: $0 [--app /path/to/Insomnia.app [--allow-unverified-origin]]" >&2; }
+usage() { echo "kullanım: $0 [--app /yol/Insomnia.app [--allow-unverified-origin]]" >&2; }
 # A command for the user to paste, each word quoted for the shell, so a space,
 # quote or $ in a path stays part of that path.
 command_line() { local line; line="$(printf '%q ' "$@")"; printf '%s' "${line% }"; }
@@ -200,9 +200,9 @@ supervise() { # base command args...
 # How a bounded call's exit status reads in a message.
 call_result() { # status
   if (( $1 == 124 )); then
-    printf 'did not answer within %ss' "$CALL_TIMEOUT_SECONDS"
+    printf '%s saniye içinde yanıt vermedi' "$CALL_TIMEOUT_SECONDS"
   else
-    printf 'exited %s' "$1"
+    printf '%s çıkış koduyla sonlandı' "$1"
   fi
 }
 
@@ -214,7 +214,7 @@ loaded_state() { # -> yes | no | unknown:<rc>
   local rc=0
   bounded "$LAUNCHCTL" print "gui/$UID_NUM/$LABEL" || rc=$?
   if (( rc == 124 )); then
-    echo "'launchctl print gui/$UID_NUM/$LABEL' did not answer within ${CALL_TIMEOUT_SECONDS}s; whether the job is loaded is unknown (unknown:124)." >&2
+    echo "'launchctl print gui/$UID_NUM/$LABEL' ${CALL_TIMEOUT_SECONDS} saniye içinde yanıt vermedi; görevin yüklü olup olmadığı bilinmiyor (unknown:124)." >&2
   fi
   case "$rc" in
     0) echo yes ;;
@@ -230,16 +230,16 @@ while (( $# )); do
     --app) [[ $# -ge 2 ]] || { usage; exit 2; }; PREBUILT="$2"; shift 2 ;;
     --allow-unverified-origin) ALLOW_UNVERIFIED_ORIGIN=1; shift ;;
     -h|--help) usage; exit 0 ;;
-    *) echo "unknown argument: $1" >&2; usage; exit 2 ;;
+    *) echo "bilinmeyen argüman: $1" >&2; usage; exit 2 ;;
   esac
 done
 if (( ALLOW_UNVERIFIED_ORIGIN )) && [[ -z "$PREBUILT" ]]; then
-  echo "--allow-unverified-origin applies to --app only; a source build has no download to vouch for." >&2
+  echo "--allow-unverified-origin yalnızca --app ile geçerlidir; kaynaktan derlemede kökenine kefil olunacak bir indirme yoktur." >&2
   usage
   exit 2
 fi
 if [[ "${INSOMNIA_LID_SIMULATION:-}" == 1 && -n "$PREBUILT" ]]; then
-  echo "INSOMNIA_LID_SIMULATION=1 applies to a source build only; the bundle given with --app is already compiled. Nothing was changed." >&2
+  echo "INSOMNIA_LID_SIMULATION=1 yalnızca kaynaktan derlemede geçerlidir; --app ile verilen paket zaten derlenmiş. Hiçbir şey değiştirilmedi." >&2
   exit 2
 fi
 
@@ -251,7 +251,7 @@ fi
 # delete the staged build.
 move_bundle() { # from to
   if [[ -e "$2" || -L "$2" ]]; then
-    echo "not moving $1: $2 already exists" >&2
+    echo "$1 taşınmıyor: $2 zaten var" >&2
     return 1
   fi
   "$MV" "$1" "$2"
@@ -270,7 +270,7 @@ pmset_rule_check() { # pmset arguments
 }
 # The part of a message about a sudo check that is still running.
 sudo_alive_note() {
-  printf "It was sent SIGTERM and is still running as pid %s. It is not killed, because killing sudo could leave what it runs as root behind" "${BOUNDED_PID:-?}"
+  printf "Bu sudo sürecine SIGTERM gönderildi ve süreç hâlâ çalışıyor (pid %s). Zorla sonlandırılmıyor, çünkü sudo'yu öldürmek root olarak çalıştırdığı işlemi geride bırakabilir" "${BOUNDED_PID:-?}"
 }
 pmset_rule_effective() {
   pmset_rule_check -a disablesleep 1 \
@@ -298,18 +298,18 @@ WORK="$("$MKTEMP" -d "${TMPDIR:-/tmp}/insomnia-install.XXXXXX")"
 #    Built or verified before the password prompt: nothing on the machine has
 #    changed when this step fails.
 if [[ -n "$PREBUILT" ]]; then
-  step "Checking the prebuilt bundle $PREBUILT"
+  step "Hazır derlenmiş paket denetleniyor: $PREBUILT"
   # Release bundles are built for arm64 only (the Release workflow runs on
   # Apple Silicon). hw.optional.arm64 describes the hardware, so a shell
   # running under Rosetta on an Apple Silicon Mac still reads 1; an Intel
   # Mac reads 0 or has no such key.
   arm64="$("$SYSCTL" -n hw.optional.arm64 2>/dev/null || true)"
   if [[ "$arm64" != 1 ]]; then
-    echo "Release bundles of Insomnia run on Apple Silicon Macs only, and this Mac is not one ('sysctl -n hw.optional.arm64' gave ${arm64:-no value}). Build and install from a source checkout instead (README, Build from source). Nothing was changed." >&2
+    echo "Insomnia sürüm paketleri yalnızca Apple Silicon Mac'lerde çalışır ve bu Mac öyle değil ('sysctl -n hw.optional.arm64' sonucu: ${arm64:-değer yok}). Bunun yerine kaynak kod kopyasından derleyip kurun (README, Kurulum). Hiçbir şey değiştirilmedi." >&2
     exit 1
   fi
   if [[ ! -d "$PREBUILT" || ! -f "$PREBUILT/Contents/Info.plist" ]]; then
-    echo "$PREBUILT is not an app bundle (no Contents/Info.plist). Nothing was changed." >&2
+    echo "$PREBUILT bir uygulama paketi değil (Contents/Info.plist yok). Hiçbir şey değiştirilmedi." >&2
     exit 1
   fi
   # Every check below runs on a private copy, and that copy is what step 3
@@ -319,7 +319,7 @@ if [[ -n "$PREBUILT" ]]; then
   BUILD_DIR="$("$MKTEMP" -d)"
   CHECKED_APP="$BUILD_DIR/Insomnia.app"
   if ! "$DITTO" "$PREBUILT" "$CHECKED_APP"; then
-    echo "could not copy $PREBUILT to check it. Nothing was changed." >&2
+    echo "denetlemek için kopyalanamadı: $PREBUILT. Hiçbir şey değiştirilmedi." >&2
     exit 1
   fi
   INFO_PLIST="$CHECKED_APP/Contents/Info.plist"
@@ -327,22 +327,22 @@ if [[ -n "$PREBUILT" ]]; then
   # to be intact. --strict rejects what newer codesign would, --deep covers
   # nested code should a later build add any.
   if ! "$CODESIGN" --verify --strict --deep "$CHECKED_APP"; then
-    echo "$PREBUILT fails 'codesign --verify --strict --deep': the download is damaged or was modified. Nothing was changed." >&2
-    echo "Check the zip against SHA256SUMS and 'gh attestation verify' (README, Install) and download it again." >&2
+    echo "$PREBUILT 'codesign --verify --strict --deep' denetiminden geçemiyor: indirilen dosya bozuk ya da değiştirilmiş. Hiçbir şey değiştirilmedi." >&2
+    echo "Zip dosyasını SHA256SUMS ve 'gh attestation verify' ile denetleyin (docs/install.md) ve yeniden indirin." >&2
     exit 1
   fi
   PREBUILT_ID="$("$PLUTIL" -extract CFBundleIdentifier raw -o - "$INFO_PLIST" 2>/dev/null || true)"
   if [[ "$PREBUILT_ID" != "$BUNDLE_ID" ]]; then
-    echo "$PREBUILT has bundle identifier '${PREBUILT_ID:-<none>}', not $BUNDLE_ID. Nothing was changed." >&2
+    echo "$PREBUILT için paket tanımlayıcısı '${PREBUILT_ID:-<yok>}'; beklenen: $BUNDLE_ID. Hiçbir şey değiştirilmedi." >&2
     exit 1
   fi
   PREBUILT_VERSION="$("$PLUTIL" -extract CFBundleShortVersionString raw -o - "$INFO_PLIST" 2>/dev/null || true)"
   if [[ ! "$PREBUILT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    echo "$PREBUILT has no usable CFBundleShortVersionString ('${PREBUILT_VERSION:-<none>}'). Nothing was changed." >&2
+    echo "$PREBUILT içinde kullanılabilir bir CFBundleShortVersionString yok ('${PREBUILT_VERSION:-<yok>}'). Hiçbir şey değiştirilmedi." >&2
     exit 1
   fi
   if [[ ! -f "$CHECKED_APP/Contents/Resources/backstop.sh" ]]; then
-    echo "$PREBUILT has no Contents/Resources/backstop.sh; the recovery agent needs the sealed copy. Nothing was changed." >&2
+    echo "$PREBUILT içinde Contents/Resources/backstop.sh yok; kurtarma ajanı mühürlü kopyaya ihtiyaç duyar. Hiçbir şey değiştirilmedi." >&2
     exit 1
   fi
   # Origin. The checks above show the bundle is intact, not where it came
@@ -354,17 +354,18 @@ if [[ -n "$PREBUILT" ]]; then
   # check, so every prebuilt bundle needs --allow-unverified-origin, the flag
   # that says they did.
   if (( ALLOW_UNVERIFIED_ORIGIN )); then
-    echo "WARNING: the origin of Insomnia $PREBUILT_VERSION is not verified. Its signature shows the bundle is intact, not who made it."
-    echo "--allow-unverified-origin: installing it anyway. Its backstop.sh will run as you at login and every 60 s."
-    echo "Continue only if you checked the zip yourself with SHA256SUMS and 'gh attestation verify' (README, Install)."
-    echo "Releases are not notarized, so macOS blocks the first launch of a downloaded one until you allow it in System Settings > Privacy & Security."
+    echo "UYARI: Insomnia $PREBUILT_VERSION sürümünün kökeni doğrulanmadı. İmzası paketin bozulmadığını gösterir, onu kimin yaptığını değil."
+    echo "--allow-unverified-origin: yine de kuruluyor. İçindeki backstop.sh girişte ve her 60 saniyede bir sizin hesabınızla çalışacak."
+    echo "Yalnızca zip dosyasını SHA256SUMS ve 'gh attestation verify' ile kendiniz denetlediyseniz devam edin (docs/install.md)."
+    echo "Sürümler Apple onaylı (notarized) değildir; bu yüzden macOS, indirilen bir sürümün ilk açılışını siz Sistem Ayarları > Gizlilik ve Güvenlik bölümünde izin verene dek engeller."
   else
     cat >&2 <<REFUSE
-The origin of Insomnia $PREBUILT_VERSION at $PREBUILT is not verified. Its signature shows the bundle is
-intact, not who made it: anyone can sign a bundle with this identifier, and this install.sh cannot tell
-where it came from. Installing it would run its backstop.sh as you at login and every 60 s. Nothing was changed.
-Verify the zip yourself first ('shasum -a 256 -c SHA256SUMS' and 'gh attestation verify' with --signer-workflow,
-see the README), then rerun with the flag that says so:
+$PREBUILT konumundaki Insomnia $PREBUILT_VERSION sürümünün kökeni doğrulanmadı. İmzası paketin
+bozulmadığını gösterir, onu kimin yaptığını değil: herkes bu tanımlayıcıyla bir paket imzalayabilir ve
+bu install.sh paketin nereden geldiğini bilemez. Kurulursa içindeki backstop.sh girişte ve her 60 saniyede
+bir sizin hesabınızla çalışır. Hiçbir şey değiştirilmedi.
+Önce zip dosyasını kendiniz doğrulayın ('shasum -a 256 -c SHA256SUMS' ve --signer-workflow ile
+'gh attestation verify'; bkz. docs/install.md), ardından bunu yaptığınızı belirten bayrakla yeniden çalıştırın:
   $(command_line "$0" --allow-unverified-origin --app "$PREBUILT")
 REFUSE
     exit 1
@@ -372,9 +373,9 @@ REFUSE
   SOURCE_APP="$CHECKED_APP"
 else
   if ! in_checkout || [[ ! -f "$SCRIPT_DIR/build-app.sh" ]]; then
-    echo "$SCRIPT_DIR is not the scripts folder of a source checkout (build-app.sh beside this script, Package.swift one level up), so there is nothing to build from. To install the bundle of a release zip, pass it with --app (README, Install). Nothing was changed." >&2
+    echo "$SCRIPT_DIR bir kaynak kod kopyasının scripts klasörü değil (bu betiğin yanında build-app.sh, bir üst klasörde Package.swift olmalı); bu yüzden derlenecek bir kaynak yok. Bir sürüm zip dosyasındaki paketi kurmak için onu --app ile verin (docs/install.md). Hiçbir şey değiştirilmedi." >&2
     if [[ -e "$SCRIPT_DIR/build-app.sh" ]] && ! in_checkout; then
-      echo "$SCRIPT_DIR/build-app.sh was not run: a release zip has no build-app.sh, so it was added after the zip was unpacked." >&2
+      echo "$SCRIPT_DIR/build-app.sh çalıştırılmadı: sürüm zip dosyalarında build-app.sh bulunmaz, yani bu dosya zip açıldıktan sonra eklenmiş." >&2
     fi
     exit 1
   fi
@@ -387,7 +388,7 @@ fi
 #    The password prompt comes first: until the rule is installed and proven
 #    effective, the running app is not asked to quit and neither the bundle
 #    (backstop.sh included) nor the LaunchAgent are touched.
-step "Writing $SUDOERS (requires your password once)"
+step "$SUDOERS yazılıyor (parolanız bir kez istenecek)"
 TMP_SUDOERS="$("$MKTEMP")"
 cat > "$TMP_SUDOERS" <<SUDO
 # Installed by Insomnia install.sh. Exactly four commands, nothing else.
@@ -399,7 +400,7 @@ SUDO
 if "$SUDO" visudo -cf "$TMP_SUDOERS" >/dev/null; then
   "$SUDO" install -m 0440 -o root -g wheel "$TMP_SUDOERS" "$SUDOERS"
 else
-  echo "sudoers file failed validation (or sudo did not authenticate); not installed. Nothing was changed." >&2
+  echo "sudoers dosyası doğrulamadan geçemedi (ya da sudo kimlik doğrulaması başarısız oldu); kurulmadı. Hiçbir şey değiştirilmedi." >&2
   exit 1
 fi
 # The backstop cannot undo anything without the rule, so stop here. Checked
@@ -407,15 +408,15 @@ fi
 rule_rc=0
 pmset_rule_effective || rule_rc=$?
 if (( rule_rc == 0 )); then
-  echo "sudoers rule verified"
+  echo "sudoers kuralı doğrulandı"
 elif (( rule_rc == 124 )); then
-  echo "'sudo -n -l', which checks the rule, did not answer within ${CALL_TIMEOUT_SECONDS}s, so the rule in $SUDOERS is not verified. The app (with backstop.sh) and the LaunchAgent were not touched; rerun once sudo answers." >&2
+  echo "Kuralı denetleyen 'sudo -n -l' ${CALL_TIMEOUT_SECONDS} saniye içinde yanıt vermedi; bu yüzden $SUDOERS içindeki kural doğrulanmadı. Uygulama (backstop.sh dahil) ve LaunchAgent olduğu gibi bırakıldı; sudo yanıt verdiğinde yeniden çalıştırın." >&2
   exit 1
 elif (( rule_rc == 125 )); then
-  echo "'sudo -n -l', which checks the rule, did not answer within ${CALL_TIMEOUT_SECONDS}s, so the rule in $SUDOERS is not verified. $(sudo_alive_note). The app (with backstop.sh) and the LaunchAgent were not touched; rerun once it has ended (or stop it with 'sudo kill ${BOUNDED_PID:-<pid>}')." >&2
+  echo "Kuralı denetleyen 'sudo -n -l' ${CALL_TIMEOUT_SECONDS} saniye içinde yanıt vermedi; bu yüzden $SUDOERS içindeki kural doğrulanmadı. $(sudo_alive_note). Uygulama (backstop.sh dahil) ve LaunchAgent olduğu gibi bırakıldı; süreç bittiğinde yeniden çalıştırın (ya da 'sudo kill ${BOUNDED_PID:-<pid>}' ile durdurun)." >&2
   exit 1
 else
-  echo "'sudo -n pmset' is still not permitted; check $SUDOERS. The app (with backstop.sh) and the LaunchAgent were not touched." >&2
+  echo "'sudo -n pmset' hâlâ izinli değil; $SUDOERS dosyasını denetleyin. Uygulama (backstop.sh dahil) ve LaunchAgent olduğu gibi bırakıldı." >&2
   exit 1
 fi
 
@@ -424,20 +425,20 @@ fi
 #    replaced in step 6, in the same locked step as the LaunchAgent: the
 #    agent pins one build's requirement, so the bundle at $APP and the loaded
 #    agent must be a matching pair before, during and after a failed run.
-step "Staging Insomnia.app"
+step "Insomnia.app hazırlanıyor"
 # Ask the app to quit and wait until it has actually exited. It refuses to
 # quit while it has unresolved recovery work; that refusal stands (no pkill),
 # and nothing of the old install is overwritten while it is still running.
 if "$PGREP" -x Insomnia >/dev/null 2>&1; then
-  echo "Insomnia is running; quitting it first (this ends any session)."
+  echo "Insomnia çalışıyor; önce kapatılıyor (bu, süren oturumu bitirir)."
   "$OSASCRIPT" -e 'tell application id "com.kgarg.insomnia" to quit' >/dev/null 2>&1 || true
   for (( i = 0; i < QUIT_WAIT_SECONDS; i++ )); do
     "$PGREP" -x Insomnia >/dev/null 2>&1 || break
     sleep 1
   done
   if "$PGREP" -x Insomnia >/dev/null 2>&1; then
-    echo "Insomnia is still running after ${QUIT_WAIT_SECONDS}s (it may be refusing to quit until its own recovery finishes)." >&2
-    echo "Let it finish or quit it from its menu, then rerun. $SUDOERS is installed; the app (with backstop.sh) and the LaunchAgent were not touched." >&2
+    echo "Insomnia ${QUIT_WAIT_SECONDS} saniye sonra hâlâ çalışıyor (kendi kurtarması bitene dek kapanmayı reddediyor olabilir)." >&2
+    echo "Bitmesini bekleyin ya da menüsünden Insomnia'dan çıkın, ardından yeniden çalıştırın. $SUDOERS kuruldu; uygulama (backstop.sh dahil) ve LaunchAgent olduğu gibi bırakıldı." >&2
     exit 1
   fi
 fi
@@ -460,7 +461,7 @@ NEW_APP="$STAGE/Insomnia.app"
 # Extended attributes, the quarantine flag among them, stay. chmod -R
 # skips symbolic links.
 if ! "$CHMOD" -R go-w "$NEW_APP" || ! "$CHMOD" -R -N "$NEW_APP"; then
-  echo "could not remove group and other write permission and ACLs from the staged bundle $NEW_APP (see the error above). $SUDOERS is installed; the app at $APP and the LaunchAgent were not touched." >&2
+  echo "hazırlanan paketten ($NEW_APP) grup ve diğer kullanıcıların yazma izni ile ACL'ler kaldırılamadı (yukarıdaki hataya bakın). $SUDOERS kuruldu; $APP konumundaki uygulama ve LaunchAgent olduğu gibi bırakıldı." >&2
   exit 1
 fi
 # backstop.sh was sealed into the bundle before signing (build-app.sh), so
@@ -469,7 +470,7 @@ fi
 # copy; an edited script fails that check. No executable is left in a
 # writable directory.
 BACKSTOP="$NEW_APP/Contents/Resources/backstop.sh"
-echo "signed $("$CODESIGN" -dv "$NEW_APP" 2>&1 | grep -i identifier || true)"
+echo "imzalandı: $("$CODESIGN" -dv "$NEW_APP" 2>&1 | grep -i identifier || true)"
 # What the agent pins: the bundle's designated requirement, in the form
 # `codesign -d -r-` prints (an implicit one carries a leading "# "). For an
 # ad-hoc signature, which source builds and releases have, that is the cdhash
@@ -480,19 +481,19 @@ echo "signed $("$CODESIGN" -dv "$NEW_APP" 2>&1 | grep -i identifier || true)"
 # Security framework (CodeRequirement.swift) to recognise this plist.
 REQUIREMENT="$("$CODESIGN" -d -r- "$NEW_APP" 2>&1 | sed -n 's/^#\{0,1\} *designated => //p' | head -n 1)"
 if [[ -z "$REQUIREMENT" ]]; then
-  echo "could not read the designated requirement of the new bundle ('codesign -d -r-'); the LaunchAgent cannot pin it. $SUDOERS is installed; the app at $APP and the LaunchAgent were not touched." >&2
+  echo "yeni paketin belirlenmiş gereksinimi (designated requirement) okunamadı ('codesign -d -r-'); LaunchAgent onu sabitleyemez. $SUDOERS kuruldu; $APP konumundaki uygulama ve LaunchAgent olduğu gibi bırakıldı." >&2
   exit 1
 fi
 # The check the agent will run every minute, run once here so a bundle the
 # agent would refuse is caught now instead of at the first recovery.
 if ! "$CODESIGN" --verify --strict "-R=$REQUIREMENT" "$NEW_APP"; then
-  echo "the new bundle does not satisfy its own requirement ($REQUIREMENT); the LaunchAgent would never run backstop.sh. $SUDOERS is installed; the app at $APP and the LaunchAgent were not touched." >&2
+  echo "yeni paket kendi gereksinimini karşılamıyor ($REQUIREMENT); LaunchAgent, backstop.sh betiğini hiçbir zaman çalıştırmazdı. $SUDOERS kuruldu; $APP konumundaki uygulama ve LaunchAgent olduğu gibi bırakıldı." >&2
   exit 1
 fi
-echo "LaunchAgent will require: $REQUIREMENT"
+echo "LaunchAgent şu gereksinimi arayacak: $REQUIREMENT"
 
 # 4. Directories -------------------------------------------------------------
-step "Creating $APP_SUPPORT, $LOG_DIR and $LAUNCH_AGENTS"
+step "Klasörler oluşturuluyor: $APP_SUPPORT, $LOG_DIR ve $LAUNCH_AGENTS"
 "$MKDIR" -p "$APP_SUPPORT" "$LOG_DIR" "$LAUNCH_AGENTS"
 
 # 5. Recovery and LaunchAgent replacement are one transaction under the
@@ -501,14 +502,14 @@ step "Creating $APP_SUPPORT, $LOG_DIR and $LAUNCH_AGENTS"
 #    and the bootout of the old job. The backstop inherits fd 9 and shares
 #    the lock instead of waiting on it. The lock file is never unlinked or
 #    replaced, so every party keeps locking the same inode.
-step "Taking the recovery lock"
+step "Kurtarma kilidi alınıyor"
 LOCK="$APP_SUPPORT/.recovery.lock"
 exec 9<>"$LOCK"
 lock_rc=0
 "$LOCKF" -t "$LOCK_TIMEOUT_SECONDS" 9 2>/dev/null || lock_rc=$?
 if (( lock_rc != 0 )); then
-  echo "The recovery lock $LOCK is held by another process (the app or a running backstop)." >&2
-  echo "Wait a minute and rerun. $SUDOERS is installed; the app at $APP and the LaunchAgent were not touched." >&2
+  echo "Kurtarma kilidi ($LOCK) başka bir sürecin elinde (uygulama ya da çalışan bir backstop.sh)." >&2
+  echo "Bir dakika bekleyip yeniden çalıştırın. $SUDOERS kuruldu; $APP konumundaki uygulama ve LaunchAgent olduğu gibi bırakıldı." >&2
   exit 75
 fi
 # From here on every sudo, pgrep, launchctl and codesign call goes through
@@ -519,10 +520,10 @@ fi
 pgrep_rc=0
 bounded "$PGREP" -x Insomnia || pgrep_rc=$?
 if (( pgrep_rc == 0 )); then
-  echo "Insomnia started again; quit it and rerun. The app at $APP and the LaunchAgent were not touched." >&2
+  echo "Insomnia yeniden açıldı; Insomnia'dan çıkıp yeniden çalıştırın. $APP konumundaki uygulama ve LaunchAgent olduğu gibi bırakıldı." >&2
   exit 1
 elif (( pgrep_rc != 1 )); then
-  echo "pgrep $(call_result "$pgrep_rc"), so whether Insomnia started again is unknown. The app at $APP and the LaunchAgent were not touched; rerun." >&2
+  echo "pgrep $(call_result "$pgrep_rc"); bu yüzden Insomnia'nın yeniden açılıp açılmadığı bilinmiyor. $APP konumundaki uygulama ve LaunchAgent olduğu gibi bırakıldı; yeniden çalıştırın." >&2
   exit 1
 fi
 # The rule was verified in step 2, before this run waited for the lock. An
@@ -536,35 +537,36 @@ pmset_rule_effective || rule_rc=$?
 if (( rule_rc == 124 )); then
   cat >&2 <<FAIL
 
-Install stopped: 'sudo -n -l', which checks the rule in $SUDOERS again now that
-this run holds the recovery lock, did not answer within ${CALL_TIMEOUT_SECONDS}s. The check
-stopped on SIGTERM and this run exits, which lets go of the lock, so the app and
-the LaunchAgent's backstop can take it again and undo a session left over. The
-app at $APP and the LaunchAgent were not touched; the new build was discarded.
-Rerun this script once sudo answers.
+Kurulum durduruldu: bu çalıştırma kurtarma kilidini aldıktan sonra $SUDOERS içindeki
+kuralı yeniden denetleyen 'sudo -n -l', ${CALL_TIMEOUT_SECONDS} saniye içinde yanıt vermedi.
+Denetim SIGTERM ile durdu ve bu çalıştırma sonlanıyor; böylece kilit bırakılır ve hem
+uygulama hem de LaunchAgent üzerinden çalışan backstop.sh kilidi yeniden alıp geride
+kalmış bir oturumu geri alabilir. $APP konumundaki uygulama ve LaunchAgent olduğu gibi
+bırakıldı; yeni derleme atıldı. sudo yanıt verdiğinde bu betiği yeniden çalıştırın.
 FAIL
   exit 1
 elif (( rule_rc == 125 )); then
   cat >&2 <<FAIL
 
-Install stopped: 'sudo -n -l', which checks the rule in $SUDOERS again now that
-this run holds the recovery lock, did not answer within ${CALL_TIMEOUT_SECONDS}s. $(sudo_alive_note).
-It keeps the recovery lock until it ends, so until then the app cannot start a
-session and the LaunchAgent's backstop cannot undo one. If it does not end by
-itself, stop it:
+Kurulum durduruldu: bu çalıştırma kurtarma kilidini aldıktan sonra $SUDOERS içindeki
+kuralı yeniden denetleyen 'sudo -n -l', ${CALL_TIMEOUT_SECONDS} saniye içinde yanıt vermedi. $(sudo_alive_note).
+Süreç bitene dek kurtarma kilidini tutar; o zamana kadar uygulama oturum başlatamaz,
+LaunchAgent üzerinden çalışan backstop.sh de bir oturumu geri alamaz. Kendiliğinden
+bitmezse durdurun:
   sudo kill ${BOUNDED_PID:-<pid>}
-The app at $APP and the LaunchAgent were not touched; the new build was
-discarded. Rerun this script once it has ended.
+$APP konumundaki uygulama ve LaunchAgent olduğu gibi bırakıldı; yeni derleme atıldı.
+Süreç bittiğinde bu betiği yeniden çalıştırın.
 FAIL
   exit 1
 elif (( rule_rc != 0 )); then
   cat >&2 <<FAIL
 
-Install stopped: 'sudo -n pmset' was permitted when $SUDOERS was installed above,
-but is not now that this run holds the recovery lock. Something removed or changed
-the rule while this run waited (uninstall.sh removes it under the same lock), and
-without it no session can undo pmset. The app at $APP and the LaunchAgent were not
-touched; the new build was discarded. Rerun this script to install the rule again.
+Kurulum durduruldu: 'sudo -n pmset', $SUDOERS yukarıda kurulduğunda izinliydi; ama bu
+çalıştırma kurtarma kilidini aldıktan sonra artık izinli değil. Bu çalıştırma beklerken
+bir şey kuralı kaldırdı ya da değiştirdi (uninstall.sh onu aynı kilit altında kaldırır) ve
+kural olmadan hiçbir oturum pmset değişikliğini geri alamaz. $APP konumundaki uygulama ve
+LaunchAgent olduğu gibi bırakıldı; yeni derleme atıldı. Kuralı yeniden kurmak için bu
+betiği yeniden çalıştırın.
 FAIL
   exit 1
 fi
@@ -585,16 +587,17 @@ if [[ -d "$PREVIOUS_APP" && ! -e "$APP" ]]; then
   if ! move_bundle "$PREVIOUS_APP" "$APP"; then
     cat >&2 <<FAIL
 
-Install stopped: nothing is at $APP, and putting back the previous app that an
-interrupted run set aside at $PREVIOUS_APP failed. It stays there; nothing else
-was moved or unloaded, and the new build was discarded. Installed so far: $SUDOERS.
-The LaunchAgent finds no app at $APP until it is back. Before you log out, move
-it back and rerun this script:
+Kurulum durduruldu: $APP konumunda hiçbir şey yok ve yarıda kalmış bir çalıştırmanın
+$PREVIOUS_APP konumuna ayırdığı önceki uygulamayı geri koyma başarısız oldu. Uygulama
+orada kalıyor; başka hiçbir şey taşınmadı ya da devreden çıkarılmadı ve yeni derleme atıldı.
+Şu ana kadar kurulan: $SUDOERS.
+Uygulama geri gelene kadar LaunchAgent $APP konumunda uygulama bulamaz. macOS oturumunuzu
+kapatmadan önce onu geri taşıyın ve bu betiği yeniden çalıştırın:
   $(command_line mv "$PREVIOUS_APP" "$APP")
 FAIL
     exit 1
   fi
-  echo "restored $APP, which an interrupted run had set aside"
+  echo "yarıda kalmış bir çalıştırmanın kenara ayırdığı uygulama geri kondu: $APP"
 fi
 # Staging directories of runs that are gone, matched by the exact name step 3
 # gives them (mktemp's suffix is six letters and digits). One whose PID is
@@ -628,62 +631,62 @@ plist_pins_previous() {
   if (( rc == 0 || rc == 124 )); then return "$rc"; fi
   return 1
 }
-pins_unknown_note="'codesign --verify', which tells which of the two bundles $PLIST pins,
-did not answer within ${CALL_TIMEOUT_SECONDS}s."
+pins_unknown_note="$PLIST dosyasının iki paketten hangisini sabitlediğini gösteren 'codesign --verify',
+${CALL_TIMEOUT_SECONDS} saniye içinde yanıt vermedi."
 
-step "Ending any stale session and checking the recovery journal"
+step "Kalmış bir oturum varsa bitiriliyor ve kurtarma kayıt defteri denetleniyor"
 recovery_rc=0
 /bin/bash "$BACKSTOP" --force || recovery_rc=$?
 
 if (( recovery_rc != 0 )); then
   held="$(loaded_state)"
   case "$held" in
-    yes) agent_note="A LaunchAgent job with label $LABEL is loaded and was left as it was. Which plist and
-schedule it runs was not verified here; check with 'launchctl print gui/$UID_NUM/$LABEL'." ;;
-    no) agent_note="No LaunchAgent $LABEL is loaded, so nothing retries by itself." ;;
-    *) agent_note="'launchctl print gui/$UID_NUM/$LABEL' $(call_result "${held#unknown:}"), so whether a LaunchAgent is loaded is unknown." ;;
+    yes) agent_note="$LABEL etiketli bir LaunchAgent görevi yüklü ve olduğu gibi bırakıldı. Hangi plist ve
+zamanlamayla çalıştığı burada doğrulanmadı; 'launchctl print gui/$UID_NUM/$LABEL' ile denetleyin." ;;
+    no) agent_note="$LABEL adlı LaunchAgent yüklü değil; yani kendiliğinden yeniden deneyen bir şey yok." ;;
+    *) agent_note="'launchctl print gui/$UID_NUM/$LABEL' $(call_result "${held#unknown:}"); bu yüzden yüklü bir LaunchAgent olup olmadığı bilinmiyor." ;;
   esac
   if [[ -d "$PREVIOUS_APP" ]]; then
-    pair_note="An interrupted install left a build at $APP and set the previous app aside at
-$PREVIOUS_APP. Neither bundle was moved and no LaunchAgent job was unloaded or
-replaced, so a loaded job still finds the build it pins; the new build was discarded."
+    pair_note="Yarıda kalmış bir kurulum $APP konumuna bir derleme bıraktı ve önceki uygulamayı
+$PREVIOUS_APP konumuna ayırdı. İki paket de taşınmadı ve hiçbir LaunchAgent görevi devreden
+çıkarılmadı ya da değiştirilmedi; yani yüklü bir görev sabitlediği derlemeyi hâlâ bulur. Yeni derleme atıldı."
     pins_rc=0
     plist_pins_previous || pins_rc=$?
     if (( pins_rc == 0 )); then
       pair_note="$pair_note
-$PLIST pins the previous app, so the agent the next login loads refuses the
-build at $APP. Before you log out, resolve the recovery and rerun this script,
-which puts the previous app back."
+$PLIST önceki uygulamayı sabitliyor; bu yüzden bir sonraki girişte yüklenen ajan
+$APP konumundaki derlemeyi reddeder. macOS oturumunuzu kapatmadan önce kurtarma
+sorununu çözün ve önceki uygulamayı geri koyan bu betiği yeniden çalıştırın."
     elif (( pins_rc == 124 )); then
       pair_note="$pair_note
 $pins_unknown_note"
     fi
   else
-    pair_note="The app at $APP and the LaunchAgent were not replaced or unloaded,
-so they still match each other; the new build was discarded."
+    pair_note="$APP konumundaki uygulama ve LaunchAgent değiştirilmedi ya da devreden
+çıkarılmadı; yani hâlâ birbiriyle eşleşiyorlar. Yeni derleme atıldı."
   fi
   # How to run the recovery again. A checkout has backstop.sh under scripts/.
   # A zip has it only inside the bundle at $PREBUILT, and the checked private
   # copy is deleted when this script exits; the original may have changed
   # since the check, so the step is this script again, which checks a new copy.
   if [[ -n "$PREBUILT" ]]; then
-    manual_step="Or rerun this script. It checks a new private
-copy of the bundle and runs that copy's recovery before it replaces the app
-or the LaunchAgent:
+    manual_step="Ya da bu betiği yeniden çalıştırın. Betik paketin yeni bir özel
+kopyasını denetler ve uygulama ya da LaunchAgent değiştirilmeden önce o kopyanın
+kurtarmasını çalıştırır:
   $(command_line "$0" --allow-unverified-origin --app "$PREBUILT")"
   else
-    manual_step="Or run the recovery by hand:
+    manual_step="Ya da kurtarmayı elle çalıştırın:
   $(command_line /bin/bash "$SCRIPT_DIR/backstop.sh" --force)
-Then rerun this script to install the app and the LaunchAgent."
+Ardından uygulama ve LaunchAgent kurulsun diye bu betiği yeniden çalıştırın."
   fi
   cat >&2 <<FAIL
 
-Install stopped: the backstop could not fully undo a previous session
-(exit status $recovery_rc). $pair_note
-Installed so far: $SUDOERS.
+Kurulum durduruldu: backstop.sh önceki bir oturumu tümüyle geri alamadı
+(çıkış kodu: $recovery_rc). $pair_note
+Şu ana kadar kurulan: $SUDOERS.
 $agent_note
-Check $LOG_DIR/insomnia.log and resolve what it reports. Saved audio, display
-brightness or keyboard backlight needs the app; if one is installed, open it:
+$LOG_DIR/insomnia.log dosyasını denetleyin ve bildirdiği sorunu çözün. Kaydedilmiş ses,
+ekran parlaklığı ya da klavye arka ışığı için uygulama gerekir; kuruluysa açın:
   $(command_line open "$APP")
 $manual_step
 FAIL
@@ -700,11 +703,11 @@ if [[ -d "$PREVIOUS_APP" ]]; then
     # unloaded: whatever job is loaded keeps the build it pins.
     cat >&2 <<FAIL
 
-Install stopped: an interrupted run left a build at $APP and set the previous app
-aside at $PREVIOUS_APP, and $pins_unknown_note
-Neither bundle was moved and no LaunchAgent job was unloaded; the new build was
-discarded. Installed so far: $SUDOERS. The recovery journal was clean when
-checked above. Rerun this script once codesign answers.
+Kurulum durduruldu: yarıda kalmış bir çalıştırma $APP konumuna bir derleme bıraktı ve
+önceki uygulamayı $PREVIOUS_APP konumuna ayırdı; ayrıca $pins_unknown_note
+İki paket de taşınmadı ve hiçbir LaunchAgent görevi devreden çıkarılmadı; yeni derleme
+atıldı. Şu ana kadar kurulan: $SUDOERS. Kurtarma kayıt defteri yukarıda denetlendiğinde
+temizdi. codesign yanıt verdiğinde bu betiği yeniden çalıştırın.
 FAIL
     exit 1
   fi
@@ -725,14 +728,14 @@ FAIL
       if [[ "$cleared" != no ]]; then
         cat >&2 <<FAIL
 
-Install stopped: an interrupted run left its build at $APP and the previous app
-at $PREVIOUS_APP, and $PLIST pins the previous one.
-A job with label $LABEL may still be loaded from that run, and unloading it was
-not confirmed (launchctl print: $cleared). That job pins the build at $APP, so
-neither bundle was moved. Installed so far: $SUDOERS. The recovery journal was
-clean when checked above.
-The next login loads $PLIST, which does not match the app at $APP. Before you
-log out, unload the job and rerun this script:
+Kurulum durduruldu: yarıda kalmış bir çalıştırma kendi derlemesini $APP konumunda,
+önceki uygulamayı $PREVIOUS_APP konumunda bıraktı ve $PLIST önceki uygulamayı sabitliyor.
+O çalıştırmadan kalan $LABEL etiketli bir görev hâlâ yüklü olabilir ve devreden
+çıkarıldığı doğrulanamadı (launchctl print: $cleared). O görev $APP konumundaki derlemeyi
+sabitlediği için iki paket de taşınmadı. Şu ana kadar kurulan: $SUDOERS. Kurtarma kayıt
+defteri yukarıda denetlendiğinde temizdi.
+Bir sonraki girişte $PLIST yüklenir ve bu dosya $APP konumundaki uygulamayla eşleşmez.
+macOS oturumunuzu kapatmadan önce görevi devreden çıkarın ve bu betiği yeniden çalıştırın:
   launchctl bootout gui/$UID_NUM/$LABEL
 FAIL
         exit 1
@@ -740,18 +743,19 @@ FAIL
     fi
     unloaded_note=""
     if [[ "$held" != no ]]; then
-      unloaded_note="The job that run left was unloaded (launchctl print confirms), and none is loaded now.
+      unloaded_note="O çalıştırmanın bıraktığı görev devreden çıkarıldı (launchctl print doğruluyor); şu anda yüklü görev yok.
 "
     fi
     if ! move_bundle "$APP" "$STAGE/Interrupted.app"; then
       cat >&2 <<FAIL
 
-Install stopped: an interrupted run left its build at $APP and the previous app
-at $PREVIOUS_APP, which $PLIST pins, and moving that build out of $APP failed.
-Neither bundle was moved; the new build was discarded. Installed so far: $SUDOERS.
-${unloaded_note}The next login loads $PLIST, which does not match the app at $APP.
-Before you log out, fix what kept the bundle from moving (see the error above)
-and rerun this script, which puts the previous app back.
+Kurulum durduruldu: yarıda kalmış bir çalıştırma kendi derlemesini $APP konumunda,
+$PLIST dosyasının sabitlediği önceki uygulamayı $PREVIOUS_APP konumunda bıraktı ve
+o derlemeyi $APP konumundan çıkarma başarısız oldu.
+İki paket de taşınmadı; yeni derleme atıldı. Şu ana kadar kurulan: $SUDOERS.
+${unloaded_note}Bir sonraki girişte $PLIST yüklenir ve bu dosya $APP konumundaki uygulamayla eşleşmez.
+macOS oturumunuzu kapatmadan önce paketin taşınmasını engelleyen sorunu giderin (yukarıdaki
+hataya bakın) ve önceki uygulamayı geri koyan bu betiği yeniden çalıştırın.
 FAIL
       exit 1
     fi
@@ -763,20 +767,21 @@ FAIL
       STAGE=""
       cat >&2 <<FAIL
 
-Install stopped: an interrupted run left its build at $APP and the previous app
-at $PREVIOUS_APP, which $PLIST pins. That build was moved out of the way, but
-moving the previous app back to $APP failed, so nothing is at $APP.
-The previous app stays at $PREVIOUS_APP; the interrupted run's build and the new
-build are kept in $kept. Installed so far: $SUDOERS.
-${unloaded_note}The LaunchAgent finds no app at $APP until the previous one is back. Before
-you log out, move it back and load its agent:
+Kurulum durduruldu: yarıda kalmış bir çalıştırma kendi derlemesini $APP konumunda,
+$PLIST dosyasının sabitlediği önceki uygulamayı $PREVIOUS_APP konumunda bıraktı. O derleme
+yoldan çekildi, ama önceki uygulamayı $APP konumuna geri taşıma başarısız oldu; yani $APP
+konumunda hiçbir şey yok.
+Önceki uygulama $PREVIOUS_APP konumunda kalıyor; yarıda kalan çalıştırmanın derlemesi ve
+yeni derleme şurada tutuluyor: $kept. Şu ana kadar kurulan: $SUDOERS.
+${unloaded_note}Önceki uygulama geri gelene kadar LaunchAgent $APP konumunda uygulama bulamaz.
+macOS oturumunuzu kapatmadan önce onu geri taşıyın ve ajanını yükleyin:
   $(command_line mv "$PREVIOUS_APP" "$APP")
   $(command_line launchctl bootstrap "gui/$UID_NUM" "$PLIST")
-or rerun this script, which puts it back first.
+ya da önce onu geri koyan bu betiği yeniden çalıştırın.
 FAIL
       exit 1
     fi
-    echo "restored $APP, which an interrupted run had set aside; $PLIST pins it"
+    echo "yarıda kalmış bir çalıştırmanın kenara ayırdığı uygulama geri kondu: $APP; $PLIST onu sabitliyor"
     if [[ "$held" != no ]]; then
       # A job was loaded when this run started; the previous plist takes its
       # place, so a failure in step 6 reloads that one. Unless print confirms
@@ -788,36 +793,36 @@ FAIL
         if (( reload_rc != 0 )); then
           reload_reason="'launchctl bootstrap' $(call_result "$reload_rc")"
         else
-          reload_reason="'launchctl bootstrap' reported success, but launchctl print says $now"
+          reload_reason="'launchctl bootstrap' başarılı olduğunu bildirdi, ama launchctl print sonucu: $now"
         fi
         if [[ "$now" == yes ]]; then
-          job_note="A job with label $LABEL is listed (launchctl print), but the bootstrap failed,
-so which plist it runs is unknown. Check 'launchctl print gui/$UID_NUM/$LABEL'."
+          job_note="$LABEL etiketli bir görev listeleniyor (launchctl print), ama bootstrap başarısız oldu;
+yani hangi plist ile çalıştığı bilinmiyor. 'launchctl print gui/$UID_NUM/$LABEL' ile denetleyin."
         else
-          job_note="No job with label $LABEL is confirmed loaded (launchctl print: $now). If none is,
-load the previous one again:
+          job_note="$LABEL etiketli hiçbir görevin yüklü olduğu doğrulanmadı (launchctl print: $now). Hiç
+görev yüklü değilse öncekini yeniden yükleyin:
   $(command_line launchctl bootstrap "gui/$UID_NUM" "$PLIST")"
         fi
         cat >&2 <<FAIL
 
-Install stopped: the job an interrupted run left was unloaded and the previous app
-is back at $APP, which $PLIST pins, but loading $PLIST again was not
-confirmed ($reload_reason).
-The new build was discarded. Installed so far: $SUDOERS. The recovery journal
-was clean when checked above, and the next login loads $PLIST, which matches
-the app at $APP.
+Kurulum durduruldu: yarıda kalmış bir çalıştırmanın bıraktığı görev devreden çıkarıldı
+ve $PLIST dosyasının sabitlediği önceki uygulama $APP konumuna geri döndü, ama $PLIST
+dosyasının yeniden yüklendiği doğrulanamadı ($reload_reason).
+Yeni derleme atıldı. Şu ana kadar kurulan: $SUDOERS. Kurtarma kayıt defteri yukarıda
+denetlendiğinde temizdi ve bir sonraki girişte $APP konumundaki uygulamayla eşleşen
+$PLIST yüklenir.
 $job_note
-Then rerun this script.
+Ardından bu betiği yeniden çalıştırın.
 FAIL
         exit 1
       fi
-      echo "unloaded the job the interrupted run left and loaded $PLIST again (launchctl print confirms)"
+      echo "yarıda kalan çalıştırmanın bıraktığı görev devreden çıkarıldı ve $PLIST yeniden yüklendi (launchctl print doğruluyor)"
     fi
   else
     # $APP is what the plist pins (the interrupted run got as far as
     # publishing it), or nothing pins either: the set-aside copy is spare.
     "$RM" -rf "$PREVIOUS_APP"
-    echo "removed the bundle an interrupted run had set aside; $APP stays"
+    echo "yarıda kalmış bir çalıştırmanın kenara ayırdığı paket kaldırıldı; $APP yerinde kalıyor"
   fi
 fi
 
@@ -841,7 +846,7 @@ fi
 #    loaded. Any failure leaves $PLIST byte for byte as it was. A run whose
 #    recovery is unresolved stopped above, so the previous job and the
 #    bundle at $APP it pins are only replaced once nothing is left to retry.
-step "Installing LaunchAgent $LABEL"
+step "LaunchAgent kuruluyor: $LABEL"
 CANDIDATE_DIR="$LAUNCH_AGENTS/.$LABEL.staging"
 CANDIDATE="$CANDIDATE_DIR/$LABEL.candidate-$$.plist"
 "$MKDIR" -p "$CANDIDATE_DIR"
@@ -892,17 +897,17 @@ if [[ "$before" != no ]]; then
   if [[ "$cleared" != no ]]; then
     reload_hint=""
     if [[ "$cleared" != yes && -f "$PLIST" ]]; then
-      reload_hint="If no job is loaded, load the previous one again:
+      reload_hint="Yüklü görev yoksa öncekini yeniden yükleyin:
   $(command_line launchctl bootstrap "gui/$UID_NUM" "$PLIST")
 "
     fi
     cat >&2 <<FAIL
 
-Install stopped: unloading the previous LaunchAgent job was not confirmed
-(launchctl print: $cleared), so the app at $APP was not replaced and the new
-build was discarded. $PLIST was not modified.
-$SUDOERS is installed and the recovery journal was clean when checked above.
-${reload_hint}Check 'launchctl print gui/$UID_NUM/$LABEL' and rerun this script.
+Kurulum durduruldu: önceki LaunchAgent görevinin devreden çıkarıldığı doğrulanamadı
+(launchctl print: $cleared); bu yüzden $APP konumundaki uygulama değiştirilmedi ve yeni
+derleme atıldı. $PLIST değiştirilmedi.
+$SUDOERS kuruldu ve kurtarma kayıt defteri yukarıda denetlendiğinde temizdi.
+${reload_hint}'launchctl print gui/$UID_NUM/$LABEL' ile denetleyin ve bu betiği yeniden çalıştırın.
 FAIL
     exit 1
   fi
@@ -919,14 +924,14 @@ if [[ -e "$APP" ]]; then
   if move_bundle "$APP" "$PREVIOUS_APP"; then
     set_aside=1
   else
-    swap_reason="the previous app at $APP could not be moved aside to $PREVIOUS_APP"
+    swap_reason="$APP konumundaki önceki uygulama $PREVIOUS_APP konumuna ayrılamadı"
   fi
 fi
 if [[ -z "$swap_reason" ]]; then
   if move_bundle "$NEW_APP" "$APP"; then
     swapped=1
   else
-    swap_reason="the new build could not be moved from $NEW_APP to $APP"
+    swap_reason="yeni derleme $NEW_APP konumundan $APP konumuna taşınamadı"
   fi
 fi
 bootstrap_rc=0
@@ -944,45 +949,45 @@ if (( swapped )); then
 fi
 
 if (( published )); then
-  echo "LaunchAgent $LABEL loaded (launchctl print confirms); $PLIST published"
+  echo "LaunchAgent yüklendi: $LABEL (launchctl print doğruluyor); $PLIST yerine kondu"
   if (( set_aside )); then
     if "$RM" -rf "$PREVIOUS_APP"; then
-      echo "replaced the previous $APP"
+      echo "önceki $APP yenisiyle değiştirildi"
     else
-      echo "replaced the previous $APP, but its copy at $PREVIOUS_APP could not be removed; the next run of this script removes it" >&2
+      echo "önceki $APP yenisiyle değiştirildi, ama $PREVIOUS_APP konumundaki kopyası kaldırılamadı; bu betiğin bir sonraki çalıştırması onu kaldırır" >&2
     fi
   fi
   # Installs before this layout ran a writable copy from $APP_SUPPORT. The
   # agent just loaded runs the sealed one, so that copy goes now, not before.
   if [[ -e "$APP_SUPPORT/backstop.sh" ]]; then
     "$RM" -f "$APP_SUPPORT/backstop.sh"
-    echo "removed the previous install's $APP_SUPPORT/backstop.sh (the agent now runs the copy sealed in the bundle)"
+    echo "önceki kurulumdan kalan $APP_SUPPORT/backstop.sh kaldırıldı (ajan artık pakette mühürlü kopyayı çalıştırıyor)"
   fi
 else
-  fix_note="Fix the launchctl error and rerun."
+  fix_note="launchctl hatasını giderip yeniden çalıştırın."
   if [[ -n "$swap_reason" ]]; then
-    reason="$swap_reason (see the error above)"
-    fix_note="Fix what kept the bundle from moving and rerun."
+    reason="$swap_reason (yukarıdaki hataya bakın)"
+    fix_note="Paketin taşınmasını engelleyen sorunu giderip yeniden çalıştırın."
   elif (( bootstrap_rc != 0 )); then
-    reason="'launchctl bootstrap' $(call_result "$bootstrap_rc") for the new LaunchAgent"
+    reason="yeni LaunchAgent için 'launchctl bootstrap' $(call_result "$bootstrap_rc")"
   elif [[ "$after" != yes ]]; then
-    reason="'launchctl bootstrap' reported success, but the job is not confirmed loaded (launchctl print: $after)"
+    reason="'launchctl bootstrap' başarılı olduğunu bildirdi, ama görevin yüklü olduğu doğrulanmadı (launchctl print: $after)"
   else
-    reason="the new LaunchAgent loaded, but its plist could not be moved to $PLIST,
-where the next login loads it from"
-    fix_note="Check that $LAUNCH_AGENTS is writable and rerun."
+    reason="yeni LaunchAgent yüklendi, ama plist dosyası bir sonraki girişte yükleneceği
+yere ($PLIST) taşınamadı"
+    fix_note="$LAUNCH_AGENTS klasörünün yazılabilir olduğunu denetleyip yeniden çalıştırın."
   fi
   # A job print lists, or cannot rule out, is this run's (see the swap
   # above): loaded from the candidate, or by a bootstrap that reported an
   # error anyway. It pins the new build, so it is unloaded before the
   # previous bundle goes back, and print has to confirm that.
   unloaded=no
-  stopped="Install stopped: $reason."
+  stopped="Kurulum durduruldu: $reason."
   if [[ "$after" != no ]]; then
     bounded "$LAUNCHCTL" bootout "gui/$UID_NUM/$LABEL" || true
     unloaded="$(loaded_state)"
     stopped="$stopped
-The new job was unloaded again (launchctl print confirms)."
+Yeni görev yeniden devreden çıkarıldı (launchctl print doğruluyor)."
   fi
   # Undo the swap first, so whatever job runs next (the previous plist
   # reloaded below, or loaded at the next login) finds the build it pins.
@@ -990,36 +995,36 @@ The new job was unloaded again (launchctl print confirms)."
   # pins: putting the previous app back would leave it refusing every run.
   kept_why=""
   if [[ "$unloaded" != no ]]; then
-    kept_why="The new job may still be loaded: unloading it was not confirmed (launchctl print: $unloaded).
-The new build stays at $APP, because that job pins it and would refuse the
-previous app."
+    kept_why="Yeni görev hâlâ yüklü olabilir: devreden çıkarıldığı doğrulanmadı (launchctl print: $unloaded).
+Yeni derleme $APP konumunda kalıyor, çünkü o görev onu sabitliyor ve önceki
+uygulamayı reddederdi."
   elif (( swapped )) && ! move_bundle "$APP" "$NEW_APP"; then
-    kept_why="No job of this run is loaded (launchctl print confirms), but moving the new
-build out of $APP failed (see the error above), so it stays there."
+    kept_why="Bu çalıştırmaya ait yüklü görev yok (launchctl print doğruluyor), ama yeni
+derlemeyi $APP konumundan çıkarma başarısız oldu (yukarıdaki hataya bakın); bu yüzden orada kalıyor."
   fi
   if [[ -n "$kept_why" ]]; then
     # The swap stays and the previous bundle stays set aside, which is the
     # state an install killed mid-swap leaves; the rerun's repair above
     # handles it.
     if (( set_aside )); then
-      kept_note="The previous app is kept at $PREVIOUS_APP; the rerun unloads any job
-and puts the previous app back if $PLIST still pins it."
+      kept_note="Önceki uygulama $PREVIOUS_APP konumunda tutuluyor; yeniden çalıştırma yüklü
+görevi devreden çıkarır ve $PLIST hâlâ önceki uygulamayı sabitliyorsa onu geri koyar."
     else
-      kept_note="No app was installed at $APP before this run."
+      kept_note="Bu çalıştırmadan önce $APP konumunda kurulu bir uygulama yoktu."
     fi
     if [[ -f "$PLIST" ]]; then
-      plist_note="$PLIST was not modified and does not pin this build, so the agent the
-next login loads would refuse to run."
+      plist_note="$PLIST değiştirilmedi ve bu derlemeyi sabitlemiyor; bu yüzden bir sonraki
+girişte yüklenen ajan çalışmayı reddederdi."
     else
-      plist_note="No plist exists at $PLIST, so no agent loads at the next login."
+      plist_note="$PLIST konumunda plist yok; bu yüzden bir sonraki girişte hiçbir ajan yüklenmez."
     fi
     cat >&2 <<FAIL
 
-Install stopped: $reason.
+Kurulum durduruldu: $reason.
 $kept_why $kept_note
 $plist_note
-$SUDOERS is installed and the recovery journal was clean when checked above.
-${fix_note%.} before you log out.
+$SUDOERS kuruldu ve kurtarma kayıt defteri yukarıda denetlendiğinde temizdi.
+${fix_note%.}; bunu macOS oturumunuzu kapatmadan önce yapın.
 FAIL
     exit 1
   fi
@@ -1030,34 +1035,34 @@ FAIL
       # Its job is not reloaded, since it would find no app to run.
       STAGE=""
       if [[ -f "$PLIST" ]]; then
-        plist_note="The plist at $PLIST was not modified."
-        restore="move it back and load its agent:
+        plist_note="$PLIST konumundaki plist değiştirilmedi."
+        restore="onu geri taşıyın ve ajanını yükleyin:
   $(command_line mv "$PREVIOUS_APP" "$APP")
   $(command_line launchctl bootstrap "gui/$UID_NUM" "$PLIST")"
       else
-        plist_note="No plist exists at $PLIST."
-        restore="move it back:
+        plist_note="$PLIST konumunda plist yok."
+        restore="onu geri taşıyın:
   $(command_line mv "$PREVIOUS_APP" "$APP")"
       fi
       cat >&2 <<FAIL
 
 $stopped
-Putting the previous app back at $APP then failed (see the error above), so
-nothing is at $APP. The previous app stays at $PREVIOUS_APP and the new build
-at $NEW_APP; neither was deleted.
+Ardından önceki uygulamayı $APP konumuna geri koyma başarısız oldu (yukarıdaki hataya
+bakın); yani $APP konumunda hiçbir şey yok. Önceki uygulama $PREVIOUS_APP konumunda,
+yeni derleme $NEW_APP konumunda kalıyor; ikisi de silinmedi.
 $plist_note
-$SUDOERS is installed and the recovery journal was clean when checked above.
-The LaunchAgent finds no app at $APP until the previous one is back. Before you
-log out, $restore
-or rerun this script, which puts it back first.
+$SUDOERS kuruldu ve kurtarma kayıt defteri yukarıda denetlendiğinde temizdi.
+Önceki uygulama geri gelene kadar LaunchAgent $APP konumunda uygulama bulamaz.
+macOS oturumunuzu kapatmadan önce $restore
+ya da önce onu geri koyan bu betiği yeniden çalıştırın.
 FAIL
       exit 1
     fi
-    app_note="The previous app was put back at $APP; the new build was discarded."
+    app_note="Önceki uygulama $APP konumuna geri kondu; yeni derleme atıldı."
   elif (( had_app )); then
-    app_note="The previous app was never moved from $APP; the new build was discarded."
+    app_note="Önceki uygulama $APP konumundan hiç taşınmadı; yeni derleme atıldı."
   else
-    app_note="No app was installed at $APP before and none is now; the new build was discarded."
+    app_note="$APP konumunda önceden kurulu bir uygulama yoktu, şimdi de yok; yeni derleme atıldı."
   fi
   # The trusted plist was never modified. Reload the previous job only when
   # it is known to have been loaded. A job being listed afterwards does not
@@ -1070,40 +1075,40 @@ FAIL
       bounded "$LAUNCHCTL" bootstrap "gui/$UID_NUM" "$PLIST" || reload_rc=$?
       now="$(loaded_state)"
       if (( reload_rc == 0 )) && [[ "$now" == yes ]]; then
-        outcome="A job with label $LABEL is loaded again from the previous plist $PLIST
-(launchctl bootstrap succeeded and launchctl print confirms; its schedule was not verified here)."
+        outcome="$LABEL etiketli bir görev önceki plist dosyasından ($PLIST) yeniden yüklendi
+(launchctl bootstrap başarılı oldu ve launchctl print doğruluyor; zamanlaması burada doğrulanmadı)."
       elif [[ "$now" == yes ]]; then
-        outcome="The reload of the previous plist was not confirmed ('launchctl bootstrap'
-$(call_result "$reload_rc")). A job with label $LABEL is loaded (launchctl print), but which plist it runs is
-unknown: it may be the job that was loaded before this attempt. Check
-'launchctl print gui/$UID_NUM/$LABEL' yourself, or rerun this script."
+        outcome="Önceki plist dosyasının yeniden yüklendiği doğrulanamadı ('launchctl bootstrap'
+$(call_result "$reload_rc")). $LABEL etiketli bir görev yüklü (launchctl print), ama hangi plist ile çalıştığı
+bilinmiyor: bu denemeden önce yüklü olan görev olabilir.
+'launchctl print gui/$UID_NUM/$LABEL' ile kendiniz denetleyin ya da bu betiği yeniden çalıştırın."
       else
-        outcome="The previous job could not be loaded again ('launchctl bootstrap'
-$(call_result "$reload_rc"); launchctl print: $now); no job with label $LABEL is confirmed loaded. Run
+        outcome="Önceki görev yeniden yüklenemedi ('launchctl bootstrap'
+$(call_result "$reload_rc"); launchctl print: $now); $LABEL etiketli hiçbir görevin yüklü olduğu doğrulanmadı. Şunu
   $(command_line launchctl bootstrap "gui/$UID_NUM" "$PLIST")
-yourself, or rerun this script."
+kendiniz çalıştırın ya da bu betiği yeniden çalıştırın."
       fi ;;
     no)
       now="$(loaded_state)"
       case "$now" in
-        yes) outcome="No job was loaded before; one is loaded now (launchctl print), from the failed
-attempt. It pins the new build, which is not installed, so it refuses to run; unload it with
-'launchctl bootout gui/$UID_NUM/$LABEL' or rerun this script." ;;
-        no) outcome="No job with label $LABEL was loaded before and none is loaded now." ;;
-        *) outcome="No job was loaded before; whether one is loaded now is unknown ('launchctl print'
-$(call_result "${now#unknown:}")), so it is not confirmed either way. Check
-'launchctl print gui/$UID_NUM/$LABEL' yourself." ;;
+        yes) outcome="Önceden yüklü görev yoktu; şimdi başarısız denemeden kalan bir görev yüklü (launchctl print).
+Bu görev kurulmamış olan yeni derlemeyi sabitlediği için çalışmayı reddeder; onu
+'launchctl bootout gui/$UID_NUM/$LABEL' ile devreden çıkarın ya da bu betiği yeniden çalıştırın." ;;
+        no) outcome="$LABEL etiketli bir görev önceden yüklü değildi, şimdi de yüklü değil." ;;
+        *) outcome="Önceden yüklü görev yoktu; şimdi yüklü olup olmadığı bilinmiyor ('launchctl print'
+$(call_result "${now#unknown:}")); yani iki yönde de doğrulanmadı.
+'launchctl print gui/$UID_NUM/$LABEL' ile kendiniz denetleyin." ;;
       esac ;;
     *)
-      outcome="Whether a job was loaded before is unknown (launchctl print $(call_result "${before#unknown:}")),
-so nothing was reloaded. Check 'launchctl print gui/$UID_NUM/$LABEL' and, if no job is
-loaded, load the previous one yourself:
+      outcome="Önceden bir görevin yüklü olup olmadığı bilinmiyor (launchctl print $(call_result "${before#unknown:}"));
+bu yüzden hiçbir şey yeniden yüklenmedi. 'launchctl print gui/$UID_NUM/$LABEL' ile denetleyin ve
+yüklü görev yoksa öncekini kendiniz yükleyin:
   $(command_line launchctl bootstrap "gui/$UID_NUM" "$PLIST")" ;;
   esac
   if [[ -f "$PLIST" ]]; then
-    plist_note="The plist at $PLIST was not modified."
+    plist_note="$PLIST konumundaki plist değiştirilmedi."
   else
-    plist_note="No plist exists at $PLIST."
+    plist_note="$PLIST konumunda plist yok."
   fi
   cat >&2 <<FAIL
 
@@ -1111,22 +1116,22 @@ $stopped
 $plist_note
 $app_note
 $outcome
-$SUDOERS is installed and the recovery journal was clean when checked above.
+$SUDOERS kuruldu ve kurtarma kayıt defteri yukarıda denetlendiğinde temizdi.
 $fix_note
 FAIL
   exit 1
 fi
 
 # 7. Done --------------------------------------------------------------------
-step "Installed"
+step "Kuruldu"
 # The uninstaller shipped beside this script: scripts/ in a checkout, the
 # zip's top level in a release (which may be unpacked inside a checkout).
 UNINSTALL="$SCRIPT_DIR/uninstall.sh"
 cat <<NEXT
-Next steps:
-  1. Launch:            $(command_line open "$APP")
-  2. Optional:          System Settings > Wi-Fi > Ask to join hotspots: Automatically
-  3. Config lives at:   $APP_SUPPORT/config.json
-  4. Logs:              $LOG_DIR/insomnia.log
-  5. Uninstall:         $(command_line "$UNINSTALL")
+Sonraki adımlar:
+  1. Başlatın:          $(command_line open "$APP")
+  2. İsteğe bağlı:      Sistem Ayarları > Wi-Fi > Erişim noktalarına katılmak için sor (Ask to join hotspots): Otomatik
+  3. Ayar dosyası:      $APP_SUPPORT/config.json
+  4. Günlükler:         $LOG_DIR/insomnia.log
+  5. Kaldırma:          $(command_line "$UNINSTALL")
 NEXT

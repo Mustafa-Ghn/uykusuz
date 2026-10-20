@@ -1,130 +1,147 @@
-# What happens when the lid closes
+# Kapak kapanınca neler olur
 
-The [README](../README.md#what-happens-when-the-lid-closes) lists the
-defaults. This page has the details.
+[README](../README.md#kapak-kapanınca-neler-olur) varsayılanları listeler. Bu
+sayfa ayrıntıları içerir.
 
-During a session, Insomnia turns the display and keyboard backlight off
-(saving their brightness first), pauses the apps on the freeze list (and, if
-you opt in, every other Dock app that is not an agent app), checks whether
-Docker Desktop is idle before pausing it, and saves then mutes audio.
-Reopening the lid attempts to undo those lid actions. If the lid opens
-while Insomnia is still checking Docker, Docker is left running and the undo
-starts right away. **The timer keeps counting down while the lid is
-closed**; only its on-screen redraw pauses, also for a session started with
-the lid already closed.
+Oturum sırasında Insomnia ekranı ve klavye arka ışığını kapatır (önce
+parlaklıklarını kaydeder), dondurma listesindeki uygulamaları dondurur (ve
+seçerseniz ajan uygulaması olmayan diğer tüm Dock uygulamalarını da), Docker
+Desktop'ı duraklatmadan önce boşta olup olmadığını denetler ve sesi kaydedip
+kapatır. Kapağı yeniden açmak bu kapak eylemlerini geri almaya çalışır.
+Insomnia hâlâ Docker'ı denetlerken kapak açılırsa Docker çalışır durumda
+bırakılır ve geri alma hemen başlar. **Kapak kapalıyken zamanlayıcı geri
+saymayı sürdürür**; yalnızca ekrandaki yeniden çizim duraklar, kapak zaten
+kapalıyken başlatılan bir oturumda da.
 
-## Display and keyboard backlight
+## Ekran ve klavye arka ışığı
 
-The display step exists because the sleep guard stops macOS from doing it:
-with sleep disabled, closing the lid no longer turns the panel or the keys off
-by itself. Insomnia sets both to zero and restores them when the lid opens.
-Both go through private macOS frameworks. The display calls run only on a
-macOS major version they were measured on (26 and 27). The keyboard calls run only
-while the private keyboard class has the method signatures measured on 26,
-on whatever version. If either check refuses a device, Insomnia leaves it
-alone and Settings says why under the toggle. A level saved before an update
-that the check now refuses stays saved for a version that can restore it, and
-the menu says to set it with the brightness keys meanwhile. That version leaves
-a level you set by hand alone, and decides only on a reading taken with the
-display awake and the keys not dimmed. Once Insomnia's own Low Power Mode has
-been on over the saved display level, it leaves that level undecided until the
-Mac restarts, through relaunches of the app, and until then a lid close leaves
-that display lit and only asks it to sleep. The same goes when the recovery
-agent switches that mode off before Insomnia starts again, and when Insomnia
-switches off a mode still claimed from before a restart. That mode may read
-off then, yet it may have gone off only a moment before, so the level waits
-for the next restart even when the mode has been off for days. Once it has seen
-that display lit above zero, it never writes the saved level over a zero you
-set by hand, also after a relaunch or a restart. It cannot tell that zero
-from one auto-brightness left under a closing lid, so the saved level stays
-undecided, with nothing written, until you raise the display above zero. If Insomnia cannot record that it saw the display lit, or that the
-saved level is settled, Quit waits until it can.
-The display comes back to the brightness sampled while the lid was open, not
-the reading at the moment of closing (auto-brightness has already dimmed the
-panel under the closing lid by then, and Low Power Mode rescales it), and if
-Insomnia's own Low Power Mode was on while the lid was closed the value is
-written once more when the mode ends. If Insomnia is not running when you open
-the lid, press the brightness-up key.
+Ekran adımı, uyku koruması macOS'in bunu yapmasını engellediği için vardır:
+uyku kapalıyken kapağı kapatmak paneli ya da tuşları artık kendiliğinden
+kapatmaz. Insomnia ikisini de sıfıra ayarlar ve kapak açılınca geri yükler.
+İkisi de macOS'in özel (private) çerçeveleri üzerinden çalışır. Ekran
+çağrıları yalnızca üzerinde ölçüldükleri macOS ana sürümlerinde (26 ve 27)
+çalışır. Klavye çağrıları, macOS sürümü ne olursa olsun, yalnızca özel klavye
+sınıfı macOS 26 üzerinde ölçülen yöntem imzalarına sahipken çalışır. Bu
+denetimlerden biri bir aygıtı reddederse Insomnia o aygıta dokunmaz ve Ayarlar
+nedenini anahtarın altında söyler. Bir güncellemeden önce kaydedilmiş ve
+denetimin artık reddettiği bir düzey, onu geri yükleyebilecek bir sürüm için
+kayıtlı kalır; menü de bu arada düzeyi parlaklık tuşlarıyla ayarlamanızı
+söyler. O sürüm, elle ayarladığınız bir düzeye dokunmaz ve kararını yalnızca
+ekran uyanıkken ve tuşlar kısılmamışken alınan bir okumaya göre verir.
+Kaydedilmiş bir ekran düzeyi varken Insomnia'nın kendi Düşük Güç Modu bir kez
+açık kaldıysa Insomnia, uygulama yeniden açılsa bile, Mac yeniden başlayana
+kadar o düzeyi kararsız bırakır; o zamana kadar bir kapak kapanışı o ekranı
+yanık bırakır ve yalnızca uyumasını ister. Aynısı, kurtarma ajanı bu modu
+Insomnia yeniden başlamadan önce kapattığında ve Insomnia bir yeniden
+başlatmadan önceden kalma, hâlâ sahiplenilmiş bir modu kapattığında da
+geçerlidir. Mod o anda kapalı görünebilir, ama yalnızca bir an önce kapanmış
+olabilir; bu yüzden mod günlerdir kapalı olsa bile düzey bir sonraki yeniden
+başlatmayı bekler. Insomnia o ekranı sıfırın üzerinde yanık gördükten sonra,
+bir yeniden açılış ya da yeniden başlatmadan sonra da, elle ayarladığınız bir
+sıfırın üzerine kaydedilmiş düzeyi hiçbir zaman yazmaz. O sıfırı, otomatik
+parlaklığın kapanan bir kapağın altında bıraktığı bir sıfırdan ayıramaz; bu
+yüzden siz ekranı sıfırın üzerine çıkarana kadar kaydedilmiş düzey, hiçbir şey
+yazılmadan kararsız kalır. Insomnia ekranı yanık gördüğünü ya da kaydedilmiş
+düzeyin karara bağlandığını kaydedemezse "Insomnia'dan Çık" bunu
+kaydedebilene kadar bekler.
+Ekran, kapanma anındaki okumaya değil, kapak açıkken örneklenen parlaklığa
+döner (otomatik parlaklık o ana kadar paneli kapanan kapağın altında zaten
+kısmıştır ve Düşük Güç Modu onu yeniden ölçeklendirir). Kapak kapalıyken
+Insomnia'nın kendi Düşük Güç Modu açıksa değer, mod bittiğinde bir kez daha
+yazılır. Kapağı açtığınızda Insomnia çalışmıyorsa parlaklık artırma tuşuna
+basın.
 
-## Defaults
+## Varsayılanlar
 
-The defaults are worth knowing:
+Varsayılanları bilmekte yarar var:
 
-- **Selected apps:** Slack, WhatsApp, and Discord are on the freeze list.
-  Configured agent apps are excluded from this ordinary list.
-- **Every other app:** "Freeze every other app while the lid is closed" is
-  off, so a fresh install pauses the freeze list only. Turn it on to also pause
-  every Dock app that is not an agent app, an Apple app, Docker Desktop or a
-  built-in protected app (editors, terminals, browsers, AI apps, password
-  managers, local databases, Tailscale, local model servers; JetBrains IDEs by
-  bundle-id prefix), so only agents keep running with the lid shut. Menu-bar
-  apps are never picked up automatically; add them to the freeze list if you
-  want them paused. Settings shows a "Would freeze now" line listing what the
-  automatic scope would pause at that moment.
-- **Meeting, recording and dictation apps:** never frozen by "Freeze every
-  other app", with their helper apps: Zoom, Microsoft Teams (new and classic),
-  Webex (and the older Webex Meetings app), FaceTime, Wispr Flow, Granola,
-  Otter, OBS and Loom. Freezing one ends the call, the recording or the
-  meeting notes when the lid closes. Putting one on the freeze list by hand
-  still freezes it, except FaceTime, which is an Apple app.
-- **Docker rule:** off. Turn it on to pause Docker Desktop on lid close when
-  no container is running. The local Desktop socket is asked once to pick
-  Docker up and once more right before the pause; a busy answer, a failed
-  `docker ps` or a timeout at either point leaves Docker running. A container
-  that starts between the second check and the pause is still paused with
-  Desktop, so leave the rule off for Docker workloads an unexpected pause
-  would hurt.
-- **Mute on close:** on, so sound stops when the lid closes. Lid open
-  restores each output that was muted, even if another one is in use by then.
-  An output that is not connected stays muted until it reconnects: Insomnia
-  restores it then if it is running, or at the next launch. Ending or
-  quitting a session does not wait for it. The end notification and the menu
-  name it, and the menu's "Stop waiting for <device>" leaves it as it is. A
-  restore that fails on a connected output is retried by Insomnia while it
-  runs, and at the next launch.
-- **Microphone:** on Mac laptops with Apple silicon or a T2 chip, closing the
-  lid disconnects the built-in microphone in hardware. Recording a meeting
-  with the lid closed needs AirPods or an external mic; Settings says the same
-  next to the lid-close options.
-- **Display and keyboard backlight:** on ("Turn off the display and keyboard
-  backlight" in Settings). Both values are saved to the journal before they
-  are changed.
-- **Low Power Mode while the lid is closed:** on. With sleep disabled a closed
-  Mac otherwise keeps running at full speed; the mode is switched off again
-  when the lid opens, unless a battery or thermal rule still wants it.
-- **Battery rules:** below 40% on battery, request Low Power Mode; below 10%,
-  end the session. A battery that is present but cannot be read on two
-  consecutive reads while on battery also ends the session, with a
-  notification saying why: the floor cannot be applied to a level nobody can
-  read. One failed read is tolerated, and the level is re-read every 30 s
-  until it is readable again. A desktop has no battery and no floor. Serious
-  thermal state requests Low Power Mode; critical thermal state ends the
-  session. These rules require the app to be running.
-  Setting the end floor to 0 turns the battery end off. Otherwise the end
-  floor stays below the Low Power Mode floor. The Settings steppers move the
-  other floor when the two would cross, and a hand-edited `config.json` with
-  the floors out of order is corrected at launch, and logged, by raising the
-  Low Power Mode floor.
+- **Seçili uygulamalar:** Slack, WhatsApp ve Discord dondurma listesindedir.
+  Ayarlanmış ajan uygulamaları bu sıradan listenin dışında tutulur.
+- **Diğer tüm uygulamalar:** "Kapak kapalıyken diğer tüm uygulamaları dondur"
+  kapalıdır; bu yüzden yeni bir kurulum yalnızca dondurma listesini dondurur.
+  Ajan uygulaması, Apple uygulaması, Docker Desktop ya da yerleşik korumalı bir
+  uygulama (düzenleyiciler, terminaller, tarayıcılar, yapay zekâ uygulamaları,
+  parola yöneticileri, yerel veritabanları, Tailscale, yerel model sunucuları;
+  paket kimliği önekine göre JetBrains IDE'leri) olmayan her Dock uygulamasını
+  da dondurmak için bu seçeneği açın; böylece kapak kapalıyken yalnızca ajanlar
+  çalışmayı sürdürür. Menü çubuğu uygulamaları hiçbir zaman otomatik olarak
+  seçilmez; dondurulmalarını istiyorsanız onları dondurma listesine ekleyin.
+  Ayarlar, otomatik kapsamın o anda neleri donduracağını listeleyen bir
+  "Şu anda dondurulacaklar" satırı gösterir.
+- **Toplantı, kayıt ve dikte uygulamaları:** "Diğer tüm uygulamaları dondur"
+  bunları ve yardımcı uygulamalarını hiçbir zaman dondurmaz: Zoom, Microsoft
+  Teams (yeni ve klasik), Webex (ve daha eski Webex Meetings uygulaması),
+  FaceTime, Wispr Flow, Granola, Otter, OBS ve Loom. Bunlardan birini
+  dondurmak, kapak kapanınca görüşmeyi, kaydı ya da toplantı notlarını
+  sonlandırır. Birini dondurma listesine elle eklemek onu yine de dondurur;
+  bunun tek istisnası bir Apple uygulaması olan FaceTime'dır.
+- **Docker kuralı:** kapalı. Hiçbir kapsayıcı çalışmıyorken Docker Desktop'ı
+  kapak kapanınca duraklatmak için açın. Yerel Desktop soketine bir kez
+  Docker'ı seçmek için, bir kez de duraklatmadan hemen önce sorulur; bu iki
+  noktadan birinde meşgul yanıtı, başarısız bir `docker ps` ya da zaman aşımı
+  Docker'ı çalışır durumda bırakır. İkinci denetim ile duraklatma arasında
+  başlayan bir kapsayıcı da Desktop ile birlikte duraklatılır; bu yüzden
+  beklenmedik bir duraklatmanın zarar vereceği Docker iş yükleri için kuralı
+  kapalı bırakın.
+- **Kapak kapanınca sesi kapat:** açık; böylece kapak kapanınca ses durur.
+  Kapağı açmak, sesi kapatılan her çıkışı, o sırada başka biri kullanılıyor
+  olsa bile geri yükler. Bağlı olmayan bir çıkış yeniden bağlanana kadar sessiz
+  kalır: Insomnia çalışıyorsa onu o zaman, çalışmıyorsa bir sonraki açılışta
+  geri yükler. Oturumu bitirmek ya da Insomnia'dan çıkmak bunu beklemez. Bitiş
+  bildirimi ve menü o çıkışı adıyla belirtir; menüdeki
+  "Beklemeyi bırak: <aygıt>" onu olduğu gibi bırakır. Bağlı bir çıkışta
+  başarısız olan bir geri yüklemeyi Insomnia çalıştığı sürece ve bir sonraki
+  açılışta yeniden dener.
+- **Mikrofon:** Apple çipli ya da T2 çipli Mac dizüstü bilgisayarlarda kapağı
+  kapatmak, yerleşik mikrofonun bağlantısını donanım düzeyinde keser. Kapak
+  kapalıyken bir toplantıyı kaydetmek için AirPods ya da harici bir mikrofon
+  gerekir; Ayarlar da kapak kapanınca yapılacaklar seçeneklerinin yanında
+  aynısını söyler.
+- **Ekran ve klavye arka ışığı:** açık (Ayarlar'da "Ekranı ve klavye arka
+  ışığını kapat"). İki değer de değiştirilmeden önce kayıt defterine
+  kaydedilir.
+- **Kapak kapalıyken Düşük Güç Modu:** açık. Uyku kapalıyken kapalı bir Mac
+  aksi hâlde tam hızda çalışmayı sürdürür; bir pil ya da ısı kuralı hâlâ
+  istemiyorsa mod kapak açılınca yeniden kapatılır.
+- **Pil kuralları:** pil gücündeyken pil düzeyi %40 eşiğinin altına inince
+  Düşük Güç Modu istenir; %10 eşiğinin altında oturum biter. Pil gücündeyken
+  var olan ama art arda iki okumada okunamayan bir pil de oturumu bitirir ve
+  nedenini söyleyen bir bildirim gösterilir: kimsenin okuyamadığı bir düzeye
+  alt sınır uygulanamaz. Tek bir başarısız okumaya göz yumulur ve düzey yeniden
+  okunabilir hâle gelene kadar her 30 saniyede bir yeniden okunur. Masaüstü bir
+  Mac'te pil ve alt sınır yoktur. Ciddi ısı durumu Düşük Güç Modu ister;
+  kritik ısı durumu oturumu bitirir. Bu kurallar uygulamanın çalışıyor olmasını
+  gerektirir.
+  Bitirme alt sınırını 0 yapmak pil nedeniyle bitirmeyi kapatır. Aksi hâlde
+  bitirme alt sınırı Düşük Güç Modu alt sınırının altında kalır. İki sınır
+  kesişecek olduğunda Ayarlar'daki artırma/azaltma düğmeleri diğer sınırı da
+  kaydırır; alt sınırları sırası bozuk biçimde elle düzenlenmiş bir
+  `config.json` ise açılışta Düşük Güç Modu alt sınırı yükseltilerek düzeltilir
+  ve bu durum günlüğe yazılır.
 
-## Upgrading from an earlier build
+## Önceki bir derlemeden yükseltme
 
-Upgrading from an earlier build changes two of these once. On the first
-launch of this version, a config.json saved by an earlier build gets "Freeze
-every other app" turned off and "Mute audio on lid close" turned on, and
-Insomnia posts a notification naming what changed. Settings shows the same
-line at the top of Lid-close actions until you dismiss it, for anyone with
-notifications off. The toggles are right below it. config.json records that
-the update ran (`lidCloseDefaultsApplied`), so a setting you turn back stays
-the way you set it. A fresh install starts with the new defaults and no
-notice.
+Önceki bir derlemeden yükseltmek bu ayarlardan ikisini bir kez değiştirir. Bu
+sürümün ilk açılışında, önceki bir derlemenin kaydettiği config.json
+dosyasında "Kapak kapalıyken diğer tüm uygulamaları dondur" kapatılır ve
+"Kapak kapanınca sesi kapat" açılır; Insomnia neyin değiştiğini belirten bir
+bildirim gösterir. Bildirimleri kapalı olan kullanıcılar için Ayarlar da aynı
+satırı, siz kapatana kadar Kapak kapanınca yapılacaklar bölümünün en üstünde
+gösterir. İlgili anahtarlar hemen altındadır. config.json bu güncellemenin
+çalıştığını kaydeder (`lidCloseDefaultsApplied`); böylece eski hâline
+getirdiğiniz bir ayar sizin bıraktığınız gibi kalır. Yeni bir kurulum yeni
+varsayılanlarla ve bildirim olmadan başlar.
 
-## Testing lid actions without closing the lid
+## Kapak eylemlerini kapağı kapatmadan deneme
 
-To exercise the lid actions without closing the lid, run
-`scripts/simulate-lid.sh closed` and then `scripts/simulate-lid.sh open` during
-a session; the app runs the same actions it would on a real lid event. Only a
-build with the file watcher compiled in reads that trigger: a debug build, or
-a release build installed with `INSOMNIA_LID_SIMULATION=1 ./scripts/install.sh`.
-A normal install has no watcher, so no program running as your user can replay
-the lid actions by writing a file. A build that has it logs "Lid simulation
-build" at launch and shows the same line in the status menu and in Settings.
+Kapak eylemlerini kapağı kapatmadan denemek için bir oturum sırasında
+`scripts/simulate-lid.sh closed` ve ardından `scripts/simulate-lid.sh open`
+çalıştırın; uygulama gerçek bir kapak olayında yapacağı eylemlerin aynısını
+yapar. Bu tetikleyiciyi yalnızca dosya izleyicisi derlemeye dahil edilmiş bir
+derleme okur: bir hata ayıklama (debug) derlemesi ya da
+`INSOMNIA_LID_SIMULATION=1 ./scripts/install.sh` ile kurulmuş bir release
+derlemesi. Normal bir kurulumda izleyici yoktur; bu yüzden sizin hesabınızla
+çalışan hiçbir program bir dosya yazarak kapak eylemlerini yeniden
+oynatamaz. İzleyicisi olan bir derleme açılışta günlüğe "Kapak simülasyonu
+derlemesi" ile başlayan bir satır yazar ve aynı satırı durum menüsünde ve
+Ayarlar'da gösterir.

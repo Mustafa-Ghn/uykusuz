@@ -4,7 +4,7 @@ import XCTest
 /// The measured DisplayServices majors as the refusal message names them, and a major past all of them. The
 /// assertions below are built from `DisplayPower.measuredDisplayServicesMajors`, so measuring the next macOS is a
 /// one-line change there rather than an edit to every expected message.
-private let measuredMajorsText = "measured on macOS \(DisplayPower.measuredDisplayServicesMajors.sorted().map(String.init).joined(separator: ", ")) only"
+private let measuredMajorsText = "yalnızca macOS \(DisplayPower.measuredDisplayServicesMajors.sorted().map(String.init).joined(separator: ", ")) üzerinde ölçüldü"
 private let unmeasuredMajor = (DisplayPower.measuredDisplayServicesMajors.max() ?? 0) + 1
 
 // Fake KeyboardBrightnessClient classes. They carry the private class's
@@ -93,7 +93,7 @@ final class PrivateDisplayGuardTests: XCTestCase {
         XCTAssertNil(DisplayPower.displayServicesRefusal(osMajorVersion: 27))
         for major in [15, 25, unmeasuredMajor, unmeasuredMajor + 3] {
             let why = try XCTUnwrap(DisplayPower.displayServicesRefusal(osMajorVersion: major))
-            XCTAssertTrue(why.contains("this is macOS \(major)"), why)
+            XCTAssertTrue(why.contains("bu sistem macOS \(major)"), why)
             XCTAssertTrue(why.contains(measuredMajorsText), why)
         }
     }
@@ -106,7 +106,7 @@ final class PrivateDisplayGuardTests: XCTestCase {
 
         let why = try XCTUnwrap(dimmer.refusal())
 
-        XCTAssertTrue(why.contains("this is macOS \(unmeasuredMajor)"), why)
+        XCTAssertTrue(why.contains("bu sistem macOS \(unmeasuredMajor)"), why)
         XCTAssertThrowsError(try dimmer.readBrightness()) { XCTAssertEqual($0.localizedDescription, why) }
         XCTAssertThrowsError(try dimmer.setBrightness(0)) { XCTAssertEqual($0.localizedDescription, why) }
         XCTAssertEqual(dimmer.refusal(), why)
@@ -134,14 +134,14 @@ final class PrivateDisplayGuardTests: XCTestCase {
 
         table["setBrightness:forKeyboard:"] = nil
         let why = try XCTUnwrap(DisplayPower.keyboardClientRefusal { table[$0] })
-        XCTAssertTrue(why.contains("has no setBrightness:forKeyboard:"), why)
+        XCTAssertTrue(why.contains("içinde setBrightness:forKeyboard: yok"), why)
     }
 
     func testAChangedEncodingRefusesEvenOnAnOptionalSelector() throws {
         var table = measured
         table["isBacklightDimmedOnKeyboard:"] = "B24@0:8i16"
         let why = try XCTUnwrap(DisplayPower.keyboardClientRefusal { table[$0] })
-        XCTAssertTrue(why.contains("isBacklightDimmedOnKeyboard: has type encoding B@:i, measured B@:Q"), why)
+        XCTAssertTrue(why.contains("isBacklightDimmedOnKeyboard: tür kodlaması B@:i, macOS 26 üzerinde ölçülen ise B@:Q"), why)
     }
 
     /// Stack offsets are layout, not signature.
@@ -168,7 +168,7 @@ final class PrivateDisplayGuardTests: XCTestCase {
 
         let why = try XCTUnwrap(backlight.refusal())
 
-        XCTAssertTrue(why.contains("isKeyboardBuiltIn: has type encoding B@:i, measured B@:Q on macOS 26"), why)
+        XCTAssertTrue(why.contains("isKeyboardBuiltIn: tür kodlaması B@:i, macOS 26 üzerinde ölçülen ise B@:Q"), why)
         XCTAssertThrowsError(try backlight.readBrightness()) { XCTAssertEqual($0.localizedDescription, why) }
         XCTAssertThrowsError(try backlight.setBrightness(0)) { XCTAssertEqual($0.localizedDescription, why) }
         XCTAssertFalse(backlight.isSuppressedOrDimmed())
@@ -180,7 +180,7 @@ final class PrivateDisplayGuardTests: XCTestCase {
 
         let why = try XCTUnwrap(backlight.refusal())
 
-        XCTAssertTrue(why.contains("has no setBrightness:forKeyboard:"), why)
+        XCTAssertTrue(why.contains("içinde setBrightness:forKeyboard: yok"), why)
         XCTAssertThrowsError(try backlight.readBrightness())
     }
 
@@ -265,8 +265,8 @@ final class RefusedDarkeningTests: XCTestCase {
         XCTAssertEqual(h.keyboard.sets, [0])
         XCTAssertEqual(h.display.sleepRequests, 1)
         let log = logText()
-        XCTAssertTrue(log.contains("display darkening refused: DisplayServices brightness calls were \(measuredMajorsText); this is macOS \(unmeasuredMajor)"), log)
-        XCTAssertTrue(log.contains("display darken on lid close skipped: DisplayServices brightness calls were \(measuredMajorsText); this is macOS \(unmeasuredMajor)"), log)
+        XCTAssertTrue(log.contains("display darkening refused: DisplayServices parlaklık çağrıları \(measuredMajorsText); bu sistem macOS \(unmeasuredMajor)"), log)
+        XCTAssertTrue(log.contains("display darken on lid close skipped: DisplayServices parlaklık çağrıları \(measuredMajorsText); bu sistem macOS \(unmeasuredMajor)"), log)
         XCTAssertTrue(log.contains("keyboard backlight off (was brightness 0.5)"), log)
 
         await actions.onOpen()
@@ -363,11 +363,11 @@ final class RefusedDarkeningTests: XCTestCase {
         XCTAssertTrue(after.hasRefusedBrightness)
         XCTAssertFalse(after.hasLidActions, "the live session keeps the sleep guard journaled, but no lid action is left to undo")
         let error = try XCTUnwrap(m.lastError)
-        XCTAssertTrue(error.hasPrefix("could not restore the brightness saved before the lid closed on this macOS build. "), error)
-        XCTAssertTrue(error.contains("Display brightness 0.8: DisplayServices brightness calls were \(measuredMajorsText); this is macOS \(unmeasuredMajor)"), error)
-        XCTAssertTrue(error.contains("Keyboard backlight 0.3: KeyboardBrightnessClient isKeyboardBuiltIn: has type encoding B@:i"), error)
-        XCTAssertTrue(error.contains("Set the levels with the brightness keys or Control Center"), error)
-        XCTAssertTrue(error.contains("the saved values stay in the journal"), error)
+        XCTAssertTrue(error.hasPrefix("Kapak kapanmadan önce kaydedilen parlaklık bu macOS derlemesinde geri yüklenemedi. "), error)
+        XCTAssertTrue(error.contains("Ekran parlaklığı 0.8: DisplayServices parlaklık çağrıları \(measuredMajorsText); bu sistem macOS \(unmeasuredMajor)"), error)
+        XCTAssertTrue(error.contains("Klavye arka ışığı 0.3: KeyboardBrightnessClient isKeyboardBuiltIn: tür kodlaması B@:i"), error)
+        XCTAssertTrue(error.contains("Düzeyleri parlaklık tuşlarıyla ya da Denetim Merkezi'nden ayarlayın"), error)
+        XCTAssertTrue(error.contains("kaydedilen değerler, geri yükleyebilen bir sürüm için kayıt defterinde kalıyor"), error)
         XCTAssertTrue(logText().contains(error), logText())
     }
 
@@ -392,13 +392,13 @@ final class RefusedDarkeningTests: XCTestCase {
         XCTAssertFalse(kept.isDirty)
         XCTAssertEqual(h.backstop.arms, 0)
         XCTAssertFalse(h.notifier.posts.contains { $0.title == SessionManager.incompleteTitle }, "\(h.notifier.posts)")
-        XCTAssertTrue(try XCTUnwrap(first.lastError).contains("with the brightness keys or Control Center"))
+        XCTAssertTrue(try XCTUnwrap(first.lastError).contains("parlaklık tuşlarıyla ya da Denetim Merkezi'nden"))
 
         let m = h.makeManager(display: refusedDisplay, keyboard: refusedKeyboard)
         await m.reconcile()
 
         XCTAssertTrue(logText().contains("reconcile: no session; trying again the brightness kept after a refused restore"), logText())
-        XCTAssertTrue(try XCTUnwrap(m.lastError).contains("with the brightness keys or Control Center"))
+        XCTAssertTrue(try XCTUnwrap(m.lastError).contains("parlaklık tuşlarıyla ya da Denetim Merkezi'nden"))
         XCTAssertEqual(h.backstop.arms, 0)
         XCTAssertFalse(h.notifier.posts.contains { $0.title == SessionManager.incompleteTitle }, "\(h.notifier.posts)")
 
@@ -458,7 +458,7 @@ final class RefusedDarkeningTests: XCTestCase {
         XCTAssertFalse(after.displayRestoreRefused)
         XCTAssertFalse(after.keyboardRestoreRefused)
         XCTAssertFalse(after.isDirty)
-        XCTAssertTrue(logText().contains("display brightness reads 0.6, set since its restore to 0.8 was refused; left as set, and the saved value cleared"), logText())
+        XCTAssertTrue(logText().contains("Ekran parlaklığı reads 0.6, set since its restore to 0.8 was refused; left as set, and the saved value cleared"), logText())
     }
 
     /// The re-read runs on its own task; polls for up to 3 s.
@@ -499,7 +499,7 @@ final class RefusedDarkeningTests: XCTestCase {
         let after = try XCTUnwrap(try h.store.loadState())
         XCTAssertNil(after.savedKeyboardBrightness)
         XCTAssertFalse(after.keyboardRestoreRefused)
-        XCTAssertTrue(logText().contains("keyboard backlight reads 0.6, set since its restore to 0.3 was refused; left as set, and the saved value cleared"), logText())
+        XCTAssertTrue(logText().contains("Klavye arka ışığı reads 0.6, set since its restore to 0.3 was refused; left as set, and the saved value cleared"), logText())
     }
 
     /// An expired session ends while the display is asleep, so its reading
@@ -565,7 +565,7 @@ final class RefusedDarkeningTests: XCTestCase {
 
         XCTAssertEqual(h.keyboard.sets, [], "the level set since is not overwritten")
         XCTAssertFalse(try XCTUnwrap(try h.store.loadState()).keyboardRestoreRefused)
-        XCTAssertTrue(logText().contains("keyboard backlight reads 0.6, set since its restore to 0.3 was refused; left as set, and the saved value cleared"), logText())
+        XCTAssertTrue(logText().contains("Klavye arka ışığı reads 0.6, set since its restore to 0.3 was refused; left as set, and the saved value cleared"), logText())
     }
 
     /// A read that fails decides nothing either: the kept value is not
@@ -711,9 +711,9 @@ final class RefusedDarkeningTests: XCTestCase {
         let held = try XCTUnwrap(try RecoveryLock(url: h.home.paths.recoveryLock).tryAcquire())
         h.keyboard.brightness = 0.6
         h.keyboard.suppressedOrDimmed = false
-        try await waitFor { self.logText().contains("brightness re-check skipped, nothing changed") }
+        try await waitFor { self.logText().contains("Parlaklık yeniden denetimi atlandı, hiçbir şey değişmedi") }
 
-        XCTAssertTrue(logText().contains("brightness re-check skipped, nothing changed"), logText())
+        XCTAssertTrue(logText().contains("Parlaklık yeniden denetimi atlandı, hiçbir şey değişmedi"), logText())
         XCTAssertEqual(try h.store.loadState()?.savedKeyboardBrightness, 0.3)
 
         held.release()
@@ -721,7 +721,7 @@ final class RefusedDarkeningTests: XCTestCase {
 
         XCTAssertEqual(h.keyboard.sets, [], "the level set since is not overwritten")
         XCTAssertNil(try h.store.loadState()?.savedKeyboardBrightness)
-        XCTAssertTrue(logText().contains("keyboard backlight reads 0.6, set since its restore to 0.3 was refused; left as set, and the saved value cleared"), logText())
+        XCTAssertTrue(logText().contains("Klavye arka ışığı reads 0.6, set since its restore to 0.3 was refused; left as set, and the saved value cleared"), logText())
     }
 
     /// A launch with no session and the lid closed: the display reads what
@@ -806,8 +806,8 @@ final class RefusedDarkeningTests: XCTestCase {
         XCTAssertEqual(h.display.sets, [])
         XCTAssertEqual(h.keyboard.sets, [])
         let error = try XCTUnwrap(m.lastError)
-        XCTAssertTrue(error.contains("display brightness was set since its restore was refused, but the saved value could not be cleared"), error)
-        XCTAssertTrue(error.contains("keyboard backlight was set since its restore was refused, but the saved value could not be cleared"), error)
+        XCTAssertTrue(error.contains("Ekran parlaklığı, geri yüklemesi reddedildikten sonra ayarlanmış, ancak kaydedilen değer temizlenemedi"), error)
+        XCTAssertTrue(error.contains("Klavye arka ışığı, geri yüklemesi reddedildikten sonra ayarlanmış, ancak kaydedilen değer temizlenemedi"), error)
         XCTAssertTrue(logText().contains("display brightness 0.8, set since its refused restore, still to be cleared from the journal; keyboard backlight 0.3, set since its refused restore, still to be cleared from the journal; nothing written or cleared, tried again in"), logText())
 
         h.display.brightness = 0
@@ -889,10 +889,10 @@ final class RefusedDarkeningTests: XCTestCase {
         XCTAssertFalse(hidden.isDirty)
         XCTAssertEqual(h.backstop.arms, 1)
         let body = try XCTUnwrap(h.notifier.posts.last { $0.title == SessionManager.incompleteTitle }?.body)
-        XCTAssertTrue(body.contains("do not quit until it is restored"), body)
-        XCTAssertFalse(body.contains("The recovery agent retries every minute"), body)
+        XCTAssertTrue(body.contains("geri yükleme tamamlanana dek uygulamadan çıkmayın"), body)
+        XCTAssertFalse(body.contains("Kurtarma ajanı her dakika yeniden dener"), body)
         XCTAssertEqual(m.pendingEnd, .timer)
-        XCTAssertTrue(try XCTUnwrap(m.lastError).contains("could not mark the display brightness for retry"), m.lastError ?? "")
+        XCTAssertTrue(try XCTUnwrap(m.lastError).contains("Ekran parlaklığı yeniden denenmek üzere işaretlenemedi"), m.lastError ?? "")
 
         let held = await m.end(reason: .quit)
         XCTAssertEqual(held, .incomplete(agentArmed: false), "quit waits while the disk hides the failed restore")
@@ -985,7 +985,7 @@ final class RefusedDarkeningTests: XCTestCase {
 
         XCTAssertEqual(m.pendingEnd, .backstop, "this process keeps the entry the agent cannot see")
         let body = try XCTUnwrap(h.notifier.posts.last { $0.title == SessionManager.incompleteTitle }?.body)
-        XCTAssertTrue(body.contains("do not quit until it is restored"), body)
+        XCTAssertTrue(body.contains("geri yükleme tamamlanana dek uygulamadan çıkmayın"), body)
         XCTAssertTrue(logText().contains("reconcile: a kept brightness failed to restore; ending as for a dirty journal"), logText())
         XCTAssertTrue(try XCTUnwrap(try h.store.loadState()).keyboardRestoreRefused)
 
@@ -1029,7 +1029,7 @@ final class RefusedDarkeningTests: XCTestCase {
         XCTAssertTrue(after.isDirty)
         let body = try XCTUnwrap(h.notifier.posts.last { $0.title == SessionManager.incompleteTitle }?.body)
         XCTAssertTrue(body.contains(SessionManager.brightnessRetrySentence), body)
-        XCTAssertFalse(body.contains("The recovery agent retries every minute"), body)
+        XCTAssertFalse(body.contains("Kurtarma ajanı her dakika yeniden dener"), body)
         XCTAssertTrue(logText().contains("brightness re-check: a kept value failed to restore; ending as for a dirty journal"), logText())
     }
 
@@ -1126,8 +1126,8 @@ final class RefusedDarkeningTests: XCTestCase {
         await m.reconcile()
 
         let incomplete = try XCTUnwrap(h.notifier.posts.first { $0.title == SessionManager.incompleteTitle }, "\(h.notifier.posts)")
-        XCTAssertTrue(incomplete.body.contains("could not restore keyboard backlight"), incomplete.body)
-        XCTAssertTrue(incomplete.body.contains("Display brightness 0.8: DisplayServices brightness calls were \(measuredMajorsText)"), incomplete.body)
+        XCTAssertTrue(incomplete.body.contains("Klavye arka ışığı geri yüklenemedi"), incomplete.body)
+        XCTAssertTrue(incomplete.body.contains("Ekran parlaklığı 0.8: DisplayServices parlaklık çağrıları \(measuredMajorsText)"), incomplete.body)
         let after = try XCTUnwrap(try h.store.loadState())
         XCTAssertEqual(after.savedKeyboardBrightness, 0.3, "the failed write keeps its entry")
         XCTAssertTrue(after.displayRestoreRefused)
@@ -1150,8 +1150,8 @@ final class RefusedDarkeningTests: XCTestCase {
         await m.reconcile()
 
         let incomplete = try XCTUnwrap(h.notifier.posts.first { $0.title == SessionManager.incompleteTitle }, "\(h.notifier.posts)")
-        XCTAssertTrue(incomplete.body.contains("could not restore audio"), incomplete.body)
-        XCTAssertTrue(incomplete.body.contains("Display brightness 0.8: DisplayServices brightness calls were \(measuredMajorsText)"), incomplete.body)
+        XCTAssertTrue(incomplete.body.contains("Ses geri yüklenemedi"), incomplete.body)
+        XCTAssertTrue(incomplete.body.contains("Ekran parlaklığı 0.8: DisplayServices parlaklık çağrıları \(measuredMajorsText)"), incomplete.body)
         XCTAssertEqual(m.lastError.map { incomplete.body.hasPrefix($0) }, true, "\(String(describing: m.lastError))")
     }
 
@@ -1499,7 +1499,7 @@ final class RefusedDarkeningTests: XCTestCase {
         XCTAssertEqual(outcome, .incomplete(agentArmed: false))
         XCTAssertEqual(h.backstop.arms, 2, "armed at the start and again for the sleep entry")
         let body = try XCTUnwrap(h.notifier.posts.last { $0.title == SessionManager.incompleteTitle }?.body)
-        XCTAssertTrue(body.contains("do not quit until state.json can be written."), body)
+        XCTAssertTrue(body.contains("state.json yazılabilene dek uygulamadan çıkmayın."), body)
         XCTAssertFalse(body.contains(SessionManager.brightnessRetrySentence), body)
     }
 
@@ -1851,7 +1851,7 @@ final class RefusedDarkeningTests: XCTestCase {
         XCTAssertEqual(m.pendingEnd, .quit)
         XCTAssertEqual(m.effectiveState.keptDisplayReadLit, 0.8, "still held")
         let body = try XCTUnwrap(h.notifier.posts.last { $0.title == SessionManager.incompleteTitle }?.body)
-        XCTAssertTrue(body.contains("do not quit until state.json can be written"), body)
+        XCTAssertTrue(body.contains("state.json yazılabilene dek uygulamadan çıkmayın"), body)
         XCTAssertEqual(h.display.sets, [])
 
         try FileManager.default.setAttributes([.immutable: false], ofItemAtPath: file)
@@ -1899,8 +1899,8 @@ final class RefusedDarkeningTests: XCTestCase {
         XCTAssertEqual(m.pendingEnd, .quit)
         XCTAssertEqual(h.backstop.arms, 0, "nothing for the agent")
         let body = try XCTUnwrap(h.notifier.posts.last { $0.title == SessionManager.incompleteTitle }?.body)
-        XCTAssertTrue(body.contains("state.json could not record a reading of the display brightness kept after a refused restore"), body)
-        XCTAssertTrue(body.contains("do not quit until state.json can be written"), body)
+        XCTAssertTrue(body.contains("state.json, geri yüklemesi reddedildikten sonra saklanan ekran parlaklığına ait bir okumayı kaydedemedi"), body)
+        XCTAssertTrue(body.contains("state.json yazılabilene dek uygulamadan çıkmayın"), body)
 
         try FileManager.default.setAttributes([.immutable: false], ofItemAtPath: file)
         let done = await m.end(reason: .quit)
@@ -2869,7 +2869,7 @@ final class RefusedDarkeningTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: file), broken, "the unreadable journal is not written over")
         XCTAssertEqual(h.display.sets, [0.8], "nothing is written on a journal not read")
         XCTAssertNotNil(m.pendingEnd)
-        XCTAssertTrue(logText().contains("the clear and the display write owed after it (0.8) wait for the journal to read again"), logText())
+        XCTAssertTrue(logText().contains("temizleme ve modun ardından yapılması gereken ekran parlaklığı yazımı (0.8), kayıt defteri yeniden okunabilene dek bekliyor"), logText())
 
         try readable.write(to: file)
         _ = await m.end(reason: .user)
@@ -2989,8 +2989,8 @@ final class RefusedDarkeningTests: XCTestCase {
         let notes = m.darkenRefusals
 
         XCTAssertEqual(notes.count, 2, "\(notes)")
-        XCTAssertTrue(notes.first?.hasPrefix("Display: DisplayServices brightness calls were \(measuredMajorsText); this is macOS \(unmeasuredMajor)") == true, "\(notes)")
-        XCTAssertTrue(notes.last?.hasPrefix("Keyboard backlight: KeyboardBrightnessClient isKeyboardBuiltIn: has type encoding B@:i") == true, "\(notes)")
+        XCTAssertTrue(notes.first?.hasPrefix("Ekran: DisplayServices parlaklık çağrıları \(measuredMajorsText); bu sistem macOS \(unmeasuredMajor)") == true, "\(notes)")
+        XCTAssertTrue(notes.last?.hasPrefix("Klavye arka ışığı: KeyboardBrightnessClient isKeyboardBuiltIn: tür kodlaması B@:i") == true, "\(notes)")
         XCTAssertEqual(h.makeManager().darkenRefusals, [], "the harness fakes refuse nothing")
     }
 
@@ -3003,8 +3003,8 @@ final class RefusedDarkeningTests: XCTestCase {
         let notes = m.darkenRefusals
 
         XCTAssertEqual(notes.count, 2, "\(notes)")
-        XCTAssertTrue(notes.first?.hasSuffix("measured again. The level saved before the lid closed, 0.8, was not restored; set it with the brightness keys or Control Center.") == true, "\(notes)")
-        XCTAssertTrue(notes.last?.hasSuffix("The level saved before the lid closed, 0.3, was not restored; set it with the brightness keys or Control Center.") == true, "\(notes)")
+        XCTAssertTrue(notes.first?.hasSuffix("yeniden ölçülene kadar ekrana dokunulmuyor. Kapak kapanmadan önce kaydedilen düzey (0.8) geri yüklenmedi; düzeyi parlaklık tuşlarıyla ya da Denetim Merkezi'nden ayarlayın.") == true, "\(notes)")
+        XCTAssertTrue(notes.last?.hasSuffix("Kapak kapanmadan önce kaydedilen düzey (0.3) geri yüklenmedi; düzeyi parlaklık tuşlarıyla ya da Denetim Merkezi'nden ayarlayın.") == true, "\(notes)")
     }
 }
 
@@ -3131,8 +3131,8 @@ final class OwedKeptClearQuitTests: XCTestCase {
         XCTAssertEqual(m.pendingEnd, .quit)
         XCTAssertEqual(h.backstop.arms, 0, "nothing for the agent: it cannot clear a kept entry")
         let body = incompleteBody()
-        XCTAssertTrue(body.hasPrefix("state.json could not record that a brightness kept after a refused restore is settled. "), body)
-        XCTAssertTrue(body.hasSuffix("do not quit until state.json can be written."), body)
+        XCTAssertTrue(body.hasPrefix("state.json, geri yüklemesi reddedildikten sonra saklanan bir parlaklığın sonuçlandığını kaydedemedi. "), body)
+        XCTAssertTrue(body.hasSuffix("state.json yazılabilene dek uygulamadan çıkmayın."), body)
         XCTAssertFalse(body.contains(SessionManager.brightnessRetrySentence), body)
         XCTAssertTrue(logText().contains("end: the journal has not taken the clear of a brightness kept after a refused restore and settled in this process; a relaunch would read that entry again and could write its saved value over a 0 set since, so Insomnia keeps it and retries"), logText())
 
@@ -3140,7 +3140,7 @@ final class OwedKeptClearQuitTests: XCTestCase {
 
         XCTAssertNil(m.session, "Start is refused while the end is pending")
         XCTAssertNil(try h.store.loadSession())
-        XCTAssertTrue(try XCTUnwrap(m.lastError).contains("start refused: the previous session is still being ended"), m.lastError ?? "")
+        XCTAssertTrue(try XCTUnwrap(m.lastError).contains("Oturum başlatma reddedildi: önceki oturum hâlâ bitiriliyor"), m.lastError ?? "")
 
         let stillRefused = await m.end(reason: .user)
 
@@ -3233,7 +3233,7 @@ final class OwedKeptClearQuitTests: XCTestCase {
         XCTAssertEqual(m.pendingEnd, .quit)
         XCTAssertEqual(h.backstop.arms, agentArms ? armsAtStart + 1 : armsAtStart, "armed for the session's own entries, or not")
         let body = incompleteBody()
-        XCTAssertTrue(body.hasSuffix("do not quit until state.json can be written."), body)
+        XCTAssertTrue(body.hasSuffix("state.json yazılabilene dek uygulamadan çıkmayın."), body)
         XCTAssertFalse(body.contains(SessionManager.brightnessRetrySentence), body)
 
         try setJournalImmutable(false)

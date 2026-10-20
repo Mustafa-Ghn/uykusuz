@@ -33,7 +33,7 @@ struct Store: Sendable {
             let c = try decoder.singleValueContainer()
             let text = try c.decode(String.self)
             guard let date = parseDate(text) else {
-                throw DecodingError.dataCorruptedError(in: c, debugDescription: "\(text) is not a date in the form 2027-01-15T08:00:00Z or 2027-01-15T10:00:00+02:00")
+                throw DecodingError.dataCorruptedError(in: c, debugDescription: "\(text), 2027-01-15T08:00:00Z ya da 2027-01-15T10:00:00+02:00 biçiminde bir tarih değil")
             }
             return date
         }
@@ -207,9 +207,9 @@ struct Store: Sendable {
         }
         switch error {
         case let .dataCorrupted(c): return path(c) + c.debugDescription
-        case let .keyNotFound(k, c): return path(c) + "missing key \(k.stringValue)"
-        case let .typeMismatch(t, c): return path(c) + "expected \(t)"
-        case let .valueNotFound(t, c): return path(c) + "missing \(t)"
+        case let .keyNotFound(k, c): return path(c) + "\(k.stringValue) anahtarı eksik"
+        case let .typeMismatch(t, c): return path(c) + "beklenen tür: \(t)"
+        case let .valueNotFound(t, c): return path(c) + "\(t) değeri eksik"
         @unknown default: return String(describing: error)
         }
     }
@@ -224,13 +224,13 @@ enum StoreError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .rename(from, to, errno):
-            return "rename \(from) -> \(to) failed: \(String(cString: strerror(errno)))"
+            return "\(from) -> \(to) yeniden adlandırılamadı: \(String(cString: strerror(errno)))"
         case let .corrupt(file, detail):
-            return "\(file) could not be decoded (\(detail)); it was left in place"
+            return "\(file) ayrıştırılamadı (\(detail)); olduğu yerde bırakıldı"
         case let .unreadable(file, detail):
-            return "\(file) could not be decoded (\(detail))"
+            return "\(file) ayrıştırılamadı (\(detail))"
         case let .notRegularFile(file):
-            return "\(file) is not a regular file; it was not opened"
+            return "\(file) normal bir dosya değil; açılmadı"
         }
     }
 }

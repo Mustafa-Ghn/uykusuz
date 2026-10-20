@@ -34,10 +34,10 @@ struct CommandStillRunningError: Error, LocalizedError, Sendable {
     var errorDescription: String? {
         let why: String
         switch reason {
-        case let .timeout(seconds): why = "did not finish within \(Int(seconds)) s"
-        case .cancelled: why = "was cancelled"
+        case let .timeout(seconds): why = "\(Int(seconds)) sn içinde bitmedi"
+        case .cancelled: why = "iptal edildi"
         }
-        return "\(command.description) \(why) and did not stop on SIGTERM within \(Int(grace)) s; it is left running, not killed"
+        return "\(command.description) \(why) ve SIGTERM ile \(Int(grace)) sn içinde durmadı; zorla sonlandırılmadı, çalışır durumda bırakıldı"
     }
 }
 
@@ -143,7 +143,7 @@ struct CancellableCommand: Sendable {
                     var lockCopy: Int32?
                     if let lock {
                         guard let copy = lock.descriptorForChild() else {
-                            state.finish(.failure(ShellError.launchFailed(exe: exe, underlying: "the recovery lock it must hold was already released")))
+                            state.finish(.failure(ShellError.launchFailed(exe: exe, underlying: "tutması gereken kurtarma kilidi zaten bırakılmıştı")))
                             return
                         }
                         lockCopy = copy

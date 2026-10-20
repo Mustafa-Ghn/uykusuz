@@ -35,7 +35,7 @@ struct AppBuild: Equatable, Sendable {
         switch (version, build) {
         case let (version?, build?): "\(version) (\(build))"
         case let (version?, nil): version
-        case (nil, _): "no version: this build has no Info.plist"
+        case (nil, _): "sürüm yok: bu derlemede Info.plist yok"
         }
     }
 }
@@ -184,22 +184,23 @@ struct ReleaseReport: Equatable, Sendable {
         return .aheadOfStable
     }
 
-    /// The line under the button in Settings.
+    /// The line under the button in Settings. The releases are the
+    /// original (upstream) project's, so the text says so.
     var summary: String {
         let stable = newestStable.map { "\($0)" }
         let first: String = switch standing {
         case .newerStableAvailable:
-            "A newer stable release exists: \(stable ?? ""). You have \(installed.version ?? "")."
+            "Orijinal projede daha yeni bir kararlı sürüm var: \(stable ?? ""). Sizdeki sürüm: \(installed.version ?? "")."
         case .upToDate:
-            "You have the newest stable release, \(stable ?? "")."
+            "Orijinal projenin en yeni kararlı sürümü sizde: \(stable ?? "")."
         case .aheadOfStable:
-            "You have \(installed.version ?? ""), higher than the release marked Latest, \(stable ?? "")."
+            "Sizdeki \(installed.version ?? "") sürümü, orijinal projede Latest olarak işaretlenen \(stable ?? "") sürümünden daha yüksek."
         case .noStableRelease:
-            "No stable release is published yet."
+            "Orijinal projede henüz yayımlanmış kararlı sürüm yok."
         case .installedVersionUnknown:
-            "This build has no version to compare. The newest stable release is \(stable ?? "none")."
+            "Bu derlemenin karşılaştırılacak bir sürümü yok. Orijinal projenin en yeni kararlı sürümü: \(stable ?? "yok")."
         }
-        let second = newestNightly.map { "Newest nightly: \($0)." } ?? "No nightly is published."
+        let second = newestNightly.map { "En yeni gecelik sürüm: \($0)." } ?? "Yayımlanmış gecelik sürüm yok."
         return first + " " + second
     }
 
@@ -224,9 +225,9 @@ enum ReleaseCheckError: LocalizedError, Equatable {
 
     var errorDescription: String? {
         switch self {
-        case .notHTTP: "the answer was not an HTTP response"
-        case let .status(code): "GitHub answered HTTP \(code)"
-        case .unexpectedAnswer: "GitHub's answer was not a releases list"
+        case .notHTTP: "yanıt bir HTTP yanıtı değildi"
+        case let .status(code): "GitHub HTTP \(code) yanıtı verdi"
+        case .unexpectedAnswer: "GitHub'ın yanıtı bir sürüm listesi değildi"
         }
     }
 }

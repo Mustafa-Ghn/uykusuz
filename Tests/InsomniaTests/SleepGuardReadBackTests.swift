@@ -92,7 +92,7 @@ final class SleepGuardReadBackTests: XCTestCase {
             try await disableSleep(sleepGuard)
             XCTFail("a disable that was put back returned")
         } catch let error as SleepDisableRevertedError {
-            XCTAssertEqual(error.localizedDescription, "SleepDisabled read 0 again within 5 s of `pmset -a disablesleep 1`; another process may be resetting it, so closing the lid would still sleep this Mac")
+            XCTAssertEqual(error.localizedDescription, "SleepDisabled, `pmset -a disablesleep 1` komutundan sonraki 5 sn içinde yeniden 0 okundu; başka bir süreç onu sıfırlıyor olabilir, bu yüzden kapak kapatılınca bu Mac yine de uykuya geçer")
         }
         XCTAssertEqual(try calls(), expectedCalls)
     }
@@ -114,7 +114,7 @@ final class SleepGuardReadBackTests: XCTestCase {
                 try await disableSleep(sleepGuard)
                 XCTFail("an unreadable read back returned for \(output.debugDescription)")
             } catch let error as SleepGuardError {
-                XCTAssertEqual(error.localizedDescription, "`pmset -g` failed with status 0: no SleepDisabled line reading 0 or 1, so `pmset -a disablesleep 1` could not be read back")
+                XCTAssertEqual(error.localizedDescription, "`pmset -g` başarısız oldu (çıkış kodu 0): 0 ya da 1 okunan bir SleepDisabled satırı yok, bu yüzden `pmset -a disablesleep 1` geri okunamadı")
             }
             XCTAssertEqual(try calls(), expectedCalls)
         }
@@ -126,7 +126,7 @@ final class SleepGuardReadBackTests: XCTestCase {
             try await disableSleep(sleepGuard)
             XCTFail("a failed read back returned")
         } catch let error as SleepGuardError {
-            XCTAssertEqual(error.localizedDescription, "`pmset -g` failed with status 3: pmset: cannot read settings")
+            XCTAssertEqual(error.localizedDescription, "`pmset -g` başarısız oldu (çıkış kodu 3): pmset: cannot read settings")
         }
         XCTAssertEqual(try calls(), expectedCalls)
     }

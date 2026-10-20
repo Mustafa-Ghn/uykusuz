@@ -60,14 +60,14 @@ final class PlaceholderStatus: StatusSource {
 /// Pure formatting for the menu's status block, kept out of the views so
 /// it can be tested.
 enum StatusLines {
-    /// "Lid: closed · 4.1 W · Wi-Fi: iPhone". Unknown parts are omitted.
+    /// "Kapak: kapalı · 4.1 W · Wi-Fi: iPhone". Unknown parts are omitted.
     static func machine(lidClosed: Bool, watts: Double?, wifiSSID: String?, batteryPercent: Int?, isCharging: Bool) -> String {
-        var parts: [String] = ["Lid: \(lidClosed ? "closed" : "open")"]
+        var parts: [String] = ["Kapak: \(lidClosed ? "kapalı" : "açık")"]
         if let w = watts {
             parts.append(String(format: "%.1f W", w))
         }
         if let p = batteryPercent {
-            parts.append(isCharging ? "\(p)% charging" : "\(p)%")
+            parts.append(isCharging ? "%\(p) şarj oluyor" : "%\(p)")
         }
         if let ssid = wifiSSID, !ssid.isEmpty {
             parts.append("Wi-Fi: \(ssid)")
@@ -75,31 +75,31 @@ enum StatusLines {
         return parts.joined(separator: " \u{00B7} ")
     }
 
-    /// "3 apps frozen · Docker paused", or nil when nothing is held.
+    /// "3 uygulama donduruldu · Docker duraklatıldı", or nil when nothing is held.
     static func actions(frozenCount: Int, dockerPaused: Bool, lastGap: TimeInterval?) -> String? {
         var parts: [String] = []
         if frozenCount > 0 {
-            parts.append(frozenCount == 1 ? "1 app frozen" : "\(frozenCount) apps frozen")
+            parts.append("\(frozenCount) uygulama donduruldu")
         }
         if dockerPaused {
-            parts.append("Docker paused")
+            parts.append("Docker duraklatıldı")
         }
         if let gap = lastGap, gap > 0 {
-            parts.append("last gap \(Int(gap.rounded()))s")
+            parts.append("son kesinti \(Int(gap.rounded()))sn")
         }
         return parts.isEmpty ? nil : parts.joined(separator: " \u{00B7} ")
     }
 
-    /// "⚠ Chrome is throttled" / "⚠ Chrome and Arc are throttled".
+    /// "⚠ Chrome kısıtlanıyor" / "⚠ Chrome ve Arc kısıtlanıyor".
     static func throttleWarning(_ browsers: [String]) -> String? {
         guard !browsers.isEmpty else { return nil }
         let names: String
         switch browsers.count {
         case 1: names = browsers[0]
-        case 2: names = "\(browsers[0]) and \(browsers[1])"
-        default: names = browsers.dropLast().joined(separator: ", ") + ", and " + browsers.last!
+        case 2: names = "\(browsers[0]) ve \(browsers[1])"
+        default: names = browsers.dropLast().joined(separator: ", ") + " ve " + browsers.last!
         }
-        return "\u{26A0} \(names) \(browsers.count == 1 ? "is" : "are") throttled"
+        return "\u{26A0} \(names) kısıtlanıyor"
     }
 }
 
@@ -117,11 +117,11 @@ enum SleepHeldLine {
     static func line(sessionActive: Bool, sleepHeld: Bool) -> Line? {
         switch (sessionActive, sleepHeld) {
         case (true, true):
-            Line(text: "Sleep held per journal \u{2014} not verified live", isWarning: false)
+            Line(text: "Kayıt defterine göre uyku engelleniyor \u{2014} canlı olarak doğrulanmadı", isWarning: false)
         case (true, false):
-            Line(text: "Sleep is not held \u{2014} this session is not keeping the Mac awake", isWarning: true)
+            Line(text: "Uyku engellenmiyor \u{2014} bu oturum Mac'i uyanık tutmuyor", isWarning: true)
         case (false, true):
-            Line(text: "Sleep still held with no session", isWarning: true)
+            Line(text: "Oturum yokken uyku hâlâ engelleniyor", isWarning: true)
         case (false, false):
             nil
         }
@@ -133,12 +133,12 @@ enum SleepHeldLine {
 enum WiFiStatusName {
     static func display(ssid: String?, locationAuthorized: Bool) -> String? {
         if let ssid, !ssid.isEmpty { return ssid }
-        return locationAuthorized ? nil : "on (name hidden until Location is allowed)"
+        return locationAuthorized ? nil : "açık (Konum izni verilene kadar ad gizli)"
     }
 }
 
-/// Short label for a duration: "30m", "2h", "3d". Used by the preset list in
-/// Settings.
+/// Short label for a duration: "30dk", "2sa", "1sa30dk", "3g". Used by the
+/// preset list in Settings.
 func chipLabel(for seconds: TimeInterval) -> String {
     SessionMath.formatRemaining(seconds).replacingOccurrences(of: " ", with: "")
 }

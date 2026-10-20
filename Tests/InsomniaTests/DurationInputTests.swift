@@ -158,8 +158,8 @@ final class DurationInputTests: XCTestCase {
     }
 
     func testFieldStrings() {
-        XCTAssertEqual(DurationInput.Field.days.placeholder, "Days")
-        XCTAssertEqual(DurationInput.Field.days.help, "Up to 30 days")
+        XCTAssertEqual(DurationInput.Field.days.placeholder, "Gün")
+        XCTAssertEqual(DurationInput.Field.days.help, "En fazla 30 gün")
         XCTAssertEqual(DurationInput.Field.hours.help, "0\u{2013}23")
         XCTAssertEqual(DurationInput.Field.minutes.help, "0\u{2013}59")
     }
@@ -184,6 +184,42 @@ final class DurationInputTests: XCTestCase {
         XCTAssertNil(DurationParser.seconds(from: "2x"))
         XCTAssertNil(DurationParser.seconds(from: "h"))
         XCTAssertNil(DurationParser.seconds(from: "2h5"))
+    }
+
+    func testParserTurkishUnits() {
+        XCTAssertEqual(DurationParser.seconds(from: "30dk"), 1_800, "dk is minutes, not d (days) followed by k")
+        XCTAssertEqual(DurationParser.seconds(from: "2sa"), 7_200)
+        XCTAssertEqual(DurationParser.seconds(from: "1sa30dk"), 5_400)
+        XCTAssertEqual(DurationParser.seconds(from: "3g"), 259_200)
+        XCTAssertEqual(DurationParser.seconds(from: "1g 2sa 3dk"), 86_400 + 7_200 + 180)
+    }
+
+    func testParserSpelledOutTurkishUnits() {
+        XCTAssertEqual(DurationParser.seconds(from: "30 dakika"), 1_800)
+        XCTAssertEqual(DurationParser.seconds(from: "2 saat"), 7_200)
+        XCTAssertEqual(DurationParser.seconds(from: "3 gün"), 259_200)
+        // "İ" lowercases to "i" plus a combining dot; it must still read as "dakika".
+        XCTAssertEqual(DurationParser.seconds(from: "30DAKİKA"), 1_800)
+    }
+
+    func testParserMixesTurkishAndEnglishUnits() {
+        XCTAssertEqual(DurationParser.seconds(from: "1h30dk"), 5_400)
+    }
+
+    func testParserStillAcceptsEnglishUnits() {
+        XCTAssertEqual(DurationParser.seconds(from: "30m"), 1_800)
+        XCTAssertEqual(DurationParser.seconds(from: "2h"), 7_200)
+        XCTAssertEqual(DurationParser.seconds(from: "1h30m"), 5_400)
+        XCTAssertEqual(DurationParser.seconds(from: "3d"), 259_200)
+    }
+
+    func testParserRejectsMalformedTurkishUnits() {
+        XCTAssertNil(DurationParser.seconds(from: "dk"), "a unit needs a number")
+        XCTAssertNil(DurationParser.seconds(from: "30dkk"), "the whole run of letters is the unit")
+        XCTAssertNil(DurationParser.seconds(from: "30d k"), "a space ends the unit, leaving k without a number")
+        XCTAssertNil(DurationParser.seconds(from: "1sa30"), "a trailing number needs a unit")
+        XCTAssertNil(DurationParser.seconds(from: "0dk"))
+        XCTAssertNil(DurationParser.seconds(from: "1sn"), "seconds are not a unit")
     }
 
     func testParserRejectsOverflowInsteadOfTrapping() {

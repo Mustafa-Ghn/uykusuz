@@ -233,8 +233,8 @@ enum OwnerOnlyError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case let .open(path, errno): return "could not open \(path): \(String(cString: strerror(errno)))"
-        case let .write(path, errno): return "could not write \(path): \(String(cString: strerror(errno)))"
+        case let .open(path, errno): return "\(path) açılamadı: \(String(cString: strerror(errno)))"
+        case let .write(path, errno): return "\(path) yazılamadı: \(String(cString: strerror(errno)))"
         case let .chmod(path, errno): return "could not make \(path) owner-only: \(String(cString: strerror(errno)))"
         case let .rotate(path, errno): return "could not rotate \(path) to \(path).1: \(String(cString: strerror(errno)))"
         case let .symlinkNotRotated(path): return "not rotating \(path): it is a symlink, so its target can grow past the cap"

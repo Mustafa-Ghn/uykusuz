@@ -30,11 +30,11 @@ enum LoginItemStatus: Equatable, Sendable {
     /// For the log and the Settings note.
     var description: String {
         switch self {
-        case .notRegistered: "not registered"
-        case .enabled: "enabled"
-        case .requiresApproval: "waiting for approval"
-        case .notFound: "not found by macOS"
-        case let .unknown(raw): "unknown status \(raw)"
+        case .notRegistered: "kayıtlı değil"
+        case .enabled: "etkin"
+        case .requiresApproval: "onay bekliyor"
+        case .notFound: "macOS tarafından bulunamadı"
+        case let .unknown(raw): "bilinmeyen durum \(raw)"
         }
     }
 }

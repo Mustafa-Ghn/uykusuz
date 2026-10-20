@@ -170,7 +170,7 @@ final class CommandCancellationTests: XCTestCase {
             reported = error.command
             XCTAssertEqual(error.reason, .timeout(seconds: 1))
             XCTAssertEqual(error.grace, 0.5)
-            XCTAssertTrue(error.localizedDescription.contains("left running"), error.localizedDescription)
+            XCTAssertTrue(error.localizedDescription.contains("çalışır durumda bırakıldı"), error.localizedDescription)
         }
         let command = try XCTUnwrap(reported)
         let readyAt = try XCTUnwrap(ready.value, "the deadline never started")

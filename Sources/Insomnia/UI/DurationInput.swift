@@ -14,16 +14,16 @@ struct DurationInput: Equatable, Sendable {
 
         var placeholder: String {
             switch self {
-            case .days: return "Days"
-            case .hours: return "Hours"
-            case .minutes: return "Minutes"
+            case .days: return "Gün"
+            case .hours: return "Saat"
+            case .minutes: return "Dakika"
             }
         }
 
         /// Tooltip on the "?" badge.
         var help: String {
             switch self {
-            case .days: return "Up to \(DurationInput.maxDays) days"
+            case .days: return "En fazla \(DurationInput.maxDays) gün"
             case .hours: return "0\u{2013}\(DurationInput.maxHours)"
             case .minutes: return "0\u{2013}\(DurationInput.maxMinutes)"
             }
@@ -109,7 +109,7 @@ struct DurationInput: Equatable, Sendable {
 
     /// Fill the pills from a preset. Seconds are floored to the minute; fields
     /// that would be zero stay empty so the pills read like the chip did
-    /// ("2h" fills only Hours). Values beyond 30 days are clamped.
+    /// ("2sa" fills only Saat). Values beyond 30 days are clamped.
     static func from(seconds: TimeInterval) -> DurationInput {
         let totalMinutes = min(max(Int(seconds / 60), 0), maxDays * 24 * 60)
         let d = totalMinutes / (24 * 60)
@@ -166,11 +166,24 @@ struct DurationInput: Equatable, Sendable {
     }
 }
 
-/// Parses the short durations typed into settings ("30m", "2h", "1h30m", "3d").
+/// Parses the short durations typed into settings: Turkish units ("30dk",
+/// "2sa", "1sa30dk", "3g", also spelled out: "30 dakika", "2 saat",
+/// "3 gün") and the English ones ("30m", "2h", "1h30m", "3d").
 enum DurationParser {
+    /// Seconds per unit. A unit is the whole run of letters after a
+    /// number, so a multi-letter unit is matched as a whole, before any
+    /// single letter: "30dk" is minutes, never days.
+    private static let unitSeconds: [String: Int] = [
+        "g": 86_400, "gün": 86_400, "d": 86_400,
+        "sa": 3_600, "saat": 3_600, "h": 3_600,
+        "dk": 60, "dakika": 60, "m": 60,
+    ]
+
     /// Seconds, or nil when the text is not a duration. Bare numbers are minutes.
     static func seconds(from text: String) -> TimeInterval? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            // "İ" lowercases to "i" plus a combining dot: "DAKİKA" is "dakika".
+            .replacingOccurrences(of: "i\u{0307}", with: "i")
         guard !trimmed.isEmpty else { return nil }
         if let bare = Int(trimmed) {
             guard bare > 0 else { return nil }
@@ -179,31 +192,32 @@ enum DurationParser {
         }
         var total = 0
         var number = ""
+        var unit = ""
         var sawUnit = false
+        /// Adds `number` in `unit` to the total; false rejects the text.
+        func addUnit() -> Bool {
+            guard let n = Int(number), let multiplier = unitSeconds[unit] else { return false }
+            // Reject rather than trap on absurd values.
+            let (seconds, mulOverflow) = n.multipliedReportingOverflow(by: multiplier)
+            guard !mulOverflow else { return false }
+            let (sum, addOverflow) = total.addingReportingOverflow(seconds)
+            guard !addOverflow else { return false }
+            total = sum
+            number = ""
+            unit = ""
+            sawUnit = true
+            return true
+        }
         for ch in trimmed {
-            if ch.isNumber {
-                number.append(ch)
-            } else if ch == " " {
-                continue
+            if ch.isNumber || ch == " " {
+                // A digit or a space ends the unit before it.
+                if !unit.isEmpty, !addUnit() { return nil }
+                if ch.isNumber { number.append(ch) }
             } else {
-                guard let n = Int(number) else { return nil }
-                let multiplier: Int
-                switch ch {
-                case "d": multiplier = 86_400
-                case "h": multiplier = 3_600
-                case "m": multiplier = 60
-                default: return nil
-                }
-                // Reject rather than trap on absurd values.
-                let (seconds, mulOverflow) = n.multipliedReportingOverflow(by: multiplier)
-                guard !mulOverflow else { return nil }
-                let (sum, addOverflow) = total.addingReportingOverflow(seconds)
-                guard !addOverflow else { return nil }
-                total = sum
-                number = ""
-                sawUnit = true
+                unit.append(ch)
             }
         }
+        if !unit.isEmpty, !addUnit() { return nil }
         guard number.isEmpty, sawUnit, total > 0 else { return nil }
         return TimeInterval(total)
     }

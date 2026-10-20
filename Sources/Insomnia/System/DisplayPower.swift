@@ -92,7 +92,7 @@ enum DisplayPower {
     static func displayServicesRefusal(osMajorVersion major: Int) -> String? {
         guard !measuredDisplayServicesMajors.contains(major) else { return nil }
         let measured = measuredDisplayServicesMajors.sorted().map(String.init).joined(separator: ", ")
-        return "DisplayServices brightness calls were measured on macOS \(measured) only; this is macOS \(major), so the display is left alone until they are measured again"
+        return "DisplayServices parlaklık çağrıları yalnızca macOS \(measured) üzerinde ölçüldü; bu sistem macOS \(major), bu yüzden çağrılar yeniden ölçülene kadar ekrana dokunulmuyor"
     }
 
     /// Instance method type encodings of the private KeyboardBrightnessClient
@@ -128,14 +128,14 @@ enum DisplayPower {
         for name in measuredKeyboardClientEncodings.keys.sorted() {
             guard let raw = encodingFor(name) else {
                 if requiredKeyboardClientSelectors.contains(name) {
-                    return "KeyboardBrightnessClient has no \(name); the keyboard backlight is left alone until it is measured again"
+                    return "KeyboardBrightnessClient içinde \(name) yok; yeniden ölçülene kadar klavye arka ışığına dokunulmuyor"
                 }
                 continue
             }
             let found = typeEncodingWithoutOffsets(raw)
             let measured = measuredKeyboardClientEncodings[name]!
             if found != measured {
-                return "KeyboardBrightnessClient \(name) has type encoding \(found), measured \(measured) on macOS 26; the keyboard backlight is left alone until it is measured again"
+                return "KeyboardBrightnessClient \(name) tür kodlaması \(found), macOS 26 üzerinde ölçülen ise \(measured); yeniden ölçülene kadar klavye arka ışığına dokunulmuyor"
             }
         }
         return nil
@@ -146,7 +146,7 @@ enum DisplayPower {
 /// so tests and non-display paths need neither private framework. Reading
 /// throws, so nothing is journaled and nothing is set.
 struct NoopDisplayDimmer: DisplayDimming {
-    func readBrightness() throws -> Float { throw DisplayPowerError(what: "no display control") }
+    func readBrightness() throws -> Float { throw DisplayPowerError(what: "ekran denetimi yok") }
     func setBrightness(_ value: Float) throws {}
     func requestSleep() throws {}
     func wake() {}
@@ -194,7 +194,7 @@ final class DisplayServicesDimmer: DisplayDimming, @unchecked Sendable {
         let display = try changeableDisplay(symbols)
         var value: Float = 0
         let rc = symbols.get(display, &value)
-        guard rc == 0 else { throw DisplayPowerError(what: "DisplayServicesGetBrightness failed (\(rc))") }
+        guard rc == 0 else { throw DisplayPowerError(what: "DisplayServicesGetBrightness başarısız oldu (\(rc))") }
         return value
     }
 
@@ -202,7 +202,7 @@ final class DisplayServicesDimmer: DisplayDimming, @unchecked Sendable {
         let symbols = try self.symbols()
         let display = try changeableDisplay(symbols)
         let rc = symbols.set(display, DisplayPower.clamped(value))
-        guard rc == 0 else { throw DisplayPowerError(what: "DisplayServicesSetBrightness failed (\(rc))") }
+        guard rc == 0 else { throw DisplayPowerError(what: "DisplayServicesSetBrightness başarısız oldu (\(rc))") }
     }
 
     /// What `pmset displaysleepnow` does. Honoured only when no process
@@ -210,10 +210,10 @@ final class DisplayServicesDimmer: DisplayDimming, @unchecked Sendable {
     /// for ~30 s after any wake.
     func requestSleep() throws {
         let wrangler = IORegistryEntryFromPath(kIOMainPortDefault, "IOService:/IOResources/IODisplayWrangler")
-        guard wrangler != 0 else { throw DisplayPowerError(what: "IODisplayWrangler not found") }
+        guard wrangler != 0 else { throw DisplayPowerError(what: "IODisplayWrangler bulunamadı") }
         defer { IOObjectRelease(wrangler) }
         let kr = IORegistryEntrySetCFProperty(wrangler, "IORequestIdle" as CFString, kCFBooleanTrue)
-        guard kr == KERN_SUCCESS else { throw DisplayPowerError(what: "IORequestIdle refused (\(kr))") }
+        guard kr == KERN_SUCCESS else { throw DisplayPowerError(what: "IORequestIdle reddedildi (\(kr))") }
     }
 
     func wake() {
@@ -257,11 +257,11 @@ final class DisplayServicesDimmer: DisplayDimming, @unchecked Sendable {
             return .failure(DisplayPowerError(what: why))
         }
         guard let handle = dlopen(frameworkPath, RTLD_LAZY) else {
-            return .failure(DisplayPowerError(what: "DisplayServices.framework could not be loaded"))
+            return .failure(DisplayPowerError(what: "DisplayServices.framework yüklenemedi"))
         }
         func symbol<T>(_ name: String) throws -> T {
             guard let pointer = dlsym(handle, name) else {
-                throw DisplayPowerError(what: "DisplayServices.framework has no \(name)")
+                throw DisplayPowerError(what: "DisplayServices.framework içinde \(name) yok")
             }
             return unsafeBitCast(pointer, to: T.self)
         }
@@ -279,7 +279,7 @@ final class DisplayServicesDimmer: DisplayDimming, @unchecked Sendable {
     private func changeableDisplay(_ symbols: Symbols) throws -> CGDirectDisplayID {
         let display = Self.builtInDisplayID()
         guard symbols.canChange(display) else {
-            throw DisplayPowerError(what: "display \(display) cannot change brightness")
+            throw DisplayPowerError(what: "\(display) kimlikli ekranın parlaklığı değiştirilemiyor")
         }
         return display
     }
@@ -335,10 +335,10 @@ final class CoreBrightnessKeyboardBacklight: KeyboardBacklighting, @unchecked Se
 
     static func loadLiveClass() throws -> AnyClass {
         guard dlopen(frameworkPath, RTLD_LAZY) != nil else {
-            throw DisplayPowerError(what: "CoreBrightness.framework could not be loaded")
+            throw DisplayPowerError(what: "CoreBrightness.framework yüklenemedi")
         }
         guard let cls = NSClassFromString(className) else {
-            throw DisplayPowerError(what: "CoreBrightness.framework has no \(className)")
+            throw DisplayPowerError(what: "CoreBrightness.framework içinde \(className) yok")
         }
         return cls
     }
@@ -352,9 +352,9 @@ final class CoreBrightnessKeyboardBacklight: KeyboardBacklighting, @unchecked Se
     func setBrightness(_ value: Float) throws {
         let client = try self.client()
         let ids = Self.builtInIDs(client)
-        guard !ids.isEmpty else { throw DisplayPowerError(what: "no built-in keyboard backlight") }
+        guard !ids.isEmpty else { throw DisplayPowerError(what: "yerleşik klavye arka ışığı yok") }
         for id in ids where !client.setBrightness(DisplayPower.clamped(value), forKeyboard: id) {
-            throw DisplayPowerError(what: "setBrightness:forKeyboard: refused for keyboard \(id)")
+            throw DisplayPowerError(what: "setBrightness:forKeyboard: \(id) kimlikli klavye için reddedildi")
         }
     }
 
@@ -412,7 +412,7 @@ final class CoreBrightnessKeyboardBacklight: KeyboardBacklighting, @unchecked Se
             return .failure(DisplayPowerError(what: why))
         }
         guard let type = cls as? NSObject.Type else {
-            return .failure(DisplayPowerError(what: "\(Self.className) is not an NSObject subclass"))
+            return .failure(DisplayPowerError(what: "\(Self.className) bir NSObject alt sınıfı değil"))
         }
         return .success(unsafeBitCast(type.init(), to: (any KeyboardBrightnessClientBridge).self))
     }

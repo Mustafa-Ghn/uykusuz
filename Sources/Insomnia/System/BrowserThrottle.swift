@@ -240,7 +240,7 @@ final class WorkspaceBrowserProcesses: BrowserProcessControlling {
         let r = try await Shell.run("/usr/bin/open", ["-b", bundleId, "--args"] + arguments, timeout: 15)
         guard r.succeeded else {
             let stderr = r.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
-            throw BrowserProcessError(detail: stderr.isEmpty ? "open exited with status \(r.status)" : stderr)
+            throw BrowserProcessError(detail: stderr.isEmpty ? "open komutu çıkış kodu \(r.status) ile sonlandı" : stderr)
         }
     }
 
@@ -308,15 +308,15 @@ enum RelaunchOutcome: Equatable, Sendable {
         case .relaunched, .cancelled:
             nil
         case .notRunning:
-            "\(name) is not running. Nothing was quit or relaunched."
+            "\(name) çalışmıyor. Hiçbir şey kapatılmadı veya yeniden başlatılmadı."
         case let .argumentsUnreadable(detail):
-            "Could not read \(name)'s profile arguments (\(detail)), so a relaunch could have opened the wrong profile. \(name) was not quit."
+            "\(name) için profil argümanları okunamadı (\(detail)), bu yüzden yeniden başlatma yanlış profili açabilirdi. \(name) kapatılmadı."
         case .stillRunning:
-            "\(name) did not quit within \(Int(BrowserThrottle.quitTimeout)) s, so nothing was relaunched. It may still quit later. If it does, open it again yourself."
+            "\(name) \(Int(BrowserThrottle.quitTimeout)) sn içinde kapanmadı, bu yüzden hiçbir şey yeniden başlatılmadı. Daha sonra yine de kapanabilir. Kapanırsa kendiniz yeniden açın."
         case let .launchFailed(detail):
-            "\(name) quit but could not be relaunched: \(detail). Open it yourself."
+            "\(name) kapandı ancak yeniden başlatılamadı: \(detail). Kendiniz açın."
         case .didNotStart:
-            "\(name) quit and was asked to open again, but it was not running after \(Int(BrowserThrottle.startTimeout)) s. Open it yourself."
+            "\(name) kapandı ve yeniden açılması istendi, ancak \(Int(BrowserThrottle.startTimeout)) sn sonra çalışmıyordu. Kendiniz açın."
         }
     }
 }
@@ -393,14 +393,14 @@ final class BrowserThrottle {
         let extra: [String]
         do {
             guard main.identity != nil else {
-                throw BrowserProcessError(detail: "the start time of pid \(main.pid) could not be read to check them")
+                throw BrowserProcessError(detail: "bunları doğrulamak için pid \(main.pid) sürecinin başlangıç zamanı okunamadı")
             }
             let args = try await readArgs(main.pid)
             guard !args.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                throw BrowserProcessError(detail: "ps printed nothing for pid \(main.pid)")
+                throw BrowserProcessError(detail: "ps, pid \(main.pid) için hiçbir şey yazdırmadı")
             }
             guard processes.isRunning(main) else {
-                throw BrowserProcessError(detail: "pid \(main.pid) exited while they were read, or could not be checked")
+                throw BrowserProcessError(detail: "pid \(main.pid) süreci argümanlar okunurken sonlandı ya da denetlenemedi")
             }
             extra = ChromiumFlags.preservedArgs(args: args)
         } catch {

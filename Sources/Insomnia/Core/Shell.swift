@@ -14,7 +14,7 @@ enum ShellError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .launchFailed(exe, underlying):
-            return "could not launch \(exe): \(underlying)"
+            return "\(exe) çalıştırılamadı: \(underlying)"
         }
     }
 }

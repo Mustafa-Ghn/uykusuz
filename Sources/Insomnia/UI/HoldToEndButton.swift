@@ -57,9 +57,9 @@ struct HoldToEndButton: View {
                     if holding { release() }
                 }
         )
-        .help("Hold to end the session")
-        .accessibilityLabel("End session")
-        .accessibilityHint("Press and hold")
+        .help("Oturumu bitirmek için basılı tutun")
+        .accessibilityLabel("Oturumu bitir")
+        .accessibilityHint("Basılı tutun")
         .accessibilityAction { action() }
     }
 

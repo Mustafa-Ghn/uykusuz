@@ -136,7 +136,7 @@ final class SettingsPasswordSaveTests: XCTestCase {
         await fulfillment(of: [keychain.entered], timeout: 5)
 
         ssid.value = "Other Phone"
-        XCTAssertEqual(field.buttonTitle(ssid: ssid.value), "Saving\u{2026}")
+        XCTAssertEqual(field.buttonTitle(ssid: ssid.value), "Kaydediliyor\u{2026}")
         keychain.release()
         let outcome = await saving.value
         let recheck = field.finishSave(outcome, ssid: ssid.value)
@@ -144,8 +144,8 @@ final class SettingsPasswordSaveTests: XCTestCase {
         XCTAssertEqual(outcome, .stored(.init(ssid: "Phone", password: "pw")))
         XCTAssertEqual(try keychain.get(service: KeychainStore.service, account: "Phone"), "pw")
         XCTAssertNil(try keychain.get(service: KeychainStore.service, account: "Other Phone"))
-        XCTAssertEqual(field.buttonTitle(ssid: ssid.value), "Save")
-        XCTAssertEqual(field.buttonTitle(ssid: "Phone"), "Saved")
+        XCTAssertEqual(field.buttonTitle(ssid: ssid.value), "Kaydet")
+        XCTAssertEqual(field.buttonTitle(ssid: "Phone"), "Kaydedildi")
         XCTAssertEqual(recheck?.ssid, "Other Phone", "the notice is read again for the SSID typed meanwhile")
     }
 
@@ -238,7 +238,7 @@ final class SettingsPasswordSaveTests: XCTestCase {
 
         let outcome = await SettingsView.storePassword("pw", in: store)
 
-        XCTAssertEqual(outcome, .failed(notice: "Could not save the hotspot password: \(KeychainError(status: errSecUserCanceled).localizedDescription)"))
+        XCTAssertEqual(outcome, .failed(notice: "Hotspot parolası kaydedilemedi: \(KeychainError(status: errSecUserCanceled).localizedDescription)"))
     }
 }
 
@@ -253,17 +253,17 @@ final class HotspotPasswordFieldTests: XCTestCase {
     func testSavedOnlyWhileTheFieldsHoldWhatWasStored() {
         var field = HotspotPasswordField()
         field.edit("pw")
-        XCTAssertEqual(field.buttonTitle(ssid: "Phone"), "Save")
+        XCTAssertEqual(field.buttonTitle(ssid: "Phone"), "Kaydet")
         XCTAssertTrue(field.startSave())
         XCTAssertFalse(field.startSave(), "one save at a time")
-        XCTAssertEqual(field.buttonTitle(ssid: "Phone"), "Saving\u{2026}")
+        XCTAssertEqual(field.buttonTitle(ssid: "Phone"), "Kaydediliyor\u{2026}")
         XCTAssertNil(field.finishSave(stored, ssid: "Phone"))
 
-        XCTAssertEqual(field.buttonTitle(ssid: "Phone"), "Saved")
-        XCTAssertEqual(field.buttonTitle(ssid: " Phone "), "Saved", "the store trims the SSID too")
-        XCTAssertEqual(field.buttonTitle(ssid: "Other Phone"), "Save")
+        XCTAssertEqual(field.buttonTitle(ssid: "Phone"), "Kaydedildi")
+        XCTAssertEqual(field.buttonTitle(ssid: " Phone "), "Kaydedildi", "the store trims the SSID too")
+        XCTAssertEqual(field.buttonTitle(ssid: "Other Phone"), "Kaydet")
         field.edit("pw2")
-        XCTAssertEqual(field.buttonTitle(ssid: "Phone"), "Save")
+        XCTAssertEqual(field.buttonTitle(ssid: "Phone"), "Kaydet")
     }
 
     /// A failed save may have left the old password or the new one, so
@@ -277,7 +277,7 @@ final class HotspotPasswordFieldTests: XCTestCase {
         _ = field.startSave()
         field.finishSave(refused, ssid: "Phone")
 
-        XCTAssertEqual(field.buttonTitle(ssid: "Phone"), "Save")
+        XCTAssertEqual(field.buttonTitle(ssid: "Phone"), "Kaydet")
         XCTAssertEqual(field.notice, refused.notice)
     }
 

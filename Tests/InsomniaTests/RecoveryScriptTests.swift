@@ -1076,7 +1076,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(moved.count, 1, "\(moved)")
         let copy = fx.home.appendingPathComponent(moved.first ?? "")
         XCTAssertEqual(try String(contentsOf: copy.appendingPathComponent("note"), encoding: .utf8), "inside")
-        XCTAssertTrue(r.stdout.contains("Kept \(copy.path): it is named like a moved-aside session.json but is not a regular file"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("\(copy.path) tutuldu: kenara taşınmış bir session.json gibi adlandırılmış ama normal bir dosya değil"), r.stdout)
     }
 
     /// When the undo fails, the journal stays dirty and the file stays where
@@ -1096,8 +1096,8 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(fx.exists(fx.plist))
         XCTAssertTrue(fx.exists(fx.sudoers))
         XCTAssertTrue(fx.exists(fx.app))
-        XCTAssertTrue(r.stderr.contains("session.json is still present and cannot be read"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("rename it to session.json.unreadable-<time> without opening it"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("session.json hâlâ duruyor ve okunamıyor"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("açmadan session.json.unreadable-<zaman> olarak yeniden adlandırır"), r.stderr)
     }
 
     /// A session.json that is a FIFO is never opened by the backstop: open(2)
@@ -1158,8 +1158,8 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertFalse(state.readerSeen, "state.json was opened although it is a FIFO")
         XCTAssertTrue(session.isStillFIFO)
         XCTAssertTrue(state.isStillFIFO)
-        XCTAssertTrue(r.stderr.contains("session.json is still present and cannot be read: it is not a regular file"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("state.json is not a regular file"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("session.json hâlâ duruyor ve okunamıyor: normal bir dosya değil"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("state.json normal bir dosya değil"), r.stderr)
         XCTAssertTrue(fx.exists(fx.plist))
         XCTAssertTrue(fx.exists(fx.sudoers))
         XCTAssertTrue(fx.exists(fx.app))
@@ -1182,7 +1182,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertFalse(fx.exists(fx.session))
         let moved = try movedAsideSessions()
         XCTAssertEqual(moved.count, 1, "\(moved)")
-        XCTAssertTrue(r.stdout.contains("Kept 1 unreadable session.json file(s)"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("kenara taşınmış 1 okunamayan session.json dosyası tutuldu"), r.stdout)
     }
 
     /// The record of a `sudo pmset` left running is gone after an uninstall,
@@ -1234,12 +1234,12 @@ final class RecoveryScriptTests: XCTestCase {
         let r = try fx.run(fx.uninstall, ["--purge"])
 
         XCTAssertEqual(r.status, 0, r.stderr + r.stdout)
-        XCTAssertTrue(r.stdout.contains("Left \(dir.path): it is named like a moved-aside session.json but is not a regular file"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("\(dir.path) bırakıldı: kenara taşınmış bir session.json gibi adlandırılmış ama normal bir dosya değil"), r.stdout)
         XCTAssertEqual(try String(contentsOf: dir.appendingPathComponent("inside"), encoding: .utf8), "keep")
         XCTAssertFalse(fx.exists(fx.home.appendingPathComponent(ours)))
         XCTAssertFalse(fx.exists(fx.config))
         XCTAssertFalse(fx.exists(fx.app))
-        XCTAssertTrue(r.stdout.contains("Done."), r.stdout)
+        XCTAssertTrue(r.stdout.contains("Bitti."), r.stdout)
     }
 
     /// The same for Insomnia's own file names: a directory at config.json
@@ -1252,7 +1252,7 @@ final class RecoveryScriptTests: XCTestCase {
         let r = try fx.run(fx.uninstall, ["--purge"])
 
         XCTAssertEqual(r.status, 0, r.stderr + r.stdout)
-        XCTAssertTrue(r.stdout.contains("Left \(fx.config.path): it is not a regular file, so Insomnia did not write it."), r.stdout)
+        XCTAssertTrue(r.stdout.contains("\(fx.config.path) bırakıldı: normal bir dosya değil, yani onu Insomnia yazmadı."), r.stdout)
         XCTAssertTrue(fx.exists(fx.config))
         XCTAssertFalse(fx.exists(fx.app))
     }
@@ -1293,10 +1293,10 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(fx.exists(fx.session))
         XCTAssertTrue(fx.exists(fx.plist))
         XCTAssertTrue(fx.exists(fx.sudoers))
-        XCTAssertTrue(r.stderr.contains("session.json is still present and is not a session"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("sleepDisabledByUs is still true"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("renames it to"), r.stderr)
-        XCTAssertFalse(r.stderr.contains("repair the file"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("session.json hâlâ duruyor ve bir oturum değil"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("sleepDisabledByUs hâlâ true"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("onu session.json.unreadable-<zaman> olarak yeniden adlandırır"), r.stderr)
+        XCTAssertFalse(r.stderr.contains("dosyayı onarın"), r.stderr)
     }
 
     func testLockContentionFailsClosed() throws {
@@ -1349,8 +1349,8 @@ final class RecoveryScriptTests: XCTestCase {
         let calls = fx.calls()
         XCTAssertFalse(calls.contains { $0.hasPrefix("launchctl") }, "\(calls)")
         XCTAssertFalse(calls.contains { $0.hasPrefix("sudo rm") }, "\(calls)")
-        XCTAssertTrue(r.stderr.contains("BEFORE removing anything"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("sleepDisabledByUs is still true"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("HİÇBİR ŞEY kaldırılmadan durduruldu"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("sleepDisabledByUs hâlâ true"), r.stderr)
         XCTAssertTrue(r.stderr.contains(fx.sudoers.path), r.stderr)
     }
 
@@ -1366,8 +1366,8 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(fx.exists(fx.app))
         XCTAssertTrue(fx.exists(fx.home), "--purge must not run before recovery is verified")
         XCTAssertEqual(try fx.stateJSON()["savedOutputVolume"] as? Double, 0.25)
-        XCTAssertTrue(r.stderr.contains("saved audio"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("open Insomnia.app"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("kaydedilmiş ses"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Insomnia.app uygulamasını açın"), r.stderr)
     }
 
     /// A brightness the app kept after a refused restore does not stop the
@@ -1391,9 +1391,9 @@ final class RecoveryScriptTests: XCTestCase {
             XCTAssertEqual(try f.stateJSON()["savedDisplayBrightness"] as? Double, 0.6)
             XCTAssertEqual(try f.stateJSON()["displayRestoreRefused"] as? Bool, true)
             XCTAssertEqual(f.exists(f.config), !purge, "purge \(purge)")
-            XCTAssertTrue(r.stdout.contains("  - display brightness 0.6"), r.stdout)
-            XCTAssertTrue(r.stdout.contains("Set the level with the brightness keys or Control Center"), r.stdout)
-            XCTAssertTrue(r.stdout.contains("Kept \(f.state.path): it holds the brightness listed above."), r.stdout)
+            XCTAssertTrue(r.stdout.contains("  - ekran parlaklığı 0.6"), r.stdout)
+            XCTAssertTrue(r.stdout.contains("Düzeyi parlaklık tuşlarıyla ya da Denetim Merkezi'nden ayarlayın"), r.stdout)
+            XCTAssertTrue(r.stdout.contains("\(f.state.path) tutuldu: yukarıda listelenen parlaklık değerlerini içeriyor."), r.stdout)
         }
     }
     /// The backstop leaves an output device entry alone and exits 0, but
@@ -1412,9 +1412,9 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(fx.exists(fx.app))
         XCTAssertTrue(fx.exists(fx.home), "--purge must not run before recovery is verified")
         XCTAssertEqual(try String(contentsOf: fx.state, encoding: .utf8), json)
-        XCTAssertTrue(r.stderr.contains("USB Headset is still muted from a lid close"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("70-8C-F2:output is still muted from a lid close"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("Stop waiting for <device>"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("USB Headset aygıtı kapak kapanınca sessize alındı ve hâlâ sessiz"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("70-8C-F2:output aygıtı kapak kapanınca sessize alındı ve hâlâ sessiz"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Beklemeyi bırak: <aygıt>"), r.stderr)
     }
     func testUninstallAbortsOnSavedDisplayBrightnessAndExplainsReopeningTheApp() throws {
         try fx.installMachinery()
@@ -1428,8 +1428,8 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(fx.exists(fx.app))
         XCTAssertTrue(fx.exists(fx.home), "--purge must not run before recovery is verified")
         XCTAssertEqual(try fx.stateJSON()["savedDisplayBrightness"] as? Double, 0.6)
-        XCTAssertTrue(r.stderr.contains("display brightness"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("open Insomnia.app"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("kaydedilmiş ekran parlaklığı"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Insomnia.app uygulamasını açın"), r.stderr)
     }
 
     /// Uninstall's own journal check sees App Nap entries the backstop
@@ -1449,7 +1449,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(fx.exists(fx.app))
         XCTAssertTrue(fx.exists(fx.config), "--purge must not run before recovery is verified")
         XCTAssertEqual((try fx.stateJSON()["appNapOverrides"] as? [Any])?.count, 1)
-        XCTAssertTrue(r.stderr.contains("App Nap settings (NSAppSleepDisabled) are not put back"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("App Nap ayarları (NSAppSleepDisabled) eski hâline getirilmedi"), r.stderr)
         XCTAssertTrue(r.stderr.contains("com.google.Chrome"), r.stderr)
         XCTAssertTrue(r.stderr.contains("defaults write"), r.stderr)
     }
@@ -1475,7 +1475,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(fx.exists(fx.app))
         XCTAssertTrue(fx.exists(fx.config))
         XCTAssertEqual((try fx.stateJSON()["appNapOverrides"] as? [Any])?.count, 1)
-        XCTAssertTrue(r.stderr.contains("App Nap settings (NSAppSleepDisabled) are not put back"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("App Nap ayarları (NSAppSleepDisabled) eski hâline getirilmedi"), r.stderr)
         XCTAssertTrue(r.stderr.contains("com.google.Chrome"), r.stderr)
     }
 
@@ -1491,7 +1491,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertNotEqual(r.status, 0)
         XCTAssertTrue(fx.exists(fx.plist))
         XCTAssertTrue(fx.exists(fx.state))
-        XCTAssertTrue(r.stderr.contains("App Nap settings (NSAppSleepDisabled) are not put back"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("App Nap ayarları (NSAppSleepDisabled) eski hâline getirilmedi"), r.stderr)
     }
 
     /// The normal path: the backstop puts the entries back under
@@ -1530,7 +1530,7 @@ final class RecoveryScriptTests: XCTestCase {
             XCTAssertEqual(defaultsCalls.filter { $0 == "defaults read \(id) NSAppSleepDisabled" }.count, 1, "\(id) is read once: \(defaultsCalls)")
         }
         XCTAssertEqual(fx.defaultsValues(), ["com.google.Chrome": "1", "com.apple.Terminal": "0", "com.todesktop.230313mzl4w4u92": "1"], "left as they were")
-        XCTAssertTrue(r.stdout.contains("no record of"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("dair bir kayıt yok"), r.stdout)
         XCTAssertTrue(r.stdout.contains("  defaults delete com.google.Chrome NSAppSleepDisabled\n"), r.stdout)
         XCTAssertTrue(r.stdout.contains("  defaults delete com.todesktop.230313mzl4w4u92 NSAppSleepDisabled\n"), r.stdout)
         XCTAssertFalse(r.stdout.contains("defaults delete com.apple.Terminal"), "a key that is 0 is not App Nap off: \(r.stdout)")
@@ -1559,9 +1559,9 @@ final class RecoveryScriptTests: XCTestCase {
             XCTAssertEqual(r.status, 0, "\(wording): " + r.stderr + r.stdout)
             let expected = (Config.defaultAgentList + ["com.example.extra"]).map { "defaults read \($0) NSAppSleepDisabled" }
             XCTAssertEqual(fx.calls().filter { $0.hasPrefix("defaults") }, expected, wording)
-            XCTAssertTrue(r.stdout.contains("Checking App Nap settings of agent apps"), "\(wording): " + r.stdout)
-            XCTAssertTrue(r.stdout.contains("none of the \(expected.count) agent apps checked has NSAppSleepDisabled set"), "\(wording): " + r.stdout)
-            XCTAssertFalse(r.stdout.contains("could not read NSAppSleepDisabled"), "\(wording): " + r.stdout)
+            XCTAssertTrue(r.stdout.contains("Ajan uygulamalarının App Nap ayarları denetleniyor"), "\(wording): " + r.stdout)
+            XCTAssertTrue(r.stdout.contains("denetlenen \(expected.count) ajan uygulamasının hiçbirinde NSAppSleepDisabled ayarlı değil"), "\(wording): " + r.stdout)
+            XCTAssertFalse(r.stdout.contains("NSAppSleepDisabled okunamadı"), "\(wording): " + r.stdout)
             XCTAssertFalse(r.stdout.contains("defaults delete"), "\(wording): " + r.stdout)
         }
     }
@@ -1578,7 +1578,7 @@ final class RecoveryScriptTests: XCTestCase {
 
         XCTAssertEqual(r.status, 0, r.stderr + r.stdout)
         XCTAssertTrue(r.stdout.contains("  defaults delete com.google.Chrome NSAppSleepDisabled\n"), r.stdout)
-        XCTAssertFalse(r.stdout.contains("none of the"), r.stdout)
+        XCTAssertFalse(r.stdout.contains("ajan uygulamasının hiçbirinde"), r.stdout)
         XCTAssertEqual(fx.defaultsValues(), ["com.google.Chrome": "1"], "listed, not changed")
         XCTAssertFalse(fx.exists(fx.config))
     }
@@ -1597,8 +1597,8 @@ final class RecoveryScriptTests: XCTestCase {
 
         XCTAssertEqual(r.status, 0, r.stderr + r.stdout)
         XCTAssertTrue(r.stdout.contains("  defaults delete com.example.My\\ App NSAppSleepDisabled\n"), r.stdout)
-        XCTAssertTrue(r.stdout.contains("could not read NSAppSleepDisabled for com.example.Broken; check it yourself with: defaults read com.example.Broken NSAppSleepDisabled"), r.stdout)
-        XCTAssertTrue(r.stdout.contains("1 could not be read"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("NSAppSleepDisabled okunamadı (com.example.Broken); kendiniz şununla denetleyin: defaults read com.example.Broken NSAppSleepDisabled"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("1 uygulama için değer okunamadı"), r.stdout)
         XCTAssertFalse(fx.calls().contains { $0.hasPrefix("defaults write") || $0.hasPrefix("defaults delete") }, "\(fx.calls())")
     }
 
@@ -1626,8 +1626,8 @@ final class RecoveryScriptTests: XCTestCase {
                        "the check stops at the read that did not answer")
         XCTAssertTrue(fx.calls().contains("defaults FD9-OPEN"), "the read keeps the lock while it runs")
         XCTAssertTrue(fx.hungProcessGone("defaults", within: 0), "the read ignored SIGTERM, so it was killed")
-        XCTAssertTrue(r.stdout.contains("defaults read did not answer within 5s for com.google.Chrome; check it yourself with: defaults read com.google.Chrome NSAppSleepDisabled"), r.stdout)
-        XCTAssertTrue(r.stdout.contains("stopped after com.google.Chrome did not answer; \(Config.defaultAgentList.count - index - 1) more agent apps were not checked"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("defaults read 5 saniye içinde yanıt vermedi (com.google.Chrome); kendiniz şununla denetleyin: defaults read com.google.Chrome NSAppSleepDisabled"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("com.google.Chrome yanıt vermeyince durduruldu; \(Config.defaultAgentList.count - index - 1) ajan uygulaması daha denetlenmedi"), r.stdout)
         XCTAssertTrue(try fx.lockIsFree())
         XCTAssertFalse(fx.exists(fx.plist))
         XCTAssertFalse(fx.exists(fx.app))
@@ -1650,7 +1650,7 @@ final class RecoveryScriptTests: XCTestCase {
 
         XCTAssertNotEqual(r.status, 0)
         XCTAssertLessThan(elapsed, 30, "one bounded print, not the fake's 60 s hang")
-        XCTAssertTrue(r.stderr.contains("'launchctl print' did not answer within 5s; cannot tell whether com.insomnia.backstop is still loaded"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("'launchctl print' 5 saniye içinde yanıt vermedi; com.insomnia.backstop görevinin hâlâ yüklü olup olmadığı anlaşılamıyor"), r.stderr)
         XCTAssertTrue(fx.calls().contains("launchctl FD9-OPEN"), "\(fx.calls())")
         XCTAssertTrue(fx.hungProcessGone("launchctl", within: 0))
         XCTAssertFalse(fx.calls().contains { $0.hasPrefix("sudo rm") }, "\(fx.calls())")
@@ -1678,7 +1678,7 @@ final class RecoveryScriptTests: XCTestCase {
 
         XCTAssertNotEqual(r.status, 0)
         XCTAssertLessThan(elapsed, 30)
-        XCTAssertTrue(r.stderr.contains("pgrep did not answer within 5s; treating Insomnia as running."), r.stderr)
+        XCTAssertTrue(r.stderr.contains("pgrep 5 saniye içinde yanıt vermedi; Insomnia çalışıyor kabul ediliyor."), r.stderr)
         XCTAssertTrue(fx.calls().contains("pgrep FD9-OPEN"), "\(fx.calls())")
         XCTAssertTrue(fx.hungProcessGone("pgrep", within: 0))
         XCTAssertFalse(fx.calls().contains { $0.hasPrefix("sudo") || $0.hasPrefix("launchctl") }, "\(fx.calls())")
@@ -1744,7 +1744,7 @@ final class RecoveryScriptTests: XCTestCase {
                 let label = "\(version ?? "no key"), \(sealed ? "sealed" : "legacy") copy"
                 XCTAssertEqual(r.status, 0, "\(label): \(r.stderr)")
                 XCTAssertTrue(f.calls().contains("installed backstop --force"), "\(label): \(f.calls())")
-                XCTAssertTrue(r.stdout.contains("does not declare InsomniaResumeFrozenVersion 1; using the backstop installed with it, \(copy.path)"), "\(label): \(r.stdout)")
+                XCTAssertTrue(r.stdout.contains("InsomniaResumeFrozenVersion 1 bildirmiyor; onunla birlikte kurulan backstop kullanılıyor: \(copy.path)"), "\(label): \(r.stdout)")
             }
         }
     }
@@ -1798,8 +1798,8 @@ final class RecoveryScriptTests: XCTestCase {
             XCTAssertNotEqual(r.status, 0, label)
             XCTAssertEqual(f.calls().filter { $0.hasPrefix("Insomnia ") }, [], "\(label): the binary ran")
             XCTAssertTrue(f.log().contains("pid 5311 needs the app binary for its microsecond identity check, but \(f.appInfo.path) declares InsomniaResumeFrozenVersion"), "\(label): \(f.log())")
-            XCTAssertTrue(r.stderr.contains("Uninstall stopped BEFORE removing anything"), "\(label): \(r.stderr)")
-            XCTAssertTrue(r.stderr.contains("frozen processes are still journaled"), "\(label): \(r.stderr)")
+            XCTAssertTrue(r.stderr.contains("Kaldırma, HİÇBİR ŞEY kaldırılmadan durduruldu"), "\(label): \(r.stderr)")
+            XCTAssertTrue(r.stderr.contains("dondurulmuş süreçler hâlâ kayıt defterinde"), "\(label): \(r.stderr)")
             let entries = try XCTUnwrap(f.stateJSON()["frozenProcesses"] as? [[String: Any]], label)
             XCTAssertEqual(entries.map { $0["pid"] as? Int }, [5311], label)
             for kept in [f.app, f.plist, f.sudoers, f.session] {
@@ -1830,7 +1830,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(fx.exists(fx.plist))
         XCTAssertTrue(fx.exists(fx.sudoers))
         XCTAssertTrue(fx.exists(fx.app))
-        XCTAssertTrue(r.stderr.contains("malformed"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("bozuk"), r.stderr)
     }
 
     func testUninstallAbortsOnLegacyPidsAndExplainsManualResolution() throws {
@@ -1860,7 +1860,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(fx.exists(fx.sudoers))
         XCTAssertTrue(fx.exists(fx.app))
         XCTAssertTrue(fx.exists(fx.state))
-        XCTAssertTrue(r.stderr.contains("sleepDisabledByUs is still true"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("sleepDisabledByUs hâlâ true"), r.stderr)
     }
 
     func testUninstallSuccessRemovesMachineryAndKeepsConfig() throws {
@@ -1935,7 +1935,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertFalse(fx.exists(fx.installedBackstop))
         XCTAssertTrue(fx.exists(fx.lock))
         XCTAssertFalse(fx.exists(fx.plist))
-        XCTAssertTrue(r.stdout.contains("Kept \(fx.home.appendingPathComponent("Logs").path)"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("\(fx.home.appendingPathComponent("Logs").path) tutuldu:"), r.stdout)
     }
 
     /// What install.sh leaves beside the bundle goes with it: the previous
@@ -1958,7 +1958,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try fx.contents(of: fx.appsDir), leftovers.keptInApps, "only install.sh's own leftovers are removed")
         XCTAssertTrue(fx.exists(leftovers.linkTarget.appendingPathComponent("Insomnia.app/Contents/MacOS/Insomnia")), "a symlink's target is never touched")
         XCTAssertTrue(fx.calls().contains("kill -0 4242") && fx.calls().contains("kill -0 4343"), "asked through $KILL: \(fx.calls())")
-        XCTAssertTrue(r.stdout.contains("kept \(fx.appsDir.path)/.Insomnia.app.staging.4343.BBBBBB"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("\(fx.appsDir.path)/.Insomnia.app.staging.4343.BBBBBB tutuldu"), r.stdout)
         let launchAgents = fx.plist.deletingLastPathComponent()
         XCTAssertEqual(try fx.contents(of: launchAgents), [".com.insomnia.backstop.staging", "com.other.agent.plist"])
         XCTAssertEqual(try fx.contents(of: launchAgents.appendingPathComponent(".com.insomnia.backstop.staging")), ["notes.txt"], "a file that is not a candidate stays, and so does its directory")
@@ -2049,7 +2049,7 @@ final class RecoveryScriptTests: XCTestCase {
 
         XCTAssertEqual(r.status, 0, r.stderr + r.stdout)
         XCTAssertEqual(fx.calls().filter { $0.hasPrefix("backstop ") }, ["backstop sealed --force"], "\(fx.calls())")
-        XCTAssertTrue(r.stdout.contains("using \(fx.installedBackstop.path)"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("kullanılıyor: \(fx.installedBackstop.path)"), r.stdout)
         let verify = try XCTUnwrap(fx.calls().firstIndex(of: "codesign --verify --strict \(fx.app.path)"), "the sealed copy is verified: \(fx.calls())")
         let ran = try XCTUnwrap(fx.calls().firstIndex(of: "backstop sealed --force"))
         XCTAssertLessThan(verify, ran, "verified before it runs: \(fx.calls())")
@@ -2075,7 +2075,7 @@ final class RecoveryScriptTests: XCTestCase {
 
         XCTAssertEqual(r.status, 0, r.stderr + r.stdout)
         XCTAssertEqual(fx.calls().filter { $0.hasPrefix("backstop ") }, ["backstop sealed --force"], "\(fx.calls())")
-        XCTAssertTrue(r.stdout.contains("using \(fx.installedBackstop.path)"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("kullanılıyor: \(fx.installedBackstop.path)"), r.stdout)
         let verify = try XCTUnwrap(fx.calls().firstIndex(of: "codesign --verify --strict \(fx.app.path)"), "the sealed copy is verified: \(fx.calls())")
         let ran = try XCTUnwrap(fx.calls().firstIndex(of: "backstop sealed --force"))
         XCTAssertLessThan(verify, ran, "verified before it runs: \(fx.calls())")
@@ -2107,8 +2107,8 @@ final class RecoveryScriptTests: XCTestCase {
 
             XCTAssertEqual(r.status, 0, "\(folder): " + r.stderr + r.stdout)
             XCTAssertEqual(fx.calls().filter { $0.hasPrefix("backstop ") }, ["backstop sealed --force"], "\(folder): \(fx.calls())")
-            XCTAssertTrue(r.stdout.contains("using \(fx.installedBackstop.path)"), r.stdout)
-            XCTAssertTrue(r.stderr.contains("not running \(planted.path): \(unpacked.path) is not the scripts folder of a source checkout"), r.stderr)
+            XCTAssertTrue(r.stdout.contains("kullanılıyor: \(fx.installedBackstop.path)"), r.stdout)
+            XCTAssertTrue(r.stderr.contains("\(planted.path) çalıştırılmıyor: \(unpacked.path) bir kaynak kod kopyasının scripts klasörü değil"), r.stderr)
             let verify = try XCTUnwrap(fx.calls().firstIndex(of: "codesign --verify --strict \(fx.app.path)"), "the sealed copy is verified: \(fx.calls())")
             let ran = try XCTUnwrap(fx.calls().firstIndex(of: "backstop sealed --force"))
             XCTAssertLessThan(verify, ran, "verified before it runs: \(fx.calls())")
@@ -2137,8 +2137,8 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(r.status, 1, r.stderr + r.stdout)
         XCTAssertFalse(fx.calls().contains { $0.hasPrefix("backstop ") }, "neither the planted nor the writable copy ran: \(fx.calls())")
         XCTAssertFalse(fx.calls().contains { $0.hasPrefix("launchctl") || $0.hasPrefix("sudo") }, "\(fx.calls())")
-        XCTAssertTrue(r.stderr.contains("no backstop.sh sealed in \(fx.app.path)/Contents/Resources, and outside a source checkout this script runs no other copy; nothing was removed."), r.stderr)
-        XCTAssertTrue(r.stderr.contains("Run scripts/uninstall.sh from a checkout of the source"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("\(fx.app.path)/Contents/Resources içinde mühürlü backstop.sh yok ve bu betik, kaynak kod kopyası dışında başka bir kopya çalıştırmaz; hiçbir şey kaldırılmadı."), r.stderr)
+        XCTAssertTrue(r.stderr.contains("scripts/uninstall.sh betiğini kaynak kodun bir kopyasından çalıştırın"), r.stderr)
         for kept in [fx.plist, fx.sudoers, fx.app, fx.config, fx.legacyBackstop] {
             XCTAssertTrue(fx.exists(kept), kept.path)
         }
@@ -2164,8 +2164,8 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertFalse(fx.calls().contains { $0.hasPrefix("backstop ") }, "neither the unverified sealed copy nor the legacy copy ran: \(fx.calls())")
         XCTAssertFalse(fx.calls().contains { $0.hasPrefix("launchctl") || $0.hasPrefix("sudo") }, "\(fx.calls())")
         XCTAssertTrue(r.stderr.contains("sealed resource"), "codesign's reason is reported: \(r.stderr)")
-        XCTAssertTrue(r.stderr.contains("Nothing was removed"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("checkout"), "the way out is named: \(r.stderr)")
+        XCTAssertTrue(r.stderr.contains("Hiçbir şey kaldırılmadı"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("kaynak kodun bir kopyasından"), "the way out is named: \(r.stderr)")
         XCTAssertTrue(fx.exists(fx.plist))
         XCTAssertTrue(fx.exists(fx.sudoers))
         XCTAssertTrue(fx.exists(fx.app))
@@ -2188,8 +2188,8 @@ final class RecoveryScriptTests: XCTestCase {
 
         XCTAssertEqual(r.status, 1, r.stderr + r.stdout)
         XCTAssertLessThan(Date().timeIntervalSince(started), 30, "one bounded call, not the fake's 60 s hang")
-        XCTAssertTrue(r.stderr.contains("'codesign --verify --strict \(fx.app.path)' did not answer within 5s"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("Nothing was removed"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("'codesign --verify --strict \(fx.app.path)' 5 saniye içinde yanıt vermedi"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Hiçbir şey kaldırılmadı"), r.stderr)
         XCTAssertTrue(fx.calls().contains("codesign FD9-OPEN"), "the call keeps the lock while it runs: \(fx.calls())")
         XCTAssertFalse(fx.calls().contains { $0.hasPrefix("backstop ") || $0.hasPrefix("launchctl") || $0.hasPrefix("sudo") }, "\(fx.calls())")
         XCTAssertTrue(fx.hungProcessGone("codesign", within: 0))
@@ -2221,7 +2221,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertGreaterThan(fx.slowPolls(), 0, "the script polled through the slow sleep")
         XCTAssertGreaterThan(elapsed, 5, "the call had its whole limit")
         XCTAssertLessThan(elapsed, 15, "the 5 s limit, at most a second more, at most two of grace, and a few slow polls")
-        XCTAssertTrue(r.stderr.contains("'codesign --verify --strict \(fx.app.path)' did not answer within 5s"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("'codesign --verify --strict \(fx.app.path)' 5 saniye içinde yanıt vermedi"), r.stderr)
         XCTAssertTrue(fx.hungProcessGone("codesign", within: 0))
         XCTAssertTrue(try fx.lockIsFree())
     }
@@ -2266,7 +2266,7 @@ final class RecoveryScriptTests: XCTestCase {
 
         XCTAssertEqual(r.status, 0, r.stderr + r.stdout)
         XCTAssertEqual(fx.calls().filter { $0.hasPrefix("backstop ") }, ["backstop legacy --force"], "\(fx.calls())")
-        XCTAssertTrue(r.stdout.contains("using \(fx.legacyBackstop.path)"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("kullanılıyor: \(fx.legacyBackstop.path)"), r.stdout)
         XCTAssertFalse(fx.exists(fx.legacyBackstop))
     }
 
@@ -2279,7 +2279,7 @@ final class RecoveryScriptTests: XCTestCase {
         let r = try fx.run(fx.uninstall, ["--purge"])
 
         XCTAssertEqual(r.status, 1, r.stderr + r.stdout)
-        XCTAssertTrue(r.stderr.contains("no backstop.sh found"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("backstop.sh bulunamadı"), r.stderr)
         XCTAssertTrue(r.stderr.contains(fx.installedBackstop.deletingLastPathComponent().path), "every place looked is named: \(r.stderr)")
         XCTAssertFalse(fx.calls().contains { $0.hasPrefix("launchctl") || $0.hasPrefix("sudo") }, "\(fx.calls())")
         XCTAssertTrue(fx.exists(fx.plist))
@@ -2300,8 +2300,8 @@ final class RecoveryScriptTests: XCTestCase {
         let r = try fx.run(fx.uninstall, ["--purge"])
 
         XCTAssertEqual(r.status, 0, r.stderr + r.stdout)
-        XCTAssertTrue(r.stdout.contains("Left \(rotatedDir.path): it is not a regular file, so Insomnia did not write it."), r.stdout)
-        XCTAssertTrue(r.stdout.hasSuffix("Done.\n"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("\(rotatedDir.path) bırakıldı: normal bir dosya değil, yani onu Insomnia yazmadı."), r.stdout)
+        XCTAssertTrue(r.stdout.hasSuffix("Bitti.\n"), r.stdout)
         XCTAssertTrue(fx.exists(rotatedDir.appendingPathComponent("a.txt")))
         for gone in [fx.state, fx.config, fx.logFile, fx.home.appendingPathComponent("Logs/handoffs.log.1")] {
             XCTAssertFalse(fx.exists(gone), gone.path)
@@ -2519,7 +2519,7 @@ final class RecoveryScriptTests: XCTestCase {
             XCTAssertTrue(f.exists(f.sudoers), json)
             XCTAssertTrue(f.exists(f.app), json)
             XCTAssertEqual(try String(contentsOf: f.state, encoding: .utf8), json)
-            XCTAssertTrue(r.stderr.contains("malformed") || r.stderr.contains("not a JSON object"), r.stderr)
+            XCTAssertTrue(r.stderr.contains("bozuk") || r.stderr.contains("bir JSON nesnesi değil"), r.stderr)
         }
     }
 
@@ -2540,39 +2540,42 @@ final class RecoveryScriptTests: XCTestCase {
     /// keeps the last of two copies of a key, where the app keeps the
     /// first. A key spelled with a \u escape is that key to both. plutil
     /// also reads keys written as JSON5 or with a \x escape, and comments;
-    /// the app reads none of them.
-    static let malformedKeptDisplayRecords: [(problem: String, json: String)] = [
-        ("keptDisplayUnderLowPower is ", #""keptDisplayUnderLowPower":"0.8""#),
-        ("keptDisplayUnderLowPower is ", #""keptDisplayUnderLowPower":true"#),
-        ("keptDisplayUnderLowPower is ", #""keptDisplayUnderLowPower":[0.8]"#),
-        ("keptDisplayUnderLowPower is ", #""keptDisplayUnderLowPower":1e39"#),
-        ("keptDisplayUnderLowPower is ", #""keptDisplayUnderLowPower":-1e39"#),
-        ("keptDisplayUnderLowPower is ", #""keptDisplayUnderLowPower":1e-50"#),
-        ("keptDisplayUnderLowPower is ", #""keptDisplayUnderLowPower":1e-400"#),
-        ("keptDisplayUnderLowPower is ", #""keptDisplayUnderLowPower":-1e-400"#),
-        ("keptDisplayUnderLowPower is ", #""keptDisplayUnderLowPower":1."#),
-        ("keptDisplayUnderLowPower is ", #""keptDisplayUnderLowPower":1e-400,"keptDisplayUnderLowPower":0.8"#),
-        ("keptDisplayReadLit is ", #""keptDisplayReadLit":"0.8""#),
-        ("keptDisplayReadLit is ", #""keptDisplayReadLit":false"#),
-        ("keptDisplayReadLit is ", #""keptDisplayReadLit":{"value":0.8}"#),
-        ("keptDisplayReadLit is ", #""keptDisplayReadLit":3.5e38"#),
-        ("keptDisplayReadLit is ", #""keptDisplayReadLit":5e-46"#),
-        ("keptDisplayReadLit is ", #""keptDisplayReadLit":1e-400"#),
-        ("keptDisplayReadLit is ", #""keptDisplayReadLit":-1e-400"#),
-        ("keptDisplayReadLit is ", #""keptDisplayReadLit":.5"#),
-        ("keptDisplayReadLit is ", #""keptDisplayReadLit":+1"#),
-        ("keptDisplayReadLit is ", #""keptDisplayReadLit":1e-400,"keptDisplayReadLit":0.8"#),
-        ("keptDisplayReadLit is ", #""kept\u0044isplayReadLit":1e-400"#),
-        ("keptDisplayUnderLowPower is ", #""keptDisplayUnderLowPowe\#(backslash)u0072":"0.8""#),
-        ("a key in state.json has an escape JSON does not have", #""kept\#(backslash)x44isplayReadLit":0.8"#),
-        ("the top level of state.json cannot be followed here", #"keptDisplayReadLit:1e-400"#),
-        ("the top level of state.json cannot be followed here", #"'keptDisplayReadLit':0.8"#),
-        ("the top level of state.json cannot be followed here", #"/* note */"keptDisplayReadLit":0.8"#),
-        ("keptDisplayUnderLowPowerBoot is ", #""keptDisplayUnderLowPowerBoot":7"#),
-        ("keptDisplayUnderLowPowerBoot is ", #""keptDisplayUnderLowPowerBoot":true"#),
-        ("keptDisplayUnderLowPowerBoot is ", #""keptDisplayUnderLowPowerBoot":["boot-a"]"#),
-        ("displayRestoredUnderLowPower is ", #""displayRestoredUnderLowPower":"0.75""#),
-        ("displayRestoredUnderLowPower is ", #""displayRestoredUnderLowPower":false"#),
+    /// the app reads none of them. `uninstallProblem` is the start of the
+    /// line uninstall.sh prints for the same record, in Turkish in this
+    /// fork: "<key> türü" for a wrong type, "<key> değeri" for a number the
+    /// app cannot read (backstop.sh's log stays English).
+    static let malformedKeptDisplayRecords: [(problem: String, uninstallProblem: String, json: String)] = [
+        ("keptDisplayUnderLowPower is ", "keptDisplayUnderLowPower türü ", #""keptDisplayUnderLowPower":"0.8""#),
+        ("keptDisplayUnderLowPower is ", "keptDisplayUnderLowPower türü ", #""keptDisplayUnderLowPower":true"#),
+        ("keptDisplayUnderLowPower is ", "keptDisplayUnderLowPower türü ", #""keptDisplayUnderLowPower":[0.8]"#),
+        ("keptDisplayUnderLowPower is ", "keptDisplayUnderLowPower değeri ", #""keptDisplayUnderLowPower":1e39"#),
+        ("keptDisplayUnderLowPower is ", "keptDisplayUnderLowPower değeri ", #""keptDisplayUnderLowPower":-1e39"#),
+        ("keptDisplayUnderLowPower is ", "keptDisplayUnderLowPower değeri ", #""keptDisplayUnderLowPower":1e-50"#),
+        ("keptDisplayUnderLowPower is ", "keptDisplayUnderLowPower değeri ", #""keptDisplayUnderLowPower":1e-400"#),
+        ("keptDisplayUnderLowPower is ", "keptDisplayUnderLowPower değeri ", #""keptDisplayUnderLowPower":-1e-400"#),
+        ("keptDisplayUnderLowPower is ", "keptDisplayUnderLowPower değeri ", #""keptDisplayUnderLowPower":1."#),
+        ("keptDisplayUnderLowPower is ", "keptDisplayUnderLowPower değeri ", #""keptDisplayUnderLowPower":1e-400,"keptDisplayUnderLowPower":0.8"#),
+        ("keptDisplayReadLit is ", "keptDisplayReadLit türü ", #""keptDisplayReadLit":"0.8""#),
+        ("keptDisplayReadLit is ", "keptDisplayReadLit türü ", #""keptDisplayReadLit":false"#),
+        ("keptDisplayReadLit is ", "keptDisplayReadLit türü ", #""keptDisplayReadLit":{"value":0.8}"#),
+        ("keptDisplayReadLit is ", "keptDisplayReadLit değeri ", #""keptDisplayReadLit":3.5e38"#),
+        ("keptDisplayReadLit is ", "keptDisplayReadLit değeri ", #""keptDisplayReadLit":5e-46"#),
+        ("keptDisplayReadLit is ", "keptDisplayReadLit değeri ", #""keptDisplayReadLit":1e-400"#),
+        ("keptDisplayReadLit is ", "keptDisplayReadLit değeri ", #""keptDisplayReadLit":-1e-400"#),
+        ("keptDisplayReadLit is ", "keptDisplayReadLit değeri ", #""keptDisplayReadLit":.5"#),
+        ("keptDisplayReadLit is ", "keptDisplayReadLit değeri ", #""keptDisplayReadLit":+1"#),
+        ("keptDisplayReadLit is ", "keptDisplayReadLit değeri ", #""keptDisplayReadLit":1e-400,"keptDisplayReadLit":0.8"#),
+        ("keptDisplayReadLit is ", "keptDisplayReadLit değeri ", #""kept\u0044isplayReadLit":1e-400"#),
+        ("keptDisplayUnderLowPower is ", "keptDisplayUnderLowPower türü ", #""keptDisplayUnderLowPowe\#(backslash)u0072":"0.8""#),
+        ("a key in state.json has an escape JSON does not have", "state.json içindeki bir anahtarda JSON'da olmayan bir kaçış dizisi var", #""kept\#(backslash)x44isplayReadLit":0.8"#),
+        ("the top level of state.json cannot be followed here", "state.json dosyasının üst düzeyi burada izlenemiyor", #"keptDisplayReadLit:1e-400"#),
+        ("the top level of state.json cannot be followed here", "state.json dosyasının üst düzeyi burada izlenemiyor", #"'keptDisplayReadLit':0.8"#),
+        ("the top level of state.json cannot be followed here", "state.json dosyasının üst düzeyi burada izlenemiyor", #"/* note */"keptDisplayReadLit":0.8"#),
+        ("keptDisplayUnderLowPowerBoot is ", "keptDisplayUnderLowPowerBoot türü ", #""keptDisplayUnderLowPowerBoot":7"#),
+        ("keptDisplayUnderLowPowerBoot is ", "keptDisplayUnderLowPowerBoot türü ", #""keptDisplayUnderLowPowerBoot":true"#),
+        ("keptDisplayUnderLowPowerBoot is ", "keptDisplayUnderLowPowerBoot türü ", #""keptDisplayUnderLowPowerBoot":["boot-a"]"#),
+        ("displayRestoredUnderLowPower is ", "displayRestoredUnderLowPower türü ", #""displayRestoredUnderLowPower":"0.75""#),
+        ("displayRestoredUnderLowPower is ", "displayRestoredUnderLowPower türü ", #""displayRestoredUnderLowPower":false"#),
     ]
 
     /// Forms the app's decoder reads: null and absent are none, a number
@@ -2596,12 +2599,21 @@ final class RecoveryScriptTests: XCTestCase {
 
     /// Journals the app reads, taking the first copy of a key, that both
     /// scripts refuse: plutil checks the last copy, and a republished
-    /// journal would keep only that one.
-    static let duplicatedKeptDisplayRecords: [(problem: String, json: String)] = [
-        ("keptDisplayReadLit is in the top level of state.json 2 times; the app reads the first and plutil the last", #""keptDisplayReadLit":0.8,"keptDisplayReadLit":0.7"#),
-        ("keptDisplayReadLit is in the top level of state.json 2 times", #""keptDisplayReadLit":0.8,"keptDisplayReadL\#(backslash)u0069t":0.7"#),
-        ("keptDisplayUnderLowPower is in the top level of state.json 3 times", #""keptDisplayUnderLowPower":0.8,"keptDisplayUnderLowPower":0.8,"keptDisplayUnderLowPower":0.8"#),
-        ("keptDisplayUnderLowPowerBoot is in the top level of state.json 2 times", #""keptDisplayUnderLowPowerBoot":"boot A","keptDisplayUnderLowPowerBoot":"boot B""#),
+    /// journal would keep only that one. `uninstallProblem` is the same
+    /// problem as uninstall.sh prints it, in Turkish in this fork.
+    static let duplicatedKeptDisplayRecords: [(problem: String, uninstallProblem: String, json: String)] = [
+        ("keptDisplayReadLit is in the top level of state.json 2 times; the app reads the first and plutil the last",
+         "keptDisplayReadLit, state.json dosyasının üst düzeyinde 2 kez geçiyor; uygulama ilkini, plutil sonuncusunu okur",
+         #""keptDisplayReadLit":0.8,"keptDisplayReadLit":0.7"#),
+        ("keptDisplayReadLit is in the top level of state.json 2 times",
+         "keptDisplayReadLit, state.json dosyasının üst düzeyinde 2 kez geçiyor",
+         #""keptDisplayReadLit":0.8,"keptDisplayReadL\#(backslash)u0069t":0.7"#),
+        ("keptDisplayUnderLowPower is in the top level of state.json 3 times",
+         "keptDisplayUnderLowPower, state.json dosyasının üst düzeyinde 3 kez geçiyor",
+         #""keptDisplayUnderLowPower":0.8,"keptDisplayUnderLowPower":0.8,"keptDisplayUnderLowPower":0.8"#),
+        ("keptDisplayUnderLowPowerBoot is in the top level of state.json 2 times",
+         "keptDisplayUnderLowPowerBoot, state.json dosyasının üst düzeyinde 2 kez geçiyor",
+         #""keptDisplayUnderLowPowerBoot":"boot A","keptDisplayUnderLowPowerBoot":"boot B""#),
     ]
 
     static let keptDisplayRecordKeys = [
@@ -2613,7 +2625,7 @@ final class RecoveryScriptTests: XCTestCase {
     /// session kept, and the log names the key. The app's decoder refuses
     /// each of these journals too.
     func testMalformedKeptDisplayRecordsAreRejectedByBackstopWithoutCommands() throws {
-        for (problem, record) in Self.malformedKeptDisplayRecords {
+        for (problem, _, record) in Self.malformedKeptDisplayRecords {
             let json = Self.keptDisplayJournal(record)
             XCTAssertThrowsError(try Store.makeDecoder().decode(RuntimeState.self, from: Data(json.utf8)), "the app refuses \(json)")
             let f = try ScriptFixture()
@@ -2683,7 +2695,7 @@ final class RecoveryScriptTests: XCTestCase {
     /// decode stops it with everything in place, even when the backstop
     /// exits 0.
     func testUninstallRejectsMalformedKeptDisplayRecordsEvenWhenBackstopExitsZero() throws {
-        for (problem, record) in Self.malformedKeptDisplayRecords {
+        for (_, uninstallProblem, record) in Self.malformedKeptDisplayRecords {
             let json = Self.keptDisplayJournal(record, ours: false)
             let f = try ScriptFixture()
             defer { f.destroy() }
@@ -2698,8 +2710,8 @@ final class RecoveryScriptTests: XCTestCase {
             XCTAssertTrue(f.exists(f.sudoers), json)
             XCTAssertTrue(f.exists(f.app), json)
             XCTAssertEqual(try String(contentsOf: f.state, encoding: .utf8), json)
-            XCTAssertTrue(r.stderr.contains("state.json is malformed (unexpected shape)"), "\(json): \(r.stderr)")
-            XCTAssertTrue(r.stderr.contains(problem), "\(json): \(r.stderr)")
+            XCTAssertTrue(r.stderr.contains("state.json bozuk (beklenmeyen yapı)"), "\(json): \(r.stderr)")
+            XCTAssertTrue(r.stderr.contains(uninstallProblem), "\(json): \(r.stderr)")
             XCTAssertThrowsError(try Store.makeDecoder().decode(RuntimeState.self, from: Data(json.utf8)), "the app refuses \(json)")
         }
     }
@@ -2708,7 +2720,7 @@ final class RecoveryScriptTests: XCTestCase {
     /// the app decodes the journal, and both scripts refuse it before any
     /// command, with the bytes kept.
     func testDuplicatedKeptDisplayRecordsAreRefusedByBothScripts() throws {
-        for (problem, record) in Self.duplicatedKeptDisplayRecords {
+        for (problem, uninstallProblem, record) in Self.duplicatedKeptDisplayRecords {
             let json = Self.keptDisplayJournal(record)
             XCTAssertNoThrow(try Store.makeDecoder().decode(RuntimeState.self, from: Data(json.utf8)), "the app reads \(json)")
             let f = try ScriptFixture()
@@ -2733,7 +2745,7 @@ final class RecoveryScriptTests: XCTestCase {
 
             XCTAssertNotEqual(ur.status, 0, json)
             XCTAssertTrue(u.exists(u.app), json)
-            XCTAssertTrue(ur.stderr.contains(problem), "\(json): \(ur.stderr)")
+            XCTAssertTrue(ur.stderr.contains(uninstallProblem), "\(json): \(ur.stderr)")
         }
     }
 
@@ -2765,7 +2777,10 @@ final class RecoveryScriptTests: XCTestCase {
         return lines[start...end].joined(separator: "\n")
     }
 
-    /// The two scripts carry the same reader, comment and all.
+    /// The two scripts carry the same reader, comment and all. In this fork
+    /// uninstall.sh prints the reader's messages in Turkish while
+    /// backstop.sh's log stays English, so uninstall.sh's copy must be
+    /// backstop.sh's with exactly the translations below applied.
     func testBothScriptsReadTheRecordsTheSameWay() throws {
         func withComment(_ script: String) throws -> String {
             let text = try String(contentsOf: ScriptFixture.productionScripts.appendingPathComponent(script), encoding: .utf8)
@@ -2773,8 +2788,41 @@ final class RecoveryScriptTests: XCTestCase {
             let end = try XCTUnwrap(text.range(of: "\n}\n", range: start.upperBound..<text.endIndex), script)
             return String(text[start.lowerBound..<end.upperBound])
         }
-        XCTAssertEqual(try withComment("backstop.sh"), try withComment("uninstall.sh"))
-        XCTAssertEqual(try Self.recordTextProblemsSource("backstop.sh"), try Self.recordTextProblemsSource("uninstall.sh"))
+        XCTAssertEqual(Self.translatedRecordReader(try withComment("backstop.sh")), try withComment("uninstall.sh"))
+        XCTAssertEqual(Self.translatedRecordReader(try Self.recordTextProblemsSource("backstop.sh")), try Self.recordTextProblemsSource("uninstall.sh"))
+    }
+
+    /// The messages of record_text_problems, quoted as in the source: as
+    /// backstop.sh prints them, and as uninstall.sh prints them in this fork.
+    private static let recordReaderMessages: [(english: String, turkish: String)] = [
+        (#""the top level of state.json cannot be followed here, so its records about a kept display entry cannot be checked""#,
+         #""state.json dosyasının üst düzeyi burada izlenemiyor; bu yüzden saklanan ekran girdisiyle ilgili kayıtları denetlenemiyor""#),
+        (#""a key in state.json has an escape JSON does not have, so its records about a kept display entry cannot be checked""#,
+         #""state.json içindeki bir anahtarda JSON'da olmayan bir kaçış dizisi var; bu yüzden saklanan ekran girdisiyle ilgili kayıtları denetlenemiyor""#),
+        (#""$key is ${token:0:40}, too small a number for the app to read""#,
+         #""$key değeri ${token:0:40}: uygulamanın okuyamayacağı kadar küçük bir sayı""#),
+        (#""$key is ${token:0:40}, too large a number for the app to read""#,
+         #""$key değeri ${token:0:40}: uygulamanın okuyamayacağı kadar büyük bir sayı""#),
+        (#""$key is written as ${token:0:40}, which the app does not read as a number""#,
+         #""$key değeri ${token:0:40} olarak yazılmış; uygulama bunu sayı olarak okumaz""#),
+        (#""keptDisplayUnderLowPower is in the top level of state.json $n_low times; the app reads the first and plutil the last""#,
+         #""keptDisplayUnderLowPower, state.json dosyasının üst düzeyinde $n_low kez geçiyor; uygulama ilkini, plutil sonuncusunu okur""#),
+        (#""keptDisplayReadLit is in the top level of state.json $n_lit times; the app reads the first and plutil the last""#,
+         #""keptDisplayReadLit, state.json dosyasının üst düzeyinde $n_lit kez geçiyor; uygulama ilkini, plutil sonuncusunu okur""#),
+        (#""keptDisplayUnderLowPowerBoot is in the top level of state.json $n_boot times; the app reads the first and plutil the last""#,
+         #""keptDisplayUnderLowPowerBoot, state.json dosyasının üst düzeyinde $n_boot kez geçiyor; uygulama ilkini, plutil sonuncusunu okur""#),
+    ]
+
+    /// backstop.sh's reader with each message as uninstall.sh prints it.
+    /// Every message must be in it exactly once, so a reader that changed
+    /// elsewhere still fails the comparison.
+    private static func translatedRecordReader(_ text: String) -> String {
+        var translated = text
+        for (english, turkish) in recordReaderMessages {
+            XCTAssertEqual(translated.components(separatedBy: english).count, 2, "backstop.sh's reader prints this once: \(english)")
+            translated = translated.replacingOccurrences(of: english, with: turkish)
+        }
+        return translated
     }
 
     /// The reader over texts no fixture writes whole: what it reads as the
@@ -2786,61 +2834,77 @@ final class RecoveryScriptTests: XCTestCase {
     /// UTF-16 file hiding a key is one the reader passed before it refused
     /// NUL bytes: the shell drops them, and what is left reads as a key
     /// inside an array, while the app reads 1e-400 at the top level.
+    /// uninstall.sh's copy prints the same lines in Turkish in this fork.
     func testTheRecordReaderFollowsTheTopLevelAsTheAppReadsIt() throws {
         let b = backslash
         let bom = Data([0xEF, 0xBB, 0xBF])
         func utf8(_ s: String) -> Data { Data(s.utf8) }
-        let cases: [(label: String, bytes: Data, prints: String, appReads: Bool)] = [
-            ("no records", utf8(#"{"sleepDisabledByUs":true}"#), "", true),
-            ("empty object", utf8("{ }"), "", true),
-            ("UTF-8 byte order mark", bom + utf8(#"{"keptDisplayReadLit":0.8}"#), "", true),
+        let cases: [(label: String, bytes: Data, prints: String, uninstallPrints: String, appReads: Bool)] = [
+            ("no records", utf8(#"{"sleepDisabledByUs":true}"#), "", "", true),
+            ("empty object", utf8("{ }"), "", "", true),
+            ("UTF-8 byte order mark", bom + utf8(#"{"keptDisplayReadLit":0.8}"#), "", "", true),
             ("UTF-8 byte order mark, too small", bom + utf8(#"{"keptDisplayReadLit":1e-400}"#),
-             "keptDisplayReadLit is 1e-400, too small a number for the app to read\n", false),
+             "keptDisplayReadLit is 1e-400, too small a number for the app to read\n",
+             "keptDisplayReadLit değeri 1e-400: uygulamanın okuyamayacağı kadar küçük bir sayı\n", false),
             ("UTF-16 with a byte order mark", Data([0xFF, 0xFE]) + #"{"keptDisplayReadLit":0.8}"#.data(using: .utf16LittleEndian)!,
-             "the top level of state.json cannot be followed here, so its records about a kept display entry cannot be checked\n", true),
+             "the top level of state.json cannot be followed here, so its records about a kept display entry cannot be checked\n",
+             "state.json dosyasının üst düzeyi burada izlenemiyor; bu yüzden saklanan ekran girdisiyle ilgili kayıtları denetlenemiyor\n", true),
             ("UTF-16 without a byte order mark", #"{"keptDisplayReadLit":0.8}"#.data(using: .utf16LittleEndian)!,
-             "the top level of state.json cannot be followed here, so its records about a kept display entry cannot be checked\n", true),
+             "the top level of state.json cannot be followed here, so its records about a kept display entry cannot be checked\n",
+             "state.json dosyasının üst düzeyi burada izlenemiyor; bu yüzden saklanan ekran girdisiyle ilgili kayıtları denetlenemiyor\n", true),
             ("UTF-16 without a byte order mark, hiding a key",
              "{\"a\":\"\u{2278}\u{222C}\u{2271}\u{203A}\u{205B}\",\"keptDisplayReadLit\":1e-400,\"b\":\"\u{2C5D}\u{2220}\u{2263}\u{203A}\u{7822}\"}"
                 .data(using: .utf16LittleEndian)!,
-             "the top level of state.json cannot be followed here, so its records about a kept display entry cannot be checked\n", false),
-            ("UTF-16 without records", #"{"sleepDisabledByUs":true}"#.data(using: .utf16LittleEndian)!, "", true),
+             "the top level of state.json cannot be followed here, so its records about a kept display entry cannot be checked\n",
+             "state.json dosyasının üst düzeyi burada izlenemiyor; bu yüzden saklanan ekran girdisiyle ilgili kayıtları denetlenemiyor\n", false),
+            ("UTF-16 without records", #"{"sleepDisabledByUs":true}"#.data(using: .utf16LittleEndian)!, "", "", true),
             ("NUL byte in a string", utf8("{\"keptDisplayReadLit\":0.8,\"a\":\"x\u{0}y\"}"),
-             "the top level of state.json cannot be followed here, so its records about a kept display entry cannot be checked\n", true),
-            ("comma before the end", utf8(#"{"keptDisplayReadLit":0.8,}"#), "", true),
-            ("whitespace everywhere", utf8("\n{ \"a\" :\t[ 1 ,2 ] ,\r\n \"keptDisplayReadLit\"\n:\n0.8\n}\n"), "", true),
+             "the top level of state.json cannot be followed here, so its records about a kept display entry cannot be checked\n",
+             "state.json dosyasının üst düzeyi burada izlenemiyor; bu yüzden saklanan ekran girdisiyle ilgili kayıtları denetlenemiyor\n", true),
+            ("comma before the end", utf8(#"{"keptDisplayReadLit":0.8,}"#), "", "", true),
+            ("whitespace everywhere", utf8("\n{ \"a\" :\t[ 1 ,2 ] ,\r\n \"keptDisplayReadLit\"\n:\n0.8\n}\n"), "", "", true),
             ("escaped letter, upper hex", utf8(#"{"kept\#(b)u0044isplayReadLit":1e-400}"#),
-             "keptDisplayReadLit is 1e-400, too small a number for the app to read\n", false),
+             "keptDisplayReadLit is 1e-400, too small a number for the app to read\n",
+             "keptDisplayReadLit değeri 1e-400: uygulamanın okuyamayacağı kadar küçük bir sayı\n", false),
             ("escaped letter, lower hex", utf8(#"{"keptDisplayRead\#(b)u004cit":1e39}"#),
-             "keptDisplayReadLit is 1e39, too large a number for the app to read\n", false),
-            ("escaped letter, valid value", utf8(#"{"keptDisplayReadL\#(b)u0069t":0.8}"#), "", true),
-            ("other escapes in keys", utf8(#"{"a\#(b)"\#(b)\#(b)\#(b)/\#(b)b\#(b)f\#(b)n\#(b)r\#(b)t\#(b)u00e9\#(b)ud83d\#(b)ude00":1}"#), "", true),
+             "keptDisplayReadLit is 1e39, too large a number for the app to read\n",
+             "keptDisplayReadLit değeri 1e39: uygulamanın okuyamayacağı kadar büyük bir sayı\n", false),
+            ("escaped letter, valid value", utf8(#"{"keptDisplayReadL\#(b)u0069t":0.8}"#), "", "", true),
+            ("other escapes in keys", utf8(#"{"a\#(b)"\#(b)\#(b)\#(b)/\#(b)b\#(b)f\#(b)n\#(b)r\#(b)t\#(b)u00e9\#(b)ud83d\#(b)ude00":1}"#), "", "", true),
             ("a key with a \\x escape", utf8(#"{"kept\#(b)x44isplayReadLit":0.8}"#),
-             "a key in state.json has an escape JSON does not have, so its records about a kept display entry cannot be checked\n", false),
+             "a key in state.json has an escape JSON does not have, so its records about a kept display entry cannot be checked\n",
+             "state.json içindeki bir anahtarda JSON'da olmayan bir kaçış dizisi var; bu yüzden saklanan ekran girdisiyle ilgili kayıtları denetlenemiyor\n", false),
             ("unquoted key", utf8(#"{keptDisplayReadLit:0.8}"#),
-             "the top level of state.json cannot be followed here, so its records about a kept display entry cannot be checked\n", false),
+             "the top level of state.json cannot be followed here, so its records about a kept display entry cannot be checked\n",
+             "state.json dosyasının üst düzeyi burada izlenemiyor; bu yüzden saklanan ekran girdisiyle ilgili kayıtları denetlenemiyor\n", false),
             ("block comment", utf8(#"{"a":1,/* c */"keptDisplayReadLit":0.8}"#),
-             "the top level of state.json cannot be followed here, so its records about a kept display entry cannot be checked\n", false),
+             "the top level of state.json cannot be followed here, so its records about a kept display entry cannot be checked\n",
+             "state.json dosyasının üst düzeyi burada izlenemiyor; bu yüzden saklanan ekran girdisiyle ilgili kayıtları denetlenemiyor\n", false),
             ("line comment", utf8("{\"a\":1, // c\n\"keptDisplayReadLit\":0.8}"),
-             "the top level of state.json cannot be followed here, so its records about a kept display entry cannot be checked\n", false),
-            ("escaped backslash in a value", utf8(#"{"name":"Headset \#(b)\#(b)u0041","uid":"\#(b)\#(b)"}"#), "", true),
-            ("escape in a value", utf8(#"{"name":"Headset \#(b)u0041 \#(b)"keptDisplayReadLit\#(b)":1e-400"}"#), "", true),
-            ("nested copies", utf8(#"{"keptDisplayReadLit":0.8,"a":{"keptDisplayReadLit":1e-400,"b":[["keptDisplayReadLit",{"keptDisplayReadLit":0.7}]]}}"#), "", true),
+             "the top level of state.json cannot be followed here, so its records about a kept display entry cannot be checked\n",
+             "state.json dosyasının üst düzeyi burada izlenemiyor; bu yüzden saklanan ekran girdisiyle ilgili kayıtları denetlenemiyor\n", false),
+            ("escaped backslash in a value", utf8(#"{"name":"Headset \#(b)\#(b)u0041","uid":"\#(b)\#(b)"}"#), "", "", true),
+            ("escape in a value", utf8(#"{"name":"Headset \#(b)u0041 \#(b)"keptDisplayReadLit\#(b)":1e-400"}"#), "", "", true),
+            ("nested copies", utf8(#"{"keptDisplayReadLit":0.8,"a":{"keptDisplayReadLit":1e-400,"b":[["keptDisplayReadLit",{"keptDisplayReadLit":0.7}]]}}"#), "", "", true),
             ("brackets in nested strings", utf8(#"{"a":{"b":"}]","c":["{[",{"d":"\#(b)"}"}]},"keptDisplayReadLit":1e-400}"#),
-             "keptDisplayReadLit is 1e-400, too small a number for the app to read\n", false),
+             "keptDisplayReadLit is 1e-400, too small a number for the app to read\n",
+             "keptDisplayReadLit değeri 1e-400: uygulamanın okuyamayacağı kadar küçük bir sayı\n", false),
             ("read twice", utf8(#"{"keptDisplayReadLit":0.8,"keptDisplayReadL\#(b)u0069t":0.8}"#),
-             "keptDisplayReadLit is in the top level of state.json 2 times; the app reads the first and plutil the last\n", true),
+             "keptDisplayReadLit is in the top level of state.json 2 times; the app reads the first and plutil the last\n",
+             "keptDisplayReadLit, state.json dosyasının üst düzeyinde 2 kez geçiyor; uygulama ilkini, plutil sonuncusunu okur\n", true),
             ("boot read twice", utf8(#"{"keptDisplayUnderLowPowerBoot":"a","keptDisplayUnderLowPowerBoot":null}"#),
-             "keptDisplayUnderLowPowerBoot is in the top level of state.json 2 times; the app reads the first and plutil the last\n", true),
-            ("zero forms", utf8(#"{"keptDisplayReadLit":-0,"keptDisplayUnderLowPower":0e-400}"#), "", true),
+             "keptDisplayUnderLowPowerBoot is in the top level of state.json 2 times; the app reads the first and plutil the last\n",
+             "keptDisplayUnderLowPowerBoot, state.json dosyasının üst düzeyinde 2 kez geçiyor; uygulama ilkini, plutil sonuncusunu okur\n", true),
+            ("zero forms", utf8(#"{"keptDisplayReadLit":-0,"keptDisplayUnderLowPower":0e-400}"#), "", "", true),
             ("leading zero", utf8(#"{"keptDisplayReadLit":01}"#),
-             "keptDisplayReadLit is written as 01, which the app does not read as a number\n", false),
+             "keptDisplayReadLit is written as 01, which the app does not read as a number\n",
+             "keptDisplayReadLit değeri 01 olarak yazılmış; uygulama bunu sayı olarak okumaz\n", false),
         ]
         let printed = try recordTextProblems(cases.map { ($0.label, $0.bytes) })
         let printedByUninstall = try recordTextProblems(cases.map { ($0.label, $0.bytes) }, script: "uninstall.sh")
         for c in cases {
             XCTAssertEqual(printed[c.label], c.prints, c.label)
-            XCTAssertEqual(printedByUninstall[c.label], c.prints, c.label)
+            XCTAssertEqual(printedByUninstall[c.label], c.uninstallPrints, c.label)
             let reads = (try? Store.makeDecoder().decode(RuntimeState.self, from: c.bytes)) != nil
             XCTAssertEqual(reads, c.appReads, "the app's decoder on \(c.label)")
         }
@@ -2864,7 +2928,7 @@ final class RecoveryScriptTests: XCTestCase {
             XCTAssertFalse(f.exists(f.plist), json)
             XCTAssertFalse(f.exists(f.app), json)
             XCTAssertEqual(try String(contentsOf: f.state, encoding: .utf8), json)
-            XCTAssertTrue(r.stdout.contains("  - display brightness 0.8"), r.stdout)
+            XCTAssertTrue(r.stdout.contains("  - ekran parlaklığı 0.8"), r.stdout)
         }
     }
 
@@ -3677,7 +3741,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(fx.exists(fx.sudoers))
         XCTAssertTrue(fx.exists(fx.app))
         XCTAssertEqual(try fx.stateJSON()["sleepDisabledByUs"] as? Bool, true)
-        XCTAssertTrue(r.stderr.contains("Nothing was removed"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Hiçbir şey kaldırılmadı"), r.stderr)
     }
 
     func testUninstallRunsRecoveryUnderItsOwnLockAndKeepsLockInode() throws {
@@ -3713,7 +3777,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(fx.exists(fx.plist))
         XCTAssertTrue(fx.exists(fx.sudoers))
         XCTAssertTrue(fx.exists(fx.app))
-        XCTAssertTrue(r.stderr.contains("started again"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("yeniden açıldı"), r.stderr)
     }
 
     func testUninstallRefusesWhenAppRelaunchesBeforeRecovery() throws {
@@ -3852,7 +3916,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(fx.exists(fx.sudoers))
         XCTAssertTrue(fx.exists(fx.app))
         XCTAssertEqual(try fx.stateJSON()["sleepDisabledByUs"] as? Bool, true)
-        XCTAssertTrue(r.stderr.contains("refusing to quit"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("kapanmayı reddediyor"), r.stderr)
     }
 
     func testUninstallAbortsWhenAgentIsStillLoadedAfterBootout() throws {
@@ -3871,7 +3935,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(fx.exists(fx.installedBackstop))
         XCTAssertTrue(fx.exists(fx.config))
         XCTAssertTrue(fx.exists(fx.lock))
-        XCTAssertTrue(r.stderr.contains("still loaded"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("com.insomnia.backstop hâlâ gui/\(fx.uid) içinde yüklü"), r.stderr)
     }
 
     func testUninstallPurgeKeepsLockInode() throws {
@@ -3891,7 +3955,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertFalse(fx.exists(fx.plist))
         XCTAssertFalse(fx.exists(fx.app))
         XCTAssertFalse(fx.exists(fx.sudoers))
-        XCTAssertTrue(r.stdout.contains("Kept \(fx.lock.path)"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("\(fx.lock.path) tutuldu"), r.stdout)
     }
 
     func testCommandThatIgnoresSigtermIsNeverKilledAndKeepsTheLock() throws {
@@ -4253,7 +4317,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(fx.exists(fx.app))
         XCTAssertTrue(fx.exists(fx.installedBackstop))
         XCTAssertTrue(fx.exists(fx.config))
-        XCTAssertTrue(r.stderr.contains("cannot tell"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("olup olmadığı anlaşılamıyor"), r.stderr)
     }
 
     // MARK: - install.sh (fully redirected: fake build, signing, sudo, launchctl)
@@ -4275,14 +4339,14 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(calls.contains("launchctl print gui/\(fx.uid)/com.insomnia.backstop"), "the claim about the agent is checked: \(calls)")
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "trusted", "the trusted plist is untouched")
         XCTAssertEqual(try fx.stateJSON()["sleepDisabledByUs"] as? Bool, true, "ownership retained")
-        XCTAssertTrue(r.stderr.contains("left as it was"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("not verified"), "no schedule claim from print alone: \(r.stderr)")
-        XCTAssertFalse(r.stderr.contains("every minute"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("yüklü ve olduğu gibi bırakıldı"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("çalıştığı burada doğrulanmadı"), "no schedule claim from print alone: \(r.stderr)")
+        XCTAssertFalse(r.stderr.contains("her dakika"), r.stderr)
         XCTAssertTrue(r.stderr.contains("/scripts/backstop.sh --force"), "manual step named, the checkout's copy: \(r.stderr)")
-        XCTAssertTrue(r.stderr.contains("not replaced"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("LaunchAgent değiştirilmedi ya da devreden"), r.stderr)
         XCTAssertEqual(try fx.installedBinaryFirstLine(), "previous", "the bundle the retained agent pins stays in place")
         XCTAssertEqual(try fx.contents(of: fx.appsDir), ["Insomnia.app"], "the staged build is discarded and nothing is set aside")
-        XCTAssertTrue(r.stderr.contains("discarded"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Yeni derleme atıldı"), r.stderr)
         XCTAssertTrue(try fx.lockIsFree(), "the transaction ends with the script")
 
         // A zip install has no scripts/ directory. The checked copy of the bundle is gone when the
@@ -4309,9 +4373,9 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(r.status, 1, r.stderr + r.stdout)
         XCTAssertFalse(fx.calls().contains { $0.hasPrefix("launchctl bootstrap") || $0.hasPrefix("launchctl bootout") }, "\(fx.calls())")
         XCTAssertFalse(fx.exists(fx.plist), "no agent file is written while recovery is unresolved")
-        XCTAssertTrue(r.stderr.contains("No LaunchAgent"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("nothing retries"), r.stderr)
-        XCTAssertFalse(r.stderr.contains("every minute"), "no retry is promised: \(r.stderr)")
+        XCTAssertTrue(r.stderr.contains("adlı LaunchAgent yüklü değil"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("kendiliğinden yeniden deneyen bir şey yok"), r.stderr)
+        XCTAssertFalse(r.stderr.contains("her dakika"), "no retry is promised: \(r.stderr)")
     }
 
     /// The commands install.sh prints for pasting name paths inside the
@@ -4341,7 +4405,7 @@ final class RecoveryScriptTests: XCTestCase {
         let installed = try fx.run(install, extraEnvironment: ["USER": "tester"])
 
         XCTAssertEqual(installed.status, 0, installed.stderr + installed.stdout)
-        let step = try XCTUnwrap(installed.stdout.split(separator: "\n").first { $0.contains("Uninstall:") }, installed.stdout)
+        let step = try XCTUnwrap(installed.stdout.split(separator: "\n").first { $0.contains("Kaldırma:") }, installed.stdout)
         let uninstall = String(step.split(separator: ":", maxSplits: 1)[1]).trimmingCharacters(in: .whitespaces)
         XCTAssertEqual(try pastedWords(of: uninstall), [checkout.appendingPathComponent("scripts/uninstall.sh").path], "the uninstaller of the checkout")
     }
@@ -4384,9 +4448,9 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(bootstraps[0].contains("candidate-") && bootstraps[0].hasSuffix(".plist"), "loaded through a private candidate launchctl accepts: \(bootstraps)")
         XCTAssertEqual(bootstraps[1], "launchctl bootstrap gui/\(fx.uid) \(fx.plist.path)")
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "trusted", "the trusted plist was never modified")
-        XCTAssertTrue(r.stderr.contains("loaded again"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("not verified"), "reload success is not a schedule claim: \(r.stderr)")
-        XCTAssertFalse(r.stderr.contains("every minute"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("önceki plist dosyasından (\(fx.plist.path)) yeniden yüklendi"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("zamanlaması burada doğrulanmadı"), "reload success is not a schedule claim: \(r.stderr)")
+        XCTAssertFalse(r.stderr.contains("her dakika"), r.stderr)
         XCTAssertTrue(fx.exists(fx.sudoers))
         XCTAssertEqual(
             fx.calls().filter { $0.hasPrefix("launchctl APP-") },
@@ -4395,7 +4459,7 @@ final class RecoveryScriptTests: XCTestCase {
         )
         XCTAssertEqual(try fx.installedBinaryFirstLine(), "previous", "the previous bundle is back for the previous agent")
         XCTAssertEqual(try fx.contents(of: fx.appsDir), ["Insomnia.app"], "no staged or set-aside bundle is left")
-        XCTAssertTrue(r.stderr.contains("put back"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Önceki uygulama \(fx.app.path) konumuna geri kondu"), r.stderr)
         XCTAssertEqual(try fx.contents(of: fx.plist.deletingLastPathComponent()), ["com.insomnia.backstop.plist"], "no staged leftovers")
     }
 
@@ -4421,7 +4485,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertFalse(calls.contains("launchctl LOCK-FREE during bootstrap"), "\(calls)")
         XCTAssertEqual(try fx.inode(fx.lock), lockInode, "the lock inode is preserved")
         XCTAssertTrue(try fx.lockIsFree())
-        XCTAssertTrue(r.stdout.contains("launchctl print confirms"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("launchctl print doğruluyor"), r.stdout)
         let plist = try fx.plistOnDisk()
         XCTAssertEqual(plist["StartInterval"] as? Int, 60)
         // The plist must be exactly what the app builds for the same bundle
@@ -4434,14 +4498,14 @@ final class RecoveryScriptTests: XCTestCase {
         let bootout = try XCTUnwrap(calls.firstIndex(of: "launchctl bootout gui/\(fx.uid)/com.insomnia.backstop"))
         let swapped = try XCTUnwrap(calls.firstIndex(of: "launchctl APP-BINARY=#!/bin/bash during bootstrap"), "\(calls)")
         XCTAssertLessThan(bootout, swapped, "the previous agent is unloaded before its bundle is replaced: \(calls)")
-        XCTAssertTrue(r.stdout.contains("replaced the previous"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("yenisiyle değiştirildi"), r.stdout)
         XCTAssertEqual(try fx.stateJSON()["sleepDisabledByUs"] as? Bool, false)
         XCTAssertTrue(fx.exists(fx.installedBackstop), "backstop.sh is sealed in the bundle")
         XCTAssertFalse(fx.exists(fx.legacyBackstop), "no writable copy is installed")
         XCTAssertTrue(fx.exists(fx.sudoers))
         XCTAssertTrue(fx.exists(fx.app.appendingPathComponent("Contents/Info.plist")))
         XCTAssertTrue(fx.exists(fx.app.appendingPathComponent("Contents/Resources/AppIcon.icns")), "the app icon is bundled")
-        XCTAssertTrue(r.stdout.contains("Installed"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("==> Kuruldu"), r.stdout)
         XCTAssertEqual(try fx.contents(of: fx.plist.deletingLastPathComponent()), ["com.insomnia.backstop.plist"])
     }
 
@@ -4489,16 +4553,16 @@ final class RecoveryScriptTests: XCTestCase {
         let verify = try XCTUnwrap(calls.firstIndex(of: "codesign --verify --strict --deep \(copy)"), "\(calls)")
         let visudo = try XCTUnwrap(calls.firstIndex { $0.hasPrefix("sudo visudo") }, "\(calls)")
         XCTAssertLessThan(verify, visudo, "verified before the password prompt: \(calls)")
-        XCTAssertTrue(r.stdout.contains("WARNING: the origin of Insomnia 0.1.0 is not verified. Its signature shows the bundle is intact, not who made it."), r.stdout)
-        XCTAssertTrue(r.stdout.contains("--allow-unverified-origin: installing it anyway"), r.stdout)
-        XCTAssertTrue(r.stdout.contains("macOS blocks the first launch"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("UYARI: Insomnia 0.1.0 sürümünün kökeni doğrulanmadı. İmzası paketin bozulmadığını gösterir, onu kimin yaptığını değil."), r.stdout)
+        XCTAssertTrue(r.stdout.contains("--allow-unverified-origin: yine de kuruluyor"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("macOS, indirilen bir sürümün ilk açılışını"), r.stdout)
         XCTAssertEqual(try String(contentsOf: fx.app.appendingPathComponent("Contents/MacOS/Insomnia"), encoding: .utf8), "prebuilt")
         XCTAssertTrue(fx.exists(fx.installedBackstop))
         XCTAssertTrue(fx.exists(prebuilt), "the source bundle is copied, not moved")
         let plist = try fx.plistOnDisk()
         let expected = LaunchdBackstop.plistDictionary(label: "com.insomnia.backstop", target: BackstopTarget(bundle: fx.app, requirement: fx.requirement))
         XCTAssertTrue(NSDictionary(dictionary: plist).isEqual(to: expected), "same agent as a source install: \(plist)")
-        XCTAssertTrue(r.stdout.contains("Uninstall:"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("Kaldırma:"), r.stdout)
     }
 
     /// The checks run on a private copy, and that copy is what gets staged
@@ -4536,7 +4600,7 @@ final class RecoveryScriptTests: XCTestCase {
         let r = try fx.run(unpacked.appendingPathComponent("install.sh"), ["--allow-unverified-origin", "--app", prebuilt.path], extraEnvironment: ["USER": "tester"])
 
         XCTAssertEqual(r.status, 0, r.stderr + r.stdout)
-        XCTAssertTrue(r.stdout.contains("Uninstall:         \(unpacked.path)/uninstall.sh"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("Kaldırma:          \(unpacked.path)/uninstall.sh"), r.stdout)
     }
 
     /// A release zip has install.sh but no build-app.sh. Run without --app
@@ -4557,8 +4621,8 @@ final class RecoveryScriptTests: XCTestCase {
 
         XCTAssertEqual(r.status, 1, r.stderr + r.stdout)
         XCTAssertEqual(fx.callsBesideScratchFiles(), [], "nothing ran, the planted script included")
-        XCTAssertTrue(r.stderr.contains("\(unpacked.path) is not the scripts folder of a source checkout"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("pass it with --app"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("\(unpacked.path) bir kaynak kod kopyasının scripts klasörü değil"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("onu --app ile verin"), r.stderr)
         XCTAssertFalse(fx.exists(fx.sudoers))
         XCTAssertFalse(fx.exists(fx.app))
     }
@@ -4585,8 +4649,8 @@ final class RecoveryScriptTests: XCTestCase {
 
             XCTAssertEqual(r.status, 1, "\(folder): " + r.stderr + r.stdout)
             XCTAssertEqual(fx.callsBesideScratchFiles(), [], "\(folder): nothing ran, the planted script included")
-            XCTAssertTrue(r.stderr.contains("\(unpacked.path) is not the scripts folder of a source checkout"), r.stderr)
-            XCTAssertTrue(r.stderr.contains("\(planted.path) was not run: a release zip has no build-app.sh"), r.stderr)
+            XCTAssertTrue(r.stderr.contains("\(unpacked.path) bir kaynak kod kopyasının scripts klasörü değil"), r.stderr)
+            XCTAssertTrue(r.stderr.contains("\(planted.path) çalıştırılmadı: sürüm zip dosyalarında build-app.sh bulunmaz"), r.stderr)
             XCTAssertFalse(fx.exists(fx.sudoers))
             XCTAssertFalse(fx.exists(fx.app))
         }
@@ -4600,7 +4664,7 @@ final class RecoveryScriptTests: XCTestCase {
         try fx.prepareInstall()
         let prebuilt = try fx.writePrebuiltApp()
         fx.setMode("launchctl", "loaded")
-        for (mode, read) in [("intel-0", "0"), ("intel-missing", "no value")] {
+        for (mode, read) in [("intel-0", "0"), ("intel-missing", "değer yok")] {
             fx.clearCalls()
             fx.setMode("sysctl", mode)
 
@@ -4608,8 +4672,8 @@ final class RecoveryScriptTests: XCTestCase {
 
             XCTAssertEqual(r.status, 1, "\(mode): " + r.stderr + r.stdout)
             XCTAssertEqual(fx.callsBesideScratchFiles(), ["sysctl -n hw.optional.arm64"], "\(mode): nothing else ran: \(fx.calls())")
-            XCTAssertTrue(r.stderr.contains("Release bundles of Insomnia run on Apple Silicon Macs only, and this Mac is not one ('sysctl -n hw.optional.arm64' gave \(read))."), r.stderr)
-            XCTAssertTrue(r.stderr.contains("Build and install from a source checkout instead (README, Build from source). Nothing was changed."), r.stderr)
+            XCTAssertTrue(r.stderr.contains("Insomnia sürüm paketleri yalnızca Apple Silicon Mac'lerde çalışır ve bu Mac öyle değil ('sysctl -n hw.optional.arm64' sonucu: \(read))."), r.stderr)
+            XCTAssertTrue(r.stderr.contains("Bunun yerine kaynak kod kopyasından derleyip kurun (README, Kurulum). Hiçbir şey değiştirilmedi."), r.stderr)
             XCTAssertFalse(fx.exists(fx.sudoers))
             XCTAssertFalse(fx.exists(fx.app))
         }
@@ -4642,9 +4706,9 @@ final class RecoveryScriptTests: XCTestCase {
             XCTAssertEqual(r.status, 1, "\(signing): \(r.stderr + r.stdout)")
             let copy = try checkedCopy(of: prebuilt)
             XCTAssertEqual(fx.callsBesideScratchFiles(), ["sysctl -n hw.optional.arm64", "codesign --verify --strict --deep \(copy)"], "\(signing): \(fx.calls())")
-            XCTAssertTrue(r.stderr.contains("The origin of Insomnia 0.1.0 at \(prebuilt.path) is not verified."), "\(signing): \(r.stderr)")
+            XCTAssertTrue(r.stderr.contains("\(prebuilt.path) konumundaki Insomnia 0.1.0 sürümünün kökeni doğrulanmadı."), "\(signing): \(r.stderr)")
             XCTAssertEqual(try pastedWords(of: printedCommand(in: r.stderr, containing: " --app ")), [fx.installRedirected.path, "--allow-unverified-origin", "--app", prebuilt.path], "\(signing): names the flag")
-            XCTAssertTrue(r.stderr.contains("Nothing was changed"), "\(signing): \(r.stderr)")
+            XCTAssertTrue(r.stderr.contains("Hiçbir şey değiştirilmedi"), "\(signing): \(r.stderr)")
             XCTAssertFalse(fx.exists(fx.app), signing)
             XCTAssertFalse(fx.exists(fx.sudoers), signing)
         }
@@ -4653,7 +4717,7 @@ final class RecoveryScriptTests: XCTestCase {
         let flagged = try fx.run(fx.installRedirected, ["--allow-unverified-origin", "--app", prebuilt.path], extraEnvironment: ["USER": "tester"])
 
         XCTAssertEqual(flagged.status, 0, flagged.stderr + flagged.stdout)
-        XCTAssertTrue(flagged.stdout.contains("WARNING: the origin of Insomnia 0.1.0 is not verified."), flagged.stdout)
+        XCTAssertTrue(flagged.stdout.contains("UYARI: Insomnia 0.1.0 sürümünün kökeni doğrulanmadı."), flagged.stdout)
         XCTAssertEqual(try String(contentsOf: fx.app.appendingPathComponent("Contents/MacOS/Insomnia"), encoding: .utf8), "prebuilt")
         XCTAssertTrue(fx.exists(fx.installedBackstop))
     }
@@ -4678,7 +4742,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(r.status, 0, r.stderr + r.stdout)
         let requirement = try CodeRequirement.designated(ofCodeAt: prebuilt)
         XCTAssertTrue(requirement.hasPrefix("cdhash H\""), requirement)
-        XCTAssertTrue(r.stdout.contains("LaunchAgent will require: \(requirement)"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("LaunchAgent şu gereksinimi arayacak: \(requirement)"), r.stdout)
         let installed = try fx.runTool("/usr/bin/codesign", ["--verify", "--strict", "--deep", fx.app.path])
         XCTAssertEqual(installed.status, 0, "the ditto copy at the installed path verifies: \(installed.output)")
         XCTAssertNoThrow(try CodeRequirement.verify(codeAt: fx.app, satisfies: requirement))
@@ -4694,8 +4758,8 @@ final class RecoveryScriptTests: XCTestCase {
 
         XCTAssertEqual(edited.status, 1, edited.stderr + edited.stdout)
         XCTAssertEqual(fx.callsBesideScratchFiles(), ["sysctl -n hw.optional.arm64"], "the real codesign refused before any other fake tool ran: \(fx.calls())")
-        XCTAssertTrue(edited.stderr.contains("fails 'codesign --verify --strict --deep'"), edited.stderr)
-        XCTAssertTrue(edited.stderr.contains("Nothing was changed"), edited.stderr)
+        XCTAssertTrue(edited.stderr.contains("'codesign --verify --strict --deep' denetiminden geçemiyor"), edited.stderr)
+        XCTAssertTrue(edited.stderr.contains("Hiçbir şey değiştirilmedi"), edited.stderr)
     }
 
     /// A zip unpacked by a tool that keeps group and other write bits, or a
@@ -4736,7 +4800,7 @@ final class RecoveryScriptTests: XCTestCase {
         let installed = try fx.runTool("/usr/bin/codesign", ["--verify", "--strict", "--deep", fx.app.path])
         XCTAssertEqual(installed.status, 0, "the installed copy still verifies: \(installed.output)")
         let requirement = try CodeRequirement.designated(ofCodeAt: prebuilt)
-        XCTAssertTrue(r.stdout.contains("LaunchAgent will require: \(requirement)"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("LaunchAgent şu gereksinimi arayacak: \(requirement)"), r.stdout)
         XCTAssertNoThrow(try CodeRequirement.verify(codeAt: fx.app, satisfies: requirement))
     }
 
@@ -4800,8 +4864,8 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(r.status, 1, r.stderr + r.stdout)
         let calls = fx.callsBesideScratchFiles()
         XCTAssertEqual(calls, ["sysctl -n hw.optional.arm64", "codesign --verify --strict --deep \(try checkedCopy(of: prebuilt))"], "nothing after the failed check: \(fx.calls())")
-        XCTAssertTrue(r.stderr.contains("fails 'codesign --verify --strict --deep'"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("Nothing was changed"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("'codesign --verify --strict --deep' denetiminden geçemiyor"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Hiçbir şey değiştirilmedi"), r.stderr)
         XCTAssertTrue(r.stderr.contains("SHA256SUMS"), "points at the download checks: \(r.stderr)")
         XCTAssertEqual(try String(contentsOf: fx.app.appendingPathComponent("Contents/MacOS/Insomnia"), encoding: .utf8), "binary", "old bundle kept")
         XCTAssertEqual(try String(contentsOf: fx.sudoers, encoding: .utf8), "rule", "sudoers rule kept")
@@ -4811,9 +4875,9 @@ final class RecoveryScriptTests: XCTestCase {
     func testInstallFromPrebuiltAppRefusesAnotherIdentifierAVersionlessBundleAndAMissingBackstop() throws {
         try fx.prepareInstall()
         let cases: [(String, String, (ScriptFixture) throws -> URL)] = [
-            ("identifier", "has bundle identifier 'com.example.other', not com.kgarg.insomnia", { try $0.writePrebuiltApp(bundleID: "com.example.other") }),
-            ("version", "has no usable CFBundleShortVersionString ('dev')", { try $0.writePrebuiltApp(version: "dev") }),
-            ("backstop", "has no Contents/Resources/backstop.sh", { try $0.writePrebuiltApp(withBackstop: false) }),
+            ("identifier", "için paket tanımlayıcısı 'com.example.other'; beklenen: com.kgarg.insomnia", { try $0.writePrebuiltApp(bundleID: "com.example.other") }),
+            ("version", "içinde kullanılabilir bir CFBundleShortVersionString yok ('dev')", { try $0.writePrebuiltApp(version: "dev") }),
+            ("backstop", "içinde Contents/Resources/backstop.sh yok", { try $0.writePrebuiltApp(withBackstop: false) }),
         ]
         for (name, reason, make) in cases {
             let bundle = try make(fx)
@@ -4822,7 +4886,7 @@ final class RecoveryScriptTests: XCTestCase {
             XCTAssertEqual(r.status, 1, "\(name): \(r.stderr + r.stdout)")
             XCTAssertFalse(fx.calls().contains { $0.hasPrefix("sudo") }, "\(name): \(fx.calls())")
             XCTAssertTrue(r.stderr.contains(reason), "\(name): \(r.stderr)")
-            XCTAssertTrue(r.stderr.contains("Nothing was changed"), "\(name): \(r.stderr)")
+            XCTAssertTrue(r.stderr.contains("Hiçbir şey değiştirilmedi"), "\(name): \(r.stderr)")
             XCTAssertFalse(fx.exists(fx.app), name)
             XCTAssertFalse(fx.exists(fx.sudoers), name)
             try FileManager.default.removeItem(at: bundle)
@@ -4859,13 +4923,13 @@ final class RecoveryScriptTests: XCTestCase {
 
         XCTAssertEqual(r.status, 2, r.stderr + r.stdout)
         XCTAssertEqual(fx.calls(), [])
-        XCTAssertTrue(r.stderr.contains("usage:"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("kullanım:"), r.stderr)
 
         let flagAlone = try fx.run(fx.installRedirected, ["--allow-unverified-origin"], extraEnvironment: ["USER": "tester"])
 
         XCTAssertEqual(flagAlone.status, 2, flagAlone.stderr + flagAlone.stdout)
         XCTAssertEqual(fx.calls(), [])
-        XCTAssertTrue(flagAlone.stderr.contains("applies to --app only"), flagAlone.stderr)
+        XCTAssertTrue(flagAlone.stderr.contains("yalnızca --app ile geçerlidir"), flagAlone.stderr)
         XCTAssertFalse(fx.exists(fx.sudoers))
     }
 
@@ -4892,7 +4956,7 @@ final class RecoveryScriptTests: XCTestCase {
 
         XCTAssertEqual(ok.status, 0, ok.stderr + ok.stdout)
         XCTAssertFalse(fx.exists(fx.legacyBackstop), "the writable copy is gone once the verifying agent is loaded")
-        XCTAssertTrue(ok.stdout.contains("removed the previous install's"), ok.stdout)
+        XCTAssertTrue(ok.stdout.contains("önceki kurulumdan kalan"), ok.stdout)
         XCTAssertTrue(fx.exists(fx.installedBackstop))
     }
 
@@ -4921,7 +4985,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "trusted")
         XCTAssertTrue(fx.exists(fx.legacyBackstop))
         XCTAssertTrue(fx.exists(fx.sudoers), "the rule step comes first and is reported")
-        XCTAssertTrue(r.stderr.contains("would never run backstop.sh"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("backstop.sh betiğini hiçbir zaman çalıştırmazdı"), r.stderr)
         XCTAssertTrue(r.stderr.contains(fx.sudoers.path), r.stderr)
     }
 
@@ -4938,7 +5002,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(fx.calls().contains("launchctl APP-BINARY=#!/bin/bash during bootstrap"), "\(fx.calls())")
         XCTAssertFalse(fx.exists(fx.app), "the new bundle is discarded with its agent")
         XCTAssertEqual(try fx.contents(of: fx.appsDir), [])
-        XCTAssertTrue(r.stderr.contains("none is now"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("önceden kurulu bir uygulama yoktu, şimdi de yok"), r.stderr)
         XCTAssertFalse(fx.exists(fx.plist))
     }
 
@@ -4957,7 +5021,7 @@ final class RecoveryScriptTests: XCTestCase {
         let r = try fx.run(fx.installRedirected, extraEnvironment: ["USER": "tester"])
 
         XCTAssertEqual(r.status, 1, r.stderr + r.stdout)
-        XCTAssertTrue(r.stdout.contains("restored \(fx.app.path)"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("uygulama geri kondu: \(fx.app.path)"), r.stdout)
         XCTAssertEqual(try fx.installedBinaryFirstLine(), "previous")
         XCTAssertEqual(try fx.contents(of: fx.appsDir), ["Insomnia.app"])
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "trusted")
@@ -4986,7 +5050,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(fx.calls().contains("codesign --verify --strict -R=\(fx.requirement) \(previous.path)"), "\(fx.calls())")
         XCTAssertEqual(try fx.installedBinaryFirstLine(), "previous", "the bundle the plist pins is back")
         XCTAssertEqual(try fx.contents(of: fx.appsDir), ["Insomnia.app"], "the interrupted build left with the staging directory")
-        XCTAssertTrue(pinsPrevious.stdout.contains("restored \(fx.app.path)"), pinsPrevious.stdout)
+        XCTAssertTrue(pinsPrevious.stdout.contains("uygulama geri kondu: \(fx.app.path)"), pinsPrevious.stdout)
 
         try FileManager.default.removeItem(at: fx.root.appendingPathComponent("codesign.rejects"))
         try FileManager.default.removeItem(at: fx.app)
@@ -4998,7 +5062,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try fx.installedBinaryFirstLine(), "interrupted", "$APP satisfies the plist, so it stays")
         XCTAssertEqual(try fx.contents(of: fx.appsDir), ["Insomnia.app"], "the set-aside copy is removed")
         XCTAssertTrue(fx.calls().contains("rm -rf \(previous.path)"), "removed through $RM: \(fx.calls())")
-        XCTAssertTrue(pinsCurrent.stdout.contains("removed the bundle an interrupted run had set aside"), pinsCurrent.stdout)
+        XCTAssertTrue(pinsCurrent.stdout.contains("yarıda kalmış bir çalıştırmanın kenara ayırdığı paket kaldırıldı"), pinsCurrent.stdout)
     }
 
     /// The interrupted run may have left its own job loaded (killed after
@@ -5028,7 +5092,7 @@ final class RecoveryScriptTests: XCTestCase {
             "the previous plist is loaded with the previous bundle back, then this run's: \(calls)")
         XCTAssertEqual(try fx.installedBinaryFirstLine(), "#!/bin/bash")
         XCTAssertEqual(try fx.contents(of: fx.appsDir), ["Insomnia.app"], "the interrupted build left with the staging directory")
-        XCTAssertTrue(r.stdout.contains("unloaded the job the interrupted run left and loaded \(fx.plist.path) again"), r.stdout)
+        XCTAssertTrue(r.stdout.contains("yarıda kalan çalıştırmanın bıraktığı görev devreden çıkarıldı ve \(fx.plist.path) yeniden yüklendi"), r.stdout)
         XCTAssertEqual(try fx.stateJSON()["sleepDisabledByUs"] as? Bool, false)
     }
 
@@ -5055,10 +5119,10 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try fx.contents(of: fx.appsDir), [".Insomnia.app.previous", "Insomnia.app"], "the staged build is discarded")
         XCTAssertEqual(try Data(contentsOf: fx.plist), plistBefore)
         XCTAssertEqual(try fx.stateJSON()["sleepDisabledByUs"] as? Bool, true, "ownership retained")
-        XCTAssertTrue(r.stderr.contains("Neither bundle was moved"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("\(fx.plist.path) pins the previous app"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("is loaded and was left as it was"), r.stderr)
-        XCTAssertFalse(r.stderr.contains("still match each other"), "the pair is not claimed to match: \(r.stderr)")
+        XCTAssertTrue(r.stderr.contains("İki paket de taşınmadı"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("\(fx.plist.path) önceki uygulamayı sabitliyor"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("yüklü ve olduğu gibi bırakıldı"), r.stderr)
+        XCTAssertFalse(r.stderr.contains("hâlâ birbiriyle eşleşiyorlar"), "the pair is not claimed to match: \(r.stderr)")
         XCTAssertTrue(try fx.lockIsFree())
     }
 
@@ -5090,10 +5154,10 @@ final class RecoveryScriptTests: XCTestCase {
             XCTAssertEqual(try fx.contents(of: fx.appsDir), ["Insomnia.app"], "\(mode)")
             XCTAssertEqual(try Data(contentsOf: fx.plist), plistBefore, "\(mode)")
             XCTAssertEqual(try fx.contents(of: fx.plist.deletingLastPathComponent()), ["com.insomnia.backstop.plist"], "no candidate written: \(mode)")
-            XCTAssertFalse(r.stdout.contains("loaded \(fx.plist.path) again"), "\(mode): \(r.stdout)")
-            XCTAssertTrue(r.stderr.contains("No job with label com.insomnia.backstop is confirmed loaded (launchctl print: \(printed))"), "\(mode): \(r.stderr)")
+            XCTAssertFalse(r.stdout.contains("\(fx.plist.path) yeniden yüklendi"), "\(mode): \(r.stdout)")
+            XCTAssertTrue(r.stderr.contains("com.insomnia.backstop etiketli hiçbir görevin yüklü olduğu doğrulanmadı (launchctl print: \(printed))"), "\(mode): \(r.stderr)")
             XCTAssertEqual(try pastedWords(of: printedCommand(in: r.stderr, containing: "launchctl bootstrap")), ["launchctl", "bootstrap", "gui/\(fx.uid)", fx.plist.path], "\(mode)")
-            XCTAssertTrue(r.stderr.contains("matches\nthe app at \(fx.app.path)"), "\(mode): \(r.stderr)")
+            XCTAssertTrue(r.stderr.contains("\(fx.app.path) konumundaki uygulamayla eşleşen\n\(fx.plist.path) yüklenir"), "\(mode): \(r.stderr)")
             XCTAssertTrue(try fx.lockIsFree(), "\(mode)")
         }
     }
@@ -5129,7 +5193,7 @@ final class RecoveryScriptTests: XCTestCase {
 
         XCTAssertEqual(r.status, 1, r.stderr + r.stdout)
         XCTAssertLessThan(elapsed, 30)
-        XCTAssertTrue(r.stderr.contains("aside at \(previous.path), and 'codesign --verify', which tells which of the two bundles \(fx.plist.path) pins,\ndid not answer within 5s.\nNeither bundle was moved"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("\(previous.path) konumuna ayırdı; ayrıca \(fx.plist.path) dosyasının iki paketten hangisini sabitlediğini gösteren 'codesign --verify',\n5 saniye içinde yanıt vermedi.\nİki paket de taşınmadı"), r.stderr)
         let calls = fx.calls()
         XCTAssertTrue(calls.contains("codesign FD9-OPEN"), "the call keeps the lock while it runs: \(calls)")
         XCTAssertTrue(fx.hungProcessGone("codesign", within: 0), "it was killed and reaped before the run went on")
@@ -5160,8 +5224,8 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: previous.appendingPathComponent("Contents/MacOS/Insomnia"), encoding: .utf8), "previous\n", "the previous app stays set aside")
         XCTAssertEqual(try fx.contents(of: fx.appsDir), [".Insomnia.app.previous", "Insomnia.app"])
         XCTAssertEqual(try Data(contentsOf: fx.plist), plistBefore)
-        XCTAssertTrue(r.stderr.contains("not confirmed (launchctl print: yes)"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("neither bundle was moved"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("çıkarıldığı doğrulanamadı (launchctl print: yes)"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("iki paket de taşınmadı"), r.stderr)
         XCTAssertTrue(r.stderr.contains("  launchctl bootout gui/\(fx.uid)/com.insomnia.backstop"), r.stderr)
         XCTAssertTrue(try fx.lockIsFree())
     }
@@ -5327,10 +5391,10 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "trusted", "the trusted plist was never modified")
         XCTAssertEqual(try fx.installedBinaryFirstLine(), "previous")
         XCTAssertEqual(try fx.contents(of: fx.appsDir), ["Insomnia.app"], "no staged or set-aside bundle is left")
-        XCTAssertTrue(r.stderr.contains("could not be moved to \(fx.plist.path)"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("put back"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("loaded again from the previous plist"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("is writable and rerun"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("yere (\(fx.plist.path)) taşınamadı"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Önceki uygulama \(fx.app.path) konumuna geri kondu"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("önceki plist dosyasından (\(fx.plist.path)) yeniden yüklendi"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("yazılabilir olduğunu denetleyip yeniden çalıştırın"), r.stderr)
     }
 
     /// As above, but the new job cannot be unloaded again: launchctl print
@@ -5365,10 +5429,10 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try fx.contents(of: fx.appsDir), [".Insomnia.app.previous", "Insomnia.app"], "the previous bundle stays set aside")
         XCTAssertEqual(try String(contentsOf: previous.appendingPathComponent("Contents/MacOS/Insomnia"), encoding: .utf8), "previous\n")
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "trusted", "the trusted plist was never modified")
-        XCTAssertTrue(r.stderr.contains("not confirmed (launchctl print: yes)"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("stays at \(fx.app.path)"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("kept at \(previous.path)"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("is writable and rerun"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("çıkarıldığı doğrulanmadı (launchctl print: yes)"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("\(fx.app.path) konumunda kalıyor"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("\(previous.path) konumunda tutuluyor"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("yazılabilir olduğunu denetleyip yeniden çalıştırın"), r.stderr)
     }
 
     /// bootstrap exits 0 but the print after it fails, so the new job may be
@@ -5397,10 +5461,10 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try fx.installedBinaryFirstLine(), "previous")
         XCTAssertEqual(try fx.contents(of: fx.appsDir), ["Insomnia.app"])
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "trusted")
-        XCTAssertTrue(r.stderr.contains("not confirmed loaded (launchctl print: unknown:1)"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("The new job was unloaded again (launchctl print confirms)."), r.stderr)
-        XCTAssertTrue(r.stderr.contains("put back"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("loaded again from the previous plist"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("görevin yüklü olduğu doğrulanmadı (launchctl print: unknown:1)"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Yeni görev yeniden devreden çıkarıldı (launchctl print doğruluyor)."), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Önceki uygulama \(fx.app.path) konumuna geri kondu"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("önceki plist dosyasından (\(fx.plist.path)) yeniden yüklendi"), r.stderr)
     }
 
     /// As above, but print keeps failing, so the unload is not confirmed. A
@@ -5426,10 +5490,10 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try fx.contents(of: fx.appsDir), [".Insomnia.app.previous", "Insomnia.app"])
         XCTAssertEqual(try String(contentsOf: previous.appendingPathComponent("Contents/MacOS/Insomnia"), encoding: .utf8), "previous\n")
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "trusted")
-        XCTAssertTrue(r.stderr.contains("not confirmed (launchctl print: unknown:1)"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("stays at \(fx.app.path)"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("kept at \(previous.path)"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("rerun before you log out"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("çıkarıldığı doğrulanmadı (launchctl print: unknown:1)"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("\(fx.app.path) konumunda kalıyor"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("\(previous.path) konumunda tutuluyor"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("yeniden çalıştırın; bunu macOS oturumunuzu kapatmadan önce yapın"), r.stderr)
     }
 
     /// bootout leaves the previous job loaded (print still lists it). The
@@ -5451,7 +5515,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try fx.installedBinaryFirstLine(), "previous")
         XCTAssertEqual(try fx.contents(of: fx.appsDir), ["Insomnia.app"], "the staged build is discarded and nothing is set aside")
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "trusted")
-        XCTAssertTrue(r.stderr.contains("(launchctl print: yes), so the app at \(fx.app.path) was not replaced"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("(launchctl print: yes); bu yüzden \(fx.app.path) konumundaki uygulama değiştirilmedi"), r.stderr)
         XCTAssertFalse(r.stderr.contains("launchctl bootstrap gui/"), "the job is still loaded, so there is nothing to reload: \(r.stderr)")
     }
 
@@ -5496,9 +5560,9 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try fx.installedBinaryFirstLine(), "previous")
         XCTAssertEqual(try fx.contents(of: fx.appsDir), ["Insomnia.app"], "nothing is left set aside or staged")
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "trusted")
-        XCTAssertTrue(r.stderr.contains("the new build could not be moved from"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("The previous app was put back at \(fx.app.path)"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("loaded again from the previous plist"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("konumundan \(fx.app.path) konumuna taşınamadı"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Önceki uygulama \(fx.app.path) konumuna geri kondu"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("önceki plist dosyasından (\(fx.plist.path)) yeniden yüklendi"), r.stderr)
     }
 
     /// The previous app cannot be moved aside: it never left $APP, and its
@@ -5516,9 +5580,9 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(calls.filter { $0.hasPrefix("launchctl APP-") }, ["launchctl APP-BINARY=previous during bootstrap"], "\(calls)")
         XCTAssertEqual(try fx.installedBinaryFirstLine(), "previous")
         XCTAssertEqual(try fx.contents(of: fx.appsDir), ["Insomnia.app"])
-        XCTAssertTrue(r.stderr.contains("could not be moved aside to \(setAside.path)"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("The previous app was never moved from \(fx.app.path)"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("loaded again from the previous plist"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("\(setAside.path) konumuna ayrılamadı"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Önceki uygulama \(fx.app.path) konumundan hiç taşınmadı"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("önceki plist dosyasından (\(fx.plist.path)) yeniden yüklendi"), r.stderr)
     }
 
     /// Neither the new build nor the previous app can be moved to $APP, so
@@ -5537,8 +5601,8 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: setAside.appendingPathComponent("Contents/MacOS/Insomnia"), encoding: .utf8), "previous\n")
         let staged = try XCTUnwrap(try stagingDirs().first, "the new build is kept: \(String(describing: try? fx.contents(of: fx.appsDir)))")
         XCTAssertTrue(fx.exists(staged.appendingPathComponent("Insomnia.app/Contents/Resources/backstop.sh")), "the kept build still carries its backstop.sh")
-        XCTAssertTrue(r.stderr.contains("nothing is at \(fx.app.path)"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("neither was deleted"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("\(fx.app.path) konumunda hiçbir şey yok"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("ikisi de silinmedi"), r.stderr)
         XCTAssertEqual(try pastedWords(of: printedCommand(in: r.stderr, containing: "mv ")), ["mv", setAside.path, fx.app.path])
         XCTAssertEqual(try pastedWords(of: printedCommand(in: r.stderr, containing: "launchctl bootstrap")), ["launchctl", "bootstrap", "gui/\(fx.uid)", fx.plist.path])
 
@@ -5547,7 +5611,7 @@ final class RecoveryScriptTests: XCTestCase {
         let rerun = try fx.run(fx.installRedirected, extraEnvironment: ["USER": "tester"])
 
         XCTAssertEqual(rerun.status, 0, rerun.stderr + rerun.stdout)
-        XCTAssertTrue(rerun.stdout.contains("restored \(fx.app.path), which an interrupted run had set aside"), rerun.stdout)
+        XCTAssertTrue(rerun.stdout.contains("yarıda kalmış bir çalıştırmanın kenara ayırdığı uygulama geri kondu: \(fx.app.path)"), rerun.stdout)
         XCTAssertEqual(try fx.installedBinaryFirstLine(), "#!/bin/bash")
         XCTAssertFalse(fx.exists(setAside))
     }
@@ -5570,9 +5634,9 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try fx.installedBinaryFirstLine(), "#!/bin/bash")
         XCTAssertEqual(try String(contentsOf: setAside.appendingPathComponent("Contents/MacOS/Insomnia"), encoding: .utf8), "previous\n")
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "trusted")
-        XCTAssertTrue(r.stderr.contains("so it stays there"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("kept at \(setAside.path)"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("rerun before you log out"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("bu yüzden orada kalıyor"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("\(setAside.path) konumunda tutuluyor"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("yeniden çalıştırın; bunu macOS oturumunuzu kapatmadan önce yapın"), r.stderr)
     }
 
     /// The new job failed to load and the new build was moved out, but the
@@ -5591,8 +5655,8 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: setAside.appendingPathComponent("Contents/MacOS/Insomnia"), encoding: .utf8), "previous\n")
         let staged = try XCTUnwrap(try stagingDirs().first, "the new build is kept: \(String(describing: try? fx.contents(of: fx.appsDir)))")
         XCTAssertTrue(fx.exists(staged.appendingPathComponent("Insomnia.app/Contents/Resources/backstop.sh")))
-        XCTAssertTrue(r.stderr.contains("'launchctl bootstrap' exited 5"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("neither was deleted"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("'launchctl bootstrap' 5 çıkış koduyla sonlandı"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("ikisi de silinmedi"), r.stderr)
         XCTAssertEqual(try pastedWords(of: printedCommand(in: r.stderr, containing: "mv ")), ["mv", setAside.path, fx.app.path])
     }
 
@@ -5611,9 +5675,9 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertFalse(fx.calls().contains { $0.hasPrefix("launchctl bootstrap") }, "\(fx.calls())")
         XCTAssertEqual(try fx.installedBinaryFirstLine(), "interrupted")
         XCTAssertEqual(try String(contentsOf: previous.appendingPathComponent("Contents/MacOS/Insomnia"), encoding: .utf8), "previous\n")
-        XCTAssertTrue(r.stderr.contains("moving that build out of \(fx.app.path) failed"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("The job that run left was unloaded"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("Neither bundle was moved"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("o derlemeyi \(fx.app.path) konumundan çıkarma başarısız oldu"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("O çalıştırmanın bıraktığı görev devreden çıkarıldı"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("İki paket de taşınmadı"), r.stderr)
     }
 
     /// The repair moved the interrupted build out but cannot move the
@@ -5654,7 +5718,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertFalse(fx.calls().contains { $0.hasPrefix("launchctl") }, "\(fx.calls())")
         XCTAssertFalse(fx.exists(fx.app))
         XCTAssertEqual(try String(contentsOf: setAside.appendingPathComponent("Contents/MacOS/Insomnia"), encoding: .utf8), "previous\n")
-        XCTAssertTrue(r.stderr.contains("putting back the previous app"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("önceki uygulamayı geri koyma başarısız oldu"), r.stderr)
         XCTAssertEqual(try pastedWords(of: printedCommand(in: r.stderr, containing: "mv ")), ["mv", setAside.path, fx.app.path])
     }
 
@@ -5669,8 +5733,8 @@ final class RecoveryScriptTests: XCTestCase {
         let r = try fx.run(fx.installRedirected, extraEnvironment: ["USER": "tester"])
 
         XCTAssertEqual(r.status, 1, r.stderr + r.stdout)
-        XCTAssertTrue(r.stdout.contains("sudoers rule verified"), "the check before the lock passed: \(r.stdout)")
-        XCTAssertTrue(r.stderr.contains("is not now that this run holds the recovery lock"), r.stderr)
+        XCTAssertTrue(r.stdout.contains("sudoers kuralı doğrulandı"), "the check before the lock passed: \(r.stdout)")
+        XCTAssertTrue(r.stderr.contains("çalıştırma kurtarma kilidini aldıktan sonra artık izinli değil"), r.stderr)
         XCTAssertFalse(fx.calls().contains { $0.hasPrefix("launchctl") }, "\(fx.calls())")
         XCTAssertEqual(try fx.installedBinaryFirstLine(), "previous")
         XCTAssertEqual(try fx.contents(of: fx.appsDir), ["Insomnia.app"], "the new build is discarded")
@@ -5694,8 +5758,8 @@ final class RecoveryScriptTests: XCTestCase {
 
         XCTAssertEqual(r.status, 1, r.stderr + r.stdout)
         XCTAssertLessThan(elapsed, 30, "one bounded check, not the fake's 60 s hang")
-        XCTAssertTrue(r.stdout.contains("sudoers rule verified"), "the check before the lock passed: \(r.stdout)")
-        XCTAssertTrue(r.stderr.contains("holds the recovery lock, did not answer within 5s. The check\nstopped on SIGTERM and this run exits, which lets go of the lock"), r.stderr)
+        XCTAssertTrue(r.stdout.contains("sudoers kuralı doğrulandı"), "the check before the lock passed: \(r.stdout)")
+        XCTAssertTrue(r.stderr.contains("kuralı yeniden denetleyen 'sudo -n -l', 5 saniye içinde yanıt vermedi.\nDenetim SIGTERM ile durdu ve bu çalıştırma sonlanıyor; böylece kilit bırakılır"), r.stderr)
         let calls = fx.calls()
         XCTAssertTrue(calls.contains("sudo FD9-OPEN"), "the check keeps the lock while it runs: \(calls)")
         XCTAssertTrue(calls.contains("sudo SIGTERM"), "\(calls)")
@@ -5726,9 +5790,9 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(r.status, 1, r.stderr + r.stdout)
         XCTAssertLessThan(elapsed, 30)
         let pid = try XCTUnwrap(fx.hungPid("sudo", within: 0))
-        XCTAssertTrue(r.stderr.contains("'sudo -n -l', which checks the rule, did not answer within 5s, so the rule in \(fx.sudoers.path) is not verified. It was sent SIGTERM and is still running as pid \(pid). It is not killed"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("(or stop it with 'sudo kill \(pid)')"), r.stderr)
-        XCTAssertFalse(r.stdout.contains("sudoers rule verified"), r.stdout)
+        XCTAssertTrue(r.stderr.contains("Kuralı denetleyen 'sudo -n -l' 5 saniye içinde yanıt vermedi; bu yüzden \(fx.sudoers.path) içindeki kural doğrulanmadı. Bu sudo sürecine SIGTERM gönderildi ve süreç hâlâ çalışıyor (pid \(pid)). Zorla sonlandırılmıyor"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("(ya da 'sudo kill \(pid)' ile durdurun)"), r.stderr)
+        XCTAssertFalse(r.stdout.contains("sudoers kuralı doğrulandı"), r.stdout)
         let calls = fx.calls()
         XCTAssertTrue(calls.contains("sudo SIGTERM"), "\(calls)")
         XCTAssertFalse(calls.contains("sudo FD9-OPEN"), "no lock is held before step 5: \(calls)")
@@ -5761,7 +5825,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertGreaterThan(elapsed, 8, "the limit, then at least two seconds after SIGTERM")
         XCTAssertLessThan(elapsed, 15, "the 5 s limit, at most four seconds more, and a few slow polls")
         let pid = try XCTUnwrap(fx.hungPid("sudo", within: 0))
-        XCTAssertTrue(r.stderr.contains("It was sent SIGTERM and is still running as pid \(pid). It is not killed"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Bu sudo sürecine SIGTERM gönderildi ve süreç hâlâ çalışıyor (pid \(pid)). Zorla sonlandırılmıyor"), r.stderr)
         XCTAssertTrue(fx.calls().contains("sudo SIGTERM"), "\(fx.calls())")
         XCTAssertFalse(fx.hungProcessGone("sudo", within: 2), "sudo is never sent SIGKILL")
         fx.releaseCommand()
@@ -5781,7 +5845,7 @@ final class RecoveryScriptTests: XCTestCase {
 
         XCTAssertEqual(r.status, 1, r.stderr + r.stdout)
         let pid = try XCTUnwrap(fx.hungPid("sudo", within: 0))
-        XCTAssertTrue(r.stderr.contains("did not answer within 5s. It was sent SIGTERM and is still running as pid \(pid). It is not killed, because killing sudo could leave what it runs as root behind.\nIt keeps the recovery lock until it ends"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("5 saniye içinde yanıt vermedi. Bu sudo sürecine SIGTERM gönderildi ve süreç hâlâ çalışıyor (pid \(pid)). Zorla sonlandırılmıyor, çünkü sudo'yu öldürmek root olarak çalıştırdığı işlemi geride bırakabilir.\nSüreç bitene dek kurtarma kilidini tutar"), r.stderr)
         XCTAssertTrue(r.stderr.contains("  sudo kill \(pid)\n"), r.stderr)
         let calls = fx.calls()
         XCTAssertTrue(calls.contains("sudo FD9-OPEN"), "\(calls)")
@@ -5810,7 +5874,7 @@ final class RecoveryScriptTests: XCTestCase {
 
         XCTAssertEqual(r.status, 1, r.stderr + r.stdout)
         XCTAssertLessThan(elapsed, 30)
-        XCTAssertTrue(r.stderr.contains("pgrep did not answer within 5s, so whether Insomnia started again is unknown."), r.stderr)
+        XCTAssertTrue(r.stderr.contains("pgrep 5 saniye içinde yanıt vermedi; bu yüzden Insomnia'nın yeniden açılıp açılmadığı bilinmiyor."), r.stderr)
         let calls = fx.calls()
         XCTAssertTrue(calls.contains("pgrep FD9-OPEN"), "\(calls)")
         XCTAssertTrue(fx.hungProcessGone("pgrep", within: 0))
@@ -5835,8 +5899,8 @@ final class RecoveryScriptTests: XCTestCase {
 
         XCTAssertEqual(r.status, 1, r.stderr + r.stdout)
         XCTAssertLessThan(elapsed, 45, "two bounded prints, not two 60 s hangs")
-        XCTAssertTrue(r.stderr.contains("'launchctl print gui/\(fx.uid)/com.insomnia.backstop' did not answer within 5s; whether the job is loaded is unknown (unknown:124)."), r.stderr)
-        XCTAssertTrue(r.stderr.contains("Install stopped: unloading the previous LaunchAgent job was not confirmed\n(launchctl print: unknown:124)"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("'launchctl print gui/\(fx.uid)/com.insomnia.backstop' 5 saniye içinde yanıt vermedi; görevin yüklü olup olmadığı bilinmiyor (unknown:124)."), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Kurulum durduruldu: önceki LaunchAgent görevinin devreden çıkarıldığı doğrulanamadı\n(launchctl print: unknown:124)"), r.stderr)
         let calls = fx.calls()
         XCTAssertTrue(calls.contains("launchctl FD9-OPEN"), "\(calls)")
         XCTAssertTrue(fx.hungProcessGone("launchctl", within: 0))
@@ -5953,7 +6017,7 @@ final class RecoveryScriptTests: XCTestCase {
         let withApp = try fx.run(fx.installRedirected, ["--allow-unverified-origin", "--app", prebuilt.path], extraEnvironment: ["USER": "tester", "INSOMNIA_LID_SIMULATION": "1"])
         XCTAssertEqual(withApp.status, 2, withApp.stderr + withApp.stdout)
         XCTAssertEqual(fx.calls(), [])
-        XCTAssertTrue(withApp.stderr.contains("INSOMNIA_LID_SIMULATION=1 applies to a source build only"), withApp.stderr)
+        XCTAssertTrue(withApp.stderr.contains("INSOMNIA_LID_SIMULATION=1 yalnızca kaynaktan derlemede geçerlidir"), withApp.stderr)
     }
 
     func testInstallLeavesTrustedPlistWhenBootstrapAndReloadBothFail() throws {
@@ -5968,9 +6032,9 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(fx.calls().filter { $0.hasPrefix("launchctl bootstrap") }.count, 2, "\(fx.calls())")
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "trusted", "byte-for-byte untouched")
         XCTAssertEqual(try fx.contents(of: fx.plist.deletingLastPathComponent()), ["com.insomnia.backstop.plist"], "no candidate left behind")
-        XCTAssertTrue(r.stderr.contains("could not be loaded again"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Önceki görev yeniden yüklenemedi"), r.stderr)
         XCTAssertTrue(r.stderr.contains("launchctl bootstrap gui/\(fx.uid)"), "manual command named: \(r.stderr)")
-        XCTAssertFalse(r.stderr.contains("every minute"), r.stderr)
+        XCTAssertFalse(r.stderr.contains("her dakika"), r.stderr)
     }
 
     /// print cannot say whether the previous job is gone after the bootout,
@@ -5989,11 +6053,11 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try fx.installedBinaryFirstLine(), "previous", "the previous bundle was not replaced")
         XCTAssertEqual(try fx.contents(of: fx.appsDir), ["Insomnia.app"], "the staged build is discarded")
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "trusted")
-        XCTAssertTrue(r.stderr.contains("(launchctl print: unknown:1), so the app at \(fx.app.path) was not replaced"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("(launchctl print: unknown:1); bu yüzden \(fx.app.path) konumundaki uygulama değiştirilmedi"), r.stderr)
         XCTAssertTrue(r.stderr.contains("  launchctl bootstrap gui/\(fx.uid) \(fx.plist.path)\n"), "how to reload the previous job if it is gone: \(r.stderr)")
         XCTAssertTrue(r.stderr.contains("unknown"), r.stderr)
-        XCTAssertFalse(r.stderr.contains("No LaunchAgent"), "ambiguous is not absent: \(r.stderr)")
-        XCTAssertFalse(r.stderr.contains("every minute"), r.stderr)
+        XCTAssertFalse(r.stderr.contains("adlı LaunchAgent yüklü değil"), "ambiguous is not absent: \(r.stderr)")
+        XCTAssertFalse(r.stderr.contains("her dakika"), r.stderr)
     }
 
     func testInstallReportsUnknownNotAbsentWhenTheLaterPrintFails() throws {
@@ -6014,13 +6078,13 @@ final class RecoveryScriptTests: XCTestCase {
         let load = try XCTUnwrap(calls.firstIndex { $0.hasPrefix("launchctl bootstrap") })
         XCTAssertTrue(calls[load...].contains("launchctl bootout gui/\(fx.uid)/com.insomnia.backstop"), "the job print cannot rule out is unloaded: \(calls)")
         XCTAssertEqual(try fx.installedBinaryFirstLine(), "#!/bin/bash", "the unload is not confirmed, so the new build stays")
-        XCTAssertTrue(r.stderr.contains("not confirmed (launchctl print: unknown:1)"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("No app was installed at \(fx.app.path) before this run"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("çıkarıldığı doğrulanmadı (launchctl print: unknown:1)"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Bu çalıştırmadan önce \(fx.app.path) konumunda kurulu bir uygulama yoktu"), r.stderr)
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "trusted")
         XCTAssertTrue(r.stderr.contains("unknown"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("not confirmed"), r.stderr)
-        XCTAssertFalse(r.stderr.contains("none is loaded now"), "unknown is not absent: \(r.stderr)")
-        XCTAssertFalse(r.stderr.contains("No LaunchAgent"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("doğrulanmadı"), r.stderr)
+        XCTAssertFalse(r.stderr.contains("şimdi de yüklü değil"), "unknown is not absent: \(r.stderr)")
+        XCTAssertFalse(r.stderr.contains("adlı LaunchAgent yüklü değil"), r.stderr)
     }
 
     func testInstallDoesNotAttributeAnExistingJobToAFailedReload() throws {
@@ -6038,11 +6102,11 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(r.status, 1, r.stderr + r.stdout)
         XCTAssertEqual(fx.calls().filter { $0.hasPrefix("launchctl bootstrap") }.count, 2, "\(fx.calls())")
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "trusted")
-        XCTAssertTrue(r.stderr.contains("reload"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("not confirmed"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("unknown"), "source of the existing job is unknown: \(r.stderr)")
-        XCTAssertFalse(r.stderr.contains("loaded again from the previous plist"), r.stderr)
-        XCTAssertFalse(r.stderr.contains("every minute"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("plist dosyasının yeniden yüklendiği"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("doğrulanamadı"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("bilinmiyor"), "source of the existing job is unknown: \(r.stderr)")
+        XCTAssertFalse(r.stderr.contains("önceki plist dosyasından (\(fx.plist.path)) yeniden yüklendi"), r.stderr)
+        XCTAssertFalse(r.stderr.contains("her dakika"), r.stderr)
     }
 
     func testInstallDoesNotPublishWhenLoadedStatusIsNotConfirmed() throws {
@@ -6056,8 +6120,8 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(r.status, 1, r.stderr + r.stdout)
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "trusted", "nothing is published without a confirmed load")
         XCTAssertEqual(try fx.contents(of: fx.plist.deletingLastPathComponent()), ["com.insomnia.backstop.plist"])
-        XCTAssertTrue(r.stderr.contains("not confirmed"), r.stderr)
-        XCTAssertFalse(r.stdout.contains("Installed"), r.stdout)
+        XCTAssertTrue(r.stderr.contains("doğrulanmadı"), r.stderr)
+        XCTAssertFalse(r.stdout.contains("==> Kuruldu"), r.stdout)
     }
 
     func testInstallRefusesWhileRecoveryLockIsHeld() throws {
@@ -6075,7 +6139,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertFalse(calls.contains { $0.hasPrefix("launchctl") }, "\(calls)")
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "trusted")
         XCTAssertEqual(try fx.stateJSON()["sleepDisabledByUs"] as? Bool, true)
-        XCTAssertTrue(r.stderr.contains("recovery lock"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Kurtarma kilidi"), r.stderr)
     }
 
     func testInstallStopsWhenAppStartsAgainUnderTheLock() throws {
@@ -6092,7 +6156,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertFalse(calls.contains { $0.hasPrefix("sudo -n \(fx.fakePmset)") }, "no recovery beside a running app: \(calls)")
         XCTAssertFalse(calls.contains { $0.hasPrefix("launchctl") }, "\(calls)")
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "trusted")
-        XCTAssertTrue(r.stderr.contains("started again"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("yeniden açıldı"), r.stderr)
     }
 
     func testInstallRefusesRelocatedHomeBeforeDoingAnything() throws {
@@ -6102,7 +6166,7 @@ final class RecoveryScriptTests: XCTestCase {
 
         XCTAssertEqual(r.status, 1, r.stderr + r.stdout)
         XCTAssertTrue(r.stderr.contains("INSOMNIA_HOME"), r.stderr)
-        XCTAssertTrue(r.stderr.contains("Nothing was changed"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Hiçbir şey değiştirilmedi"), r.stderr)
         XCTAssertEqual(fx.calls(), [])
         XCTAssertFalse(r.stdout.contains("==>"), "no step ran: \(r.stdout)")
     }
@@ -6156,7 +6220,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: fx.installedBackstop, encoding: .utf8), "old helper", "installed backstop.sh replaced")
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "plist", "trusted plist touched")
         XCTAssertEqual(try String(contentsOf: fx.sudoers, encoding: .utf8), "rule", "sudoers rule replaced")
-        XCTAssertTrue(r.stderr.contains("Nothing was changed"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Hiçbir şey değiştirilmedi"), r.stderr)
     }
 
     /// Authentication passes but the rule it installed does not grant the
@@ -6177,7 +6241,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: fx.app.appendingPathComponent("Contents/MacOS/Insomnia"), encoding: .utf8), "binary")
         XCTAssertEqual(try String(contentsOf: fx.installedBackstop, encoding: .utf8), "old helper")
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "plist")
-        XCTAssertTrue(r.stderr.contains("still not permitted"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("hâlâ izinli değil"), r.stderr)
     }
 
     /// With no app running there is nothing to wait for: an installer that
@@ -6204,7 +6268,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: fx.installedBackstop, encoding: .utf8), "old helper", "installed backstop.sh replaced")
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "plist", "trusted plist touched")
         XCTAssertEqual(try String(contentsOf: fx.sudoers, encoding: .utf8), "rule", "sudoers rule replaced")
-        XCTAssertTrue(r.stderr.contains("Nothing was changed"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("Hiçbir şey değiştirilmedi"), r.stderr)
     }
 
     /// Same with the app not running: authentication passes and the rule is
@@ -6229,7 +6293,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: fx.installedBackstop, encoding: .utf8), "old helper", "installed backstop.sh replaced")
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "plist", "trusted plist touched")
         XCTAssertTrue(try String(contentsOf: fx.sudoers, encoding: .utf8).contains("NOPASSWD: /usr/bin/pmset"), "the new rule is what was installed")
-        XCTAssertTrue(r.stderr.contains("still not permitted"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("hâlâ izinli değil"), r.stderr)
     }
 
     /// The sudoers rule is installed before the app is asked to quit. When
@@ -6253,10 +6317,10 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: fx.app.appendingPathComponent("Contents/MacOS/Insomnia"), encoding: .utf8), "binary")
         XCTAssertEqual(try String(contentsOf: fx.installedBackstop, encoding: .utf8), "old helper")
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "plist")
-        XCTAssertFalse(r.stderr.contains("Nothing was changed"), "the sudoers rule was changed: \(r.stderr)")
+        XCTAssertFalse(r.stderr.contains("Hiçbir şey değiştirilmedi"), "the sudoers rule was changed: \(r.stderr)")
         XCTAssertTrue(r.stderr.contains(fx.sudoers.path), "says what was installed: \(r.stderr)")
-        XCTAssertTrue(r.stderr.contains("not touched"), "says what was not: \(r.stderr)")
-        XCTAssertTrue(r.stderr.contains("still running"), r.stderr)
+        XCTAssertTrue(r.stderr.contains("ve LaunchAgent olduğu gibi bırakıldı"), "says what was not: \(r.stderr)")
+        XCTAssertTrue(r.stderr.contains("hâlâ çalışıyor"), r.stderr)
     }
 }
 
@@ -8110,8 +8174,8 @@ final class AppEncodedJournalScriptTests: XCTestCase {
                         XCTAssertTrue(f.exists(f.app), label)
                         XCTAssertTrue(f.exists(f.plist), label)
                         XCTAssertTrue(f.exists(f.sudoers), label)
-                        XCTAssertFalse(r.stderr.contains("malformed"), "\(label): \(r.stderr)")
-                        XCTAssertTrue(r.stderr.contains("audio") || r.stdout.contains("audio"), "\(label): \(r.stdout) \(r.stderr)")
+                        XCTAssertFalse(r.stderr.contains("bozuk"), "\(label): \(r.stderr)")
+                        XCTAssertTrue(r.stderr.contains("Kaydedilmiş ses") || r.stdout.contains("Kaydedilmiş ses"), "\(label): \(r.stdout) \(r.stderr)")
                         try checkUndone(f, before: before, label)
                     }
                 }

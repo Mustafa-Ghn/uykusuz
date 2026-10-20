@@ -281,7 +281,7 @@ final class PackagingTests: XCTestCase {
         // A process running from one bundle never pins another.
         let other = try makeSignedBundle(named: "Other")
         XCTAssertThrowsError(try CodeRequirement.pin(bundle: other, running: { launched }, mainBundle: other)) { error in
-            XCTAssertTrue(error.localizedDescription.contains("runs from \(bundle.path)"), error.localizedDescription)
+            XCTAssertTrue(error.localizedDescription.contains("şuradan çalışıyor: \(bundle.path)"), error.localizedDescription)
         }
     }
 

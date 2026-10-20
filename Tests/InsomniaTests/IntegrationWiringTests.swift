@@ -117,9 +117,9 @@ final class IntegrationWiringTests: XCTestCase {
         await fulfillment(of: [notifier.posted], timeout: 60)
         services.cancelBrowserTasks()
 
-        XCTAssertEqual(notifier.posts.map(\.title), ["Browser not relaunched"])
-        XCTAssertEqual(notifier.posts.map(\.body), ["Chrome is not running. Nothing was quit or relaunched."])
-        XCTAssertEqual(services.status.relaunchProblems, ["com.google.Chrome": "Chrome is not running. Nothing was quit or relaunched."])
+        XCTAssertEqual(notifier.posts.map(\.title), ["Tarayıcı yeniden başlatılmadı"])
+        XCTAssertEqual(notifier.posts.map(\.body), ["Chrome çalışmıyor. Hiçbir şey kapatılmadı veya yeniden başlatılmadı."])
+        XCTAssertEqual(services.status.relaunchProblems, ["com.google.Chrome": "Chrome çalışmıyor. Hiçbir şey kapatılmadı veya yeniden başlatılmadı."])
         XCTAssertEqual(processes.quitRequests.count, 0)
         XCTAssertEqual(processes.launches.count, 0)
     }
@@ -148,7 +148,7 @@ final class IntegrationWiringTests: XCTestCase {
 
         await services.relaunchUnthrottled(Self.chrome)
 
-        let reason = "Chrome quit but could not be relaunched: LSOpenURLsWithRole() failed with error -10810. Open it yourself."
+        let reason = "Chrome kapandı ancak yeniden başlatılamadı: LSOpenURLsWithRole() failed with error -10810. Kendiniz açın."
         XCTAssertEqual(source.relaunchProblems, [reason])
         let items = StatusItemController.menuItems(manager: h.makeManager(), status: source)
         // The scan after the relaunch lists whatever browsers this Mac is
@@ -177,7 +177,7 @@ final class IntegrationWiringTests: XCTestCase {
         services.status.hotspotPasswordReport = HotspotPasswordReport(ssid: "Phone", problem: .unreadable)
         // A debug build also has the lid simulation line.
         func warnings() -> [String] {
-            StatusItemController.menuItems(manager: manager, status: source).map(\.title).filter { $0.contains("Hotspot") }
+            StatusItemController.menuItems(manager: manager, status: source).map(\.title).filter { $0.contains("hotspot") }
         }
 
         XCTAssertEqual(warnings(), [HotspotPasswordProblem.unreadable.menuLine])
@@ -273,8 +273,8 @@ final class IntegrationWiringTests: XCTestCase {
         processes.releaseQuit()
         await first.value
 
-        let brave = "Brave quit but could not be relaunched: boom. Open it yourself."
-        let chrome = "Chrome did not quit within 10 s, so nothing was relaunched. It may still quit later. If it does, open it again yourself."
+        let brave = "Brave kapandı ancak yeniden başlatılamadı: boom. Kendiniz açın."
+        let chrome = "Chrome 10 sn içinde kapanmadı, bu yüzden hiçbir şey yeniden başlatılmadı. Daha sonra yine de kapanabilir. Kapanırsa kendiniz yeniden açın."
         XCTAssertEqual(notifier.posts.map(\.body), [brave, chrome])
         XCTAssertEqual(LiveStatusSource(services: services).relaunchProblems, [
             brave, chrome, "Edge is not running. Nothing was quit or relaunched.",
@@ -352,8 +352,8 @@ final class IntegrationWiringTests: XCTestCase {
 
         await services.relaunchUnthrottled(Self.chrome)
 
-        XCTAssertEqual(notifier.posts.map(\.title), ["Browser not relaunched"])
-        XCTAssertEqual(notifier.posts.map(\.body), ["Chrome did not quit within 10 s, so nothing was relaunched. It may still quit later. If it does, open it again yourself."])
+        XCTAssertEqual(notifier.posts.map(\.title), ["Tarayıcı yeniden başlatılmadı"])
+        XCTAssertEqual(notifier.posts.map(\.body), ["Chrome 10 sn içinde kapanmadı, bu yüzden hiçbir şey yeniden başlatılmadı. Daha sonra yine de kapanabilir. Kapanırsa kendiniz yeniden açın."])
         XCTAssertEqual(processes.terminated, [[42]])
         XCTAssertEqual(processes.launches.count, 0)
     }
@@ -415,7 +415,7 @@ final class IntegrationWiringTests: XCTestCase {
         await services.relaunchUnthrottled(Self.chrome)
 
         XCTAssertEqual(processes.quitRequests.count, 1, "the list was cleared during the quit wait")
-        XCTAssertEqual(notifier.posts.map(\.body), ["Chrome did not quit within 10 s, so nothing was relaunched. It may still quit later. If it does, open it again yourself."])
+        XCTAssertEqual(notifier.posts.map(\.body), ["Chrome 10 sn içinde kapanmadı, bu yüzden hiçbir şey yeniden başlatılmadı. Daha sonra yine de kapanabilir. Kapanırsa kendiniz yeniden açın."])
     }
 
     @MainActor
@@ -482,7 +482,7 @@ final class IntegrationWiringTests: XCTestCase {
     func testWiFiStatusNameExplainsLocationRedaction() {
         XCTAssertEqual(
             WiFiStatusName.display(ssid: nil, locationAuthorized: false),
-            "on (name hidden until Location is allowed)"
+            "açık (Konum izni verilene kadar ad gizli)"
         )
         XCTAssertEqual(WiFiStatusName.display(ssid: "Office", locationAuthorized: false), "Office")
         XCTAssertNil(WiFiStatusName.display(ssid: nil, locationAuthorized: true))
@@ -495,7 +495,7 @@ final class IntegrationWiringTests: XCTestCase {
         let permission = LocationPermission(authorizationStatus: .authorizedAlways)
         XCTAssertTrue(permission.isAuthorized)
         XCTAssertFalse(permission.isDenied)
-        XCTAssertEqual(permission.statusDescription, "Allowed")
+        XCTAssertEqual(permission.statusDescription, "İzin verildi")
     }
 
     @MainActor
@@ -503,11 +503,11 @@ final class IntegrationWiringTests: XCTestCase {
         let denied = LocationPermission(authorizationStatus: .denied)
         XCTAssertFalse(denied.isAuthorized)
         XCTAssertTrue(denied.isDenied)
-        XCTAssertEqual(denied.statusDescription, "Denied")
+        XCTAssertEqual(denied.statusDescription, "Reddedildi")
 
         let undetermined = LocationPermission(authorizationStatus: .notDetermined)
         XCTAssertFalse(undetermined.isAuthorized)
-        XCTAssertEqual(undetermined.statusDescription, "Not requested")
+        XCTAssertEqual(undetermined.statusDescription, "İstenmedi")
     }
 }
 

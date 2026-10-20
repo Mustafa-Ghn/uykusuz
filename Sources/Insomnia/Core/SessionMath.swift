@@ -43,21 +43,21 @@ enum SessionMath {
         endsAt.timeIntervalSince(now) <= 0
     }
 
-    /// Minute-granularity remaining time: "3d 2h", "2h 14m", "14m", "<1m".
-    /// Zero secondary units are dropped ("2h", "3d"). Seconds are floored.
+    /// Minute-granularity remaining time: "3g 2sa", "2sa 14dk", "14dk", "<1dk".
+    /// Zero secondary units are dropped ("2sa", "3g"). Seconds are floored.
     static func formatRemaining(_ interval: TimeInterval) -> String {
         let totalMinutes = Int(max(interval, 0) / 60)
-        if totalMinutes < 1 { return "<1m" }
+        if totalMinutes < 1 { return "<1dk" }
         let days = totalMinutes / (24 * 60)
         let hours = (totalMinutes % (24 * 60)) / 60
         let minutes = totalMinutes % 60
         if days > 0 {
-            return hours > 0 ? "\(days)d \(hours)h" : "\(days)d"
+            return hours > 0 ? "\(days)g \(hours)sa" : "\(days)g"
         }
         if hours > 0 {
-            return minutes > 0 ? "\(hours)h \(minutes)m" : "\(hours)h"
+            return minutes > 0 ? "\(hours)sa \(minutes)dk" : "\(hours)sa"
         }
-        return "\(minutes)m"
+        return "\(minutes)dk"
     }
 
     /// Live menu bar countdown, ticking every second in a fixed `shape`.
@@ -77,7 +77,7 @@ enum SessionMath {
         case .days:
             let days = total / 86400
             guard days > 0 else { return clock(hours: total / 3600) }
-            return "\(days)d " + clock(hours: (total % 86400) / 3600)
+            return "\(days)g " + clock(hours: (total % 86400) / 3600)
         case .hours:
             return clock(hours: total / 3600)
         case .minutes:
@@ -104,7 +104,7 @@ enum SessionMath {
 /// units drop off. The only mid-session change is `days` losing its day
 /// component once fewer than 24 hours remain.
 enum CountdownShape: Equatable, Sendable {
-    /// `Nd H:MM:SS` while a day or more remains, then `H:MM:SS`.
+    /// `Ng H:MM:SS` while a day or more remains, then `H:MM:SS`.
     case days
     /// `H:MM:SS` for the whole session, even under an hour (`0:04:07`).
     case hours

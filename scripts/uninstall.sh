@@ -48,8 +48,8 @@ PURGE=0
 for arg in "$@"; do
   case "$arg" in
     --purge) PURGE=1 ;;
-    -h|--help) echo "usage: $0 [--purge]"; exit 0 ;;
-    *) echo "unknown option: $arg" >&2; exit 2 ;;
+    -h|--help) echo "kullanım: $0 [--purge]"; exit 0 ;;
+    *) echo "bilinmeyen seçenek: $arg" >&2; exit 2 ;;
   esac
 done
 
@@ -222,8 +222,8 @@ supervise() { # base command args...
 }
 
 # Fail closed on paths that are not the exact things install.sh created.
-case "$APP_SUPPORT" in /*) ;; *) echo "refusing: app support path is not absolute: $APP_SUPPORT" >&2; exit 1 ;; esac
-[[ "$(basename "$APP")" == "Insomnia.app" ]] || { echo "refusing: $APP is not an Insomnia.app bundle path" >&2; exit 1; }
+case "$APP_SUPPORT" in /*) ;; *) echo "reddedildi: uygulama destek yolu mutlak değil: $APP_SUPPORT" >&2; exit 1 ;; esac
+[[ "$(basename "$APP")" == "Insomnia.app" ]] || { echo "reddedildi: $APP bir Insomnia.app paket yolu değil" >&2; exit 1; }
 
 extract() { # file keypath (raw scalar; non-zero if missing)
   "$PLUTIL" -extract "$2" raw -o - "$1" 2>/dev/null
@@ -272,7 +272,7 @@ record_text_problems() { # file
   number='^-?(0|[1-9][0-9]*)(\.([0-9]+))?([eE]([-+]?)([0-9]+))?$'
   esc='^u00(4[1-9A-Fa-f]|5[0-9Aa]|6[1-9A-Fa-f]|7[0-9Aa])'
   hex='^u[0-9A-Fa-f]{4}'
-  lost="the top level of state.json cannot be followed here, so its records about a kept display entry cannot be checked"
+  lost="state.json dosyasının üst düzeyi burada izlenemiyor; bu yüzden saklanan ekran girdisiyle ilgili kayıtları denetlenemiyor"
   text="$(<"$1")"
   [[ "$text" == *keptDisplay* || "$text" == *\\* ]] || return 0
   if IFS= read -r -d '' c < "$1"; then
@@ -308,7 +308,7 @@ record_text_problems() { # file
       else
         case "${raw:0:1}" in
           '"'|\\|/|b|f|n|r|t) key+="?"; raw="${raw:1}" ;;
-          *) echo "a key in state.json has an escape JSON does not have, so its records about a kept display entry cannot be checked"; return 0 ;;
+          *) echo "state.json içindeki bir anahtarda JSON'da olmayan bir kaçış dizisi var; bu yüzden saklanan ekran girdisiyle ilgili kayıtları denetlenemiyor"; return 0 ;;
         esac
       fi
     done
@@ -370,13 +370,13 @@ record_text_problems() { # file
           lead="${sig}00000000"
           lead=$((10#${lead:0:9}))
           if (( e10 < -46 || (e10 == -46 && lead < 701000000) )); then
-            echo "$key is ${token:0:40}, too small a number for the app to read"
+            echo "$key değeri ${token:0:40}: uygulamanın okuyamayacağı kadar küçük bir sayı"
           elif (( e10 > 38 || (e10 == 38 && lead > 340282355) )); then
-            echo "$key is ${token:0:40}, too large a number for the app to read"
+            echo "$key değeri ${token:0:40}: uygulamanın okuyamayacağı kadar büyük bir sayı"
           fi
         fi
       else
-        echo "$key is written as ${token:0:40}, which the app does not read as a number"
+        echo "$key değeri ${token:0:40} olarak yazılmış; uygulama bunu sayı olarak okumaz"
       fi
     fi
     rest="${rest#"${rest%%[![:space:]]*}"}"
@@ -386,9 +386,9 @@ record_text_problems() { # file
       *) echo "$lost"; return 0 ;;
     esac
   done
-  (( n_low > 1 )) && echo "keptDisplayUnderLowPower is in the top level of state.json $n_low times; the app reads the first and plutil the last"
-  (( n_lit > 1 )) && echo "keptDisplayReadLit is in the top level of state.json $n_lit times; the app reads the first and plutil the last"
-  (( n_boot > 1 )) && echo "keptDisplayUnderLowPowerBoot is in the top level of state.json $n_boot times; the app reads the first and plutil the last"
+  (( n_low > 1 )) && echo "keptDisplayUnderLowPower, state.json dosyasının üst düzeyinde $n_low kez geçiyor; uygulama ilkini, plutil sonuncusunu okur"
+  (( n_lit > 1 )) && echo "keptDisplayReadLit, state.json dosyasının üst düzeyinde $n_lit kez geçiyor; uygulama ilkini, plutil sonuncusunu okur"
+  (( n_boot > 1 )) && echo "keptDisplayUnderLowPowerBoot, state.json dosyasının üst düzeyinde $n_boot kez geçiyor; uygulama ilkini, plutil sonuncusunu okur"
   return 0
 }
 
@@ -397,44 +397,44 @@ record_text_problems() { # file
 journal_shape_problems() { # file
   local f="$1" key t i n
   if [[ "$("$PLUTIL" -convert json -o - "$f" 2>/dev/null | head -c 1)" != "{" ]]; then
-    echo "state.json is not a JSON object"
+    echo "state.json bir JSON nesnesi değil"
     return 0
   fi
   for key in sleepDisabledByUs lowPowerSetByUs dockerFrozen savedMuted displayRestoreRefused keyboardRestoreRefused; do
     t="$(type_of "$f" "$key")"
-    [[ -z "$t" || "$t" == bool || "$t" == "(any)" ]] || echo "$key is a $t, not a bool"
+    [[ -z "$t" || "$t" == bool || "$t" == "(any)" ]] || echo "$key türü $t, bool değil"
   done
   for key in savedOutputVolume savedDisplayBrightness savedKeyboardBrightness displayRestoredUnderLowPower; do
     t="$(type_of "$f" "$key")"
-    [[ -z "$t" || "$t" == float || "$t" == integer || "$t" == "(any)" ]] || echo "$key is a $t, not a number"
+    [[ -z "$t" || "$t" == float || "$t" == integer || "$t" == "(any)" ]] || echo "$key türü $t, sayı değil"
   done
   # The app's records about a kept display entry: never read for an undo
   # here, and they stay or go with state.json. Each must still decode, or
   # the app cannot read the journal at all.
   for key in keptDisplayUnderLowPower keptDisplayReadLit; do
     t="$(type_of "$f" "$key")"
-    [[ -z "$t" || "$t" == float || "$t" == integer || "$t" == "(any)" ]] || echo "$key is a $t, not a number"
+    [[ -z "$t" || "$t" == float || "$t" == integer || "$t" == "(any)" ]] || echo "$key türü $t, sayı değil"
   done
   t="$(type_of "$f" keptDisplayUnderLowPowerBoot)"
-  [[ -z "$t" || "$t" == string || "$t" == "(any)" ]] || echo "keptDisplayUnderLowPowerBoot is a $t, not a string"
+  [[ -z "$t" || "$t" == string || "$t" == "(any)" ]] || echo "keptDisplayUnderLowPowerBoot türü $t, metin değil"
   record_text_problems "$f"
   t="$(type_of "$f" frozenProcesses)"
   if [[ -n "$t" && "$t" != "(any)" ]]; then
     if [[ "$t" != array ]]; then
-      echo "frozenProcesses is a $t, not an array"
+      echo "frozenProcesses türü $t, dizi değil"
     else
       i=0
       while [[ -n "$(type_of "$f" "frozenProcesses.$i")" ]]; do
         if [[ "$(type_of "$f" "frozenProcesses.$i")" != dictionary ]]; then
-          echo "frozenProcesses[$i] is not an object"
+          echo "frozenProcesses[$i] bir nesne değil"
         else
-          [[ "$(type_of "$f" "frozenProcesses.$i.pid")" == integer ]] || echo "frozenProcesses[$i].pid is not an integer"
+          [[ "$(type_of "$f" "frozenProcesses.$i.pid")" == integer ]] || echo "frozenProcesses[$i].pid bir tamsayı değil"
           for n in startedAt startedAtMicros; do
             t="$(type_of "$f" "frozenProcesses.$i.$n")"
-            [[ -z "$t" || "$t" == integer || "$t" == "(any)" ]] || echo "frozenProcesses[$i].$n is a $t, not an integer"
+            [[ -z "$t" || "$t" == integer || "$t" == "(any)" ]] || echo "frozenProcesses[$i].$n türü $t, tamsayı değil"
           done
           t="$(type_of "$f" "frozenProcesses.$i.bootSession")"
-          [[ -z "$t" || "$t" == string || "$t" == "(any)" ]] || echo "frozenProcesses[$i].bootSession is a $t, not a string"
+          [[ -z "$t" || "$t" == string || "$t" == "(any)" ]] || echo "frozenProcesses[$i].bootSession türü $t, metin değil"
         fi
         i=$((i + 1))
       done
@@ -443,11 +443,11 @@ journal_shape_problems() { # file
   t="$(type_of "$f" frozenPids)"
   if [[ -n "$t" && "$t" != "(any)" ]]; then
     if [[ "$t" != array ]]; then
-      echo "frozenPids is a $t, not an array"
+      echo "frozenPids türü $t, dizi değil"
     else
       i=0
       while [[ -n "$(type_of "$f" "frozenPids.$i")" ]]; do
-        [[ "$(type_of "$f" "frozenPids.$i")" == integer ]] || echo "frozenPids[$i] is not an integer"
+        [[ "$(type_of "$f" "frozenPids.$i")" == integer ]] || echo "frozenPids[$i] bir tamsayı değil"
         i=$((i + 1))
       done
     fi
@@ -455,21 +455,21 @@ journal_shape_problems() { # file
   t="$(type_of "$f" savedAudioOutputs)"
   if [[ -n "$t" && "$t" != "(any)" ]]; then
     if [[ "$t" != array ]]; then
-      echo "savedAudioOutputs is a $t, not an array"
+      echo "savedAudioOutputs türü $t, dizi değil"
     else
       i=0
       while [[ -n "$(type_of "$f" "savedAudioOutputs.$i")" ]]; do
         if [[ "$(type_of "$f" "savedAudioOutputs.$i")" != dictionary ]]; then
-          echo "savedAudioOutputs[$i] is not an object"
+          echo "savedAudioOutputs[$i] bir nesne değil"
         else
-          [[ "$(type_of "$f" "savedAudioOutputs.$i.deviceUID")" == string ]] || echo "savedAudioOutputs[$i].deviceUID is not a string"
+          [[ "$(type_of "$f" "savedAudioOutputs.$i.deviceUID")" == string ]] || echo "savedAudioOutputs[$i].deviceUID bir metin değil"
           t="$(type_of "$f" "savedAudioOutputs.$i.volume")"
-          [[ "$t" == float || "$t" == integer ]] || echo "savedAudioOutputs[$i].volume is not a number"
-          [[ "$(type_of "$f" "savedAudioOutputs.$i.muted")" == bool ]] || echo "savedAudioOutputs[$i].muted is not a bool"
+          [[ "$t" == float || "$t" == integer ]] || echo "savedAudioOutputs[$i].volume bir sayı değil"
+          [[ "$(type_of "$f" "savedAudioOutputs.$i.muted")" == bool ]] || echo "savedAudioOutputs[$i].muted bir bool değil"
           t="$(type_of "$f" "savedAudioOutputs.$i.name")"
-          [[ -z "$t" || "$t" == string || "$t" == "(any)" ]] || echo "savedAudioOutputs[$i].name is a $t, not a string"
+          [[ -z "$t" || "$t" == string || "$t" == "(any)" ]] || echo "savedAudioOutputs[$i].name türü $t, metin değil"
           t="$(type_of "$f" "savedAudioOutputs.$i.saveID")"
-          [[ -z "$t" || "$t" == string || "$t" == "(any)" ]] || echo "savedAudioOutputs[$i].saveID is a $t, not a string"
+          [[ -z "$t" || "$t" == string || "$t" == "(any)" ]] || echo "savedAudioOutputs[$i].saveID türü $t, metin değil"
         fi
         i=$((i + 1))
       done
@@ -478,16 +478,16 @@ journal_shape_problems() { # file
   t="$(type_of "$f" appNapOverrides)"
   if [[ -n "$t" && "$t" != "(any)" ]]; then
     if [[ "$t" != array ]]; then
-      echo "appNapOverrides is a $t, not an array"
+      echo "appNapOverrides türü $t, dizi değil"
     else
       i=0
       while [[ -n "$(type_of "$f" "appNapOverrides.$i")" ]]; do
         if [[ "$(type_of "$f" "appNapOverrides.$i")" != dictionary ]]; then
-          echo "appNapOverrides[$i] is not an object"
+          echo "appNapOverrides[$i] bir nesne değil"
         else
-          [[ "$(type_of "$f" "appNapOverrides.$i.bundleId")" == string ]] || echo "appNapOverrides[$i].bundleId is not a string"
+          [[ "$(type_of "$f" "appNapOverrides.$i.bundleId")" == string ]] || echo "appNapOverrides[$i].bundleId bir metin değil"
           t="$(type_of "$f" "appNapOverrides.$i.previous")"
-          [[ -z "$t" || "$t" == bool || "$t" == "(any)" ]] || echo "appNapOverrides[$i].previous is a $t, not a bool"
+          [[ -z "$t" || "$t" == bool || "$t" == "(any)" ]] || echo "appNapOverrides[$i].previous türü $t, bool değil"
         fi
         i=$((i + 1))
       done
@@ -506,10 +506,10 @@ refused_brightness() {
   local value
   [[ -f "$STATE" ]] || return 0
   if is_refused displayRestoreRefused && value="$(extract "$STATE" savedDisplayBrightness)"; then
-    echo "display brightness $value"
+    echo "ekran parlaklığı $value"
   fi
   if is_refused keyboardRestoreRefused && value="$(extract "$STATE" savedKeyboardBrightness)"; then
-    echo "keyboard backlight $value"
+    echo "klavye arka ışığı $value"
   fi
 }
 
@@ -547,29 +547,29 @@ session_shape_problems() { # file
   # JSONDecoder refuses, so the file itself must start with "{" too.
   if [[ "$(LC_ALL=C tr -d ' \t\r\n' < "$f" 2>/dev/null | head -c 1)" != "{" ]] \
      || [[ "$("$PLUTIL" -convert json -o - "$f" 2>/dev/null | head -c 1)" != "{" ]]; then
-    echo "session.json is not a JSON object"
+    echo "session.json bir JSON nesnesi değil"
     return 0
   fi
   for key in startedAt endsAt; do
     t="$(type_of "$f" "$key")"
     if [[ -z "$t" ]]; then
-      echo "$key is missing"
+      echo "$key eksik"
     elif [[ "$t" != string ]]; then
-      echo "$key is a JSON $t, not a date string"
+      echo "$key türü JSON $t, tarih metni değil"
     elif [[ -z "$(epoch_at "$f" "$key")" ]]; then
-      echo "$key is not a date in the form 2027-01-15T08:00:00Z or 2027-01-15T10:00:00+02:00"
+      echo "$key, 2027-01-15T08:00:00Z ya da 2027-01-15T10:00:00+02:00 biçiminde bir tarih değil"
     fi
   done
   t="$(type_of "$f" extensions)"
   if [[ -z "$t" ]]; then
-    echo "extensions is missing"
+    echo "extensions eksik"
   elif [[ "$t" != array ]]; then
-    echo "extensions is a JSON $t, not an array"
+    echo "extensions türü JSON $t, dizi değil"
   else
     i=0
     while [[ -n "$(type_of "$f" "extensions.$i")" ]]; do
       t="$(type_of "$f" "extensions.$i")"
-      [[ "$t" == integer || "$t" == float ]] || echo "extensions[$i] is a JSON $t, not a number"
+      [[ "$t" == integer || "$t" == float ]] || echo "extensions[$i] türü JSON $t, sayı değil"
       i=$((i + 1))
     done
   fi
@@ -584,61 +584,61 @@ journal_problems() {
     # Only a regular file is opened: open(2) on a FIFO with no writer
     # blocks, and this check runs while the recovery lock is held.
     if [[ ! -f "$SESSION" ]]; then
-      echo "session.json is still present and cannot be read: it is not a regular file, so it was not opened"
+      echo "session.json hâlâ duruyor ve okunamıyor: normal bir dosya değil, bu yüzden açılmadı"
     elif ! cat "$SESSION" >/dev/null 2>&1; then
-      echo "session.json is still present and cannot be read (permissions or I/O)"
+      echo "session.json hâlâ duruyor ve okunamıyor (izinler ya da G/Ç)"
     elif shape="$(session_shape_problems "$SESSION")" && [[ -n "$shape" ]]; then
-      echo "session.json is still present and is not a session: ${shape%%$'\n'*}"
+      echo "session.json hâlâ duruyor ve bir oturum değil: ${shape%%$'\n'*}"
     else
-      echo "session.json is still present"
+      echo "session.json hâlâ duruyor"
     fi
   fi
   [[ -e "$STATE" ]] || return 0
   if [[ ! -f "$STATE" ]]; then
-    echo "state.json is not a regular file, so it was not opened"
+    echo "state.json normal bir dosya değil, bu yüzden açılmadı"
     return 0
   fi
   if ! "$PLUTIL" -convert json -o /dev/null "$STATE" >/dev/null 2>&1; then
-    echo "state.json is unreadable or malformed"
+    echo "state.json okunamıyor ya da bozuk"
     return 0
   fi
   shape="$(journal_shape_problems "$STATE")"
   if [[ -n "$shape" ]]; then
-    echo "state.json is malformed (unexpected shape):"
+    echo "state.json bozuk (beklenmeyen yapı):"
     echo "$shape"
     return 0
   fi
   for key in sleepDisabledByUs lowPowerSetByUs dockerFrozen; do
     if [[ "$(extract "$STATE" "$key" || true)" == "true" ]]; then
-      echo "$key is still true"
+      echo "$key hâlâ true"
     fi
   done
   value="$(extract_json "$STATE" frozenProcesses || true)"
   if [[ -n "$value" && "$value" != "[]" ]]; then
-    echo "frozen processes are still journaled: $value"
+    echo "dondurulmuş süreçler hâlâ kayıt defterinde: $value"
   fi
   value="$(extract_json "$STATE" frozenPids || true)"
   if [[ -n "$value" && "$value" != "[]" ]]; then
-    echo "legacy frozen pids (no identity; the backstop never signals or clears these, only the app does): $value"
+    echo "eski biçimde kaydedilmiş dondurulmuş pid'ler (kimlik bilgisi yok; backstop bunlara asla sinyal göndermez ve bunları temizlemez, bunu yalnızca uygulama yapar): $value"
   fi
   if extract "$STATE" savedOutputVolume >/dev/null || extract "$STATE" savedMuted >/dev/null; then
-    echo "saved audio settings (volume/mute) are not restored; only the app can do that"
+    echo "kaydedilmiş ses ayarları (ses düzeyi/sessiz) geri yüklenmedi; bunu yalnızca uygulama yapabilir"
   fi
   i=0
   while extract_json "$STATE" "savedAudioOutputs.$i" >/dev/null; do
     value="$(extract "$STATE" "savedAudioOutputs.$i.name" || extract "$STATE" "savedAudioOutputs.$i.deviceUID" || true)"
-    echo "$value is still muted from a lid close; only the app can restore its volume, once the device is connected"
+    echo "$value aygıtı kapak kapanınca sessize alındı ve hâlâ sessiz; ses düzeyini yalnızca uygulama, aygıt bağlandığında geri yükleyebilir"
     i=$((i + 1))
   done
   if extract "$STATE" savedDisplayBrightness >/dev/null && ! is_refused displayRestoreRefused; then
-    echo "saved display brightness is not restored; only the app can do that"
+    echo "kaydedilmiş ekran parlaklığı geri yüklenmedi; bunu yalnızca uygulama yapabilir"
   fi
   if extract "$STATE" savedKeyboardBrightness >/dev/null && ! is_refused keyboardRestoreRefused; then
-    echo "saved keyboard backlight is not restored; only the app can do that"
+    echo "kaydedilmiş klavye arka ışığı geri yüklenmedi; bunu yalnızca uygulama yapabilir"
   fi
   value="$(extract_json "$STATE" appNapOverrides || true)"
   if [[ -n "$value" && "$value" != "[]" ]]; then
-    echo "App Nap settings (NSAppSleepDisabled) are not put back: $value"
+    echo "App Nap ayarları (NSAppSleepDisabled) eski hâline getirilmedi: $value"
   fi
 }
 
@@ -671,7 +671,7 @@ list_unrecorded_app_nap() {
     if (( rc == 124 )); then
       stuck="$id"
       unreadable=$((unreadable + 1))
-      printf 'defaults read did not answer within %ss for %s; check it yourself with: defaults read %q NSAppSleepDisabled\n' "$CALL_TIMEOUT_SECONDS" "$id" "$id"
+      printf 'defaults read %s saniye içinde yanıt vermedi (%s); kendiniz şununla denetleyin: defaults read %q NSAppSleepDisabled\n' "$CALL_TIMEOUT_SECONDS" "$id" "$id"
       continue
     fi
     if (( rc != 0 )); then
@@ -679,7 +679,7 @@ list_unrecorded_app_nap() {
         checked=$((checked + 1))
       else
         unreadable=$((unreadable + 1))
-        printf 'could not read NSAppSleepDisabled for %s; check it yourself with: defaults read %q NSAppSleepDisabled\n' "$id" "$id"
+        printf 'NSAppSleepDisabled okunamadı (%s); kendiniz şununla denetleyin: defaults read %q NSAppSleepDisabled\n' "$id" "$id"
       fi
       continue
     fi
@@ -688,21 +688,21 @@ list_unrecorded_app_nap() {
     if (( found == 0 )); then
       found=1
       cat <<MSG
-NSAppSleepDisabled is YES for these agent apps and Insomnia has no record of
-what it was before (an older build set it without recording). They are left
-as they are. To turn App Nap back on for one, run:
+Şu ajan uygulamalarında NSAppSleepDisabled YES ve Insomnia'da önceki değerine
+dair bir kayıt yok (eski bir derleme bunu kaydetmeden ayarlamış). Olduğu gibi
+bırakıldılar. Birinde App Nap'i yeniden açmak için şunu çalıştırın:
 MSG
     fi
     printf '  defaults delete %q NSAppSleepDisabled\n' "$id"
   done < <(printf '%s' "$ids" | awk '!seen[$0]++')
   if (( found == 0 )); then
-    echo "none of the $checked agent apps checked has NSAppSleepDisabled set"
+    echo "denetlenen $checked ajan uygulamasının hiçbirinde NSAppSleepDisabled ayarlı değil"
   fi
   if (( unreadable > 0 )); then
-    echo "$unreadable could not be read; see above"
+    echo "$unreadable uygulama için değer okunamadı; yukarıya bakın"
   fi
   if (( skipped > 0 )); then
-    echo "stopped after $stuck did not answer; $skipped more agent apps were not checked"
+    echo "$stuck yanıt vermeyince durduruldu; $skipped ajan uygulaması daha denetlenmedi"
   fi
 }
 
@@ -741,11 +741,11 @@ remove_owned() { # path...
   for f in "$@"; do
     if [[ -f "$f" && ! -L "$f" ]]; then
       if ! "$RM" -f "$f"; then
-        echo "Could not remove $f; left in place." >&2
+        echo "Kaldırılamadı, yerinde bırakıldı: $f" >&2
         remove_failures=$((remove_failures + 1))
       fi
     elif [[ -e "$f" || -L "$f" ]]; then
-      echo "Left $f: it is not a regular file, so Insomnia did not write it."
+      echo "$f bırakıldı: normal bir dosya değil, yani onu Insomnia yazmadı."
     fi
   done
   return 0
@@ -755,46 +755,46 @@ abort_incomplete() { # backstop exit status, problem lines...
   local rc="$1"; shift
   cat >&2 <<MSG
 
-Uninstall stopped BEFORE removing anything: Insomnia's changes are not fully
-undone (backstop exit status $rc). Still journaled in $STATE:
+Kaldırma, HİÇBİR ŞEY kaldırılmadan durduruldu: Insomnia'nın değişiklikleri tümüyle
+geri alınmadı (backstop çıkış kodu: $rc). $STATE içinde hâlâ kayıtlı olanlar:
 MSG
   local p
   for p in "$@"; do printf '  - %s\n' "$p" >&2; done
   cat >&2 <<MSG
 
-Nothing was removed on purpose: the LaunchAgent keeps retrying every minute,
-the sudoers rule keeps pmset undoable, and the journal keeps the evidence.
+Bilerek hiçbir şey kaldırılmadı: LaunchAgent her dakika yeniden denemeyi sürdürür,
+sudoers kuralı pmset değişikliklerini geri alınabilir tutar ve kayıt defteri kanıtı saklar.
 
-What to do, then rerun this script:
-  - Saved audio (volume/mute), display brightness or keyboard backlight:
-    open Insomnia.app; it restores them from the journal at launch. If the
-    display is dark, press the brightness-up key first.
-  - An output device still muted from a lid close: connect it and open
-    Insomnia.app, which restores its volume. If the device is gone for
-    good, open Insomnia.app and choose "Stop waiting for <device>" in its
-    menu; the device then stays as it is.
-  - pmset failures (sleep / Low Power Mode): check $SUDOERS
-    (rerun scripts/install.sh to reinstall it), or run
-    'sudo pmset -a disablesleep 0' / 'sudo pmset -b lowpowermode 0' yourself.
-  - Frozen or legacy pids: open Insomnia.app to resolve them, or inspect each
-    with 'ps -o pid,stat,lstart,command -p <pid>' and 'kill -CONT <pid>' it
-    yourself if it is a process you recognise.
-  - App Nap (NSAppSleepDisabled): the recovery agent retries 'defaults write'
-    or 'defaults delete' every minute, and Insomnia.app restores them at
-    launch. If 'defaults' keeps failing, see the log.
-  - Unreadable state.json: neither the app nor the recovery agent repairs or
-    removes it. Repair it by hand from the log, or move it away yourself once
-    you know its changes are undone.
-  - session.json that does not parse: the recovery agent renames it to
-    session.json.unreadable-<time> as soon as the journal is clean, and the
-    app does the same at launch. It needs no action of its own.
-  - session.json that cannot be read at all: its end time is unknown, so
-    the app and the agent treat it as expired, undo the journal, and then
-    rename it to session.json.unreadable-<time> without opening it. If it
-    is still here, that rename failed (see the log): remove it or move it
-    out of this folder, then rerun. Do not make it readable where it is:
-    the app would then resume it.
-  - Log: $LOG_DIR/insomnia.log
+Yapılacaklar (ardından bu betiği yeniden çalıştırın):
+  - Kaydedilmiş ses (ses düzeyi/sessiz), ekran parlaklığı ya da klavye arka ışığı:
+    Insomnia.app uygulamasını açın; açılışta bunları kayıt defterinden geri yükler.
+    Ekran karanlıksa önce parlaklık artırma tuşuna basın.
+  - Kapak kapanınca sessize alınmış ve hâlâ sessiz olan bir çıkış aygıtı: aygıtı
+    bağlayıp Insomnia.app uygulamasını açın; ses düzeyini geri yükler. Aygıt kalıcı
+    olarak yoksa Insomnia.app uygulamasını açın ve menüsünden "Beklemeyi bırak: <aygıt>"
+    öğesini seçin; aygıt o zaman olduğu gibi kalır.
+  - pmset hataları (uyku / Düşük Güç Modu): $SUDOERS dosyasını denetleyin
+    (yeniden kurmak için scripts/install.sh betiğini yeniden çalıştırın) ya da
+    'sudo pmset -a disablesleep 0' / 'sudo pmset -b lowpowermode 0' komutunu kendiniz çalıştırın.
+  - Dondurulmuş ya da eski biçimde kaydedilmiş pid'ler: çözmek için Insomnia.app
+    uygulamasını açın ya da her birini 'ps -o pid,stat,lstart,command -p <pid>' ile
+    inceleyin ve tanıdığınız bir süreçse 'kill -CONT <pid>' ile kendiniz çözün.
+  - App Nap (NSAppSleepDisabled): kurtarma ajanı 'defaults write' ya da 'defaults delete'
+    komutunu her dakika yeniden dener ve Insomnia.app açılışta bunları eski hâline
+    getirir. 'defaults' başarısız olmayı sürdürürse günlüğe bakın.
+  - Okunamayan state.json: ne uygulama ne de kurtarma ajanı onu onarır ya da kaldırır.
+    Günlüğe bakarak elle onarın ya da değişikliklerinin geri alındığından emin
+    olduğunuzda kendiniz başka bir yere taşıyın.
+  - Ayrıştırılamayan session.json: kurtarma ajanı, kayıt defteri temizlenir temizlenmez
+    onu session.json.unreadable-<zaman> olarak yeniden adlandırır; uygulama da açılışta
+    aynısını yapar. Ayrıca bir şey yapmanız gerekmez.
+  - Hiç okunamayan session.json: bitiş zamanı bilinmediği için uygulama ve ajan onu
+    süresi dolmuş sayar, kayıt defterindeki değişiklikleri geri alır ve ardından dosyayı
+    açmadan session.json.unreadable-<zaman> olarak yeniden adlandırır. Hâlâ buradaysa bu
+    yeniden adlandırma başarısız olmuştur (günlüğe bakın): onu kaldırın ya da bu klasörün
+    dışına taşıyın, sonra yeniden çalıştırın. Bulunduğu yerde okunabilir hâle getirmeyin:
+    uygulama o zaman o oturumu sürdürür.
+  - Günlük: $LOG_DIR/insomnia.log
 MSG
   exit 1
 }
@@ -804,7 +804,7 @@ app_running() {
   local rc=0
   bounded "$PGREP" -x Insomnia || rc=$?
   if (( rc == 124 )); then
-    echo "pgrep did not answer within ${CALL_TIMEOUT_SECONDS}s; treating Insomnia as running." >&2
+    echo "pgrep ${CALL_TIMEOUT_SECONDS} saniye içinde yanıt vermedi; Insomnia çalışıyor kabul ediliyor." >&2
     return 0
   fi
   return "$rc"
@@ -813,7 +813,7 @@ app_running() {
 # 1. Quit the app --------------------------------------------------------------
 # Ask politely and wait. The app refuses to quit while it has unresolved
 # recovery work, and that refusal must stand: no pkill, no force.
-step "Quitting Insomnia"
+step "Insomnia kapatılıyor"
 if app_running; then
   "$OSASCRIPT" -e 'tell application id "com.kgarg.insomnia" to quit' >/dev/null 2>&1 || true
   for (( i = 0; i < QUIT_WAIT_SECONDS; i++ )); do
@@ -821,25 +821,25 @@ if app_running; then
     sleep 1
   done
   if app_running; then
-    echo "Insomnia is still running (it may be refusing to quit until its own recovery finishes)." >&2
-    echo "Let it finish or quit it from its menu, then rerun. Nothing was removed." >&2
+    echo "Insomnia hâlâ çalışıyor (kendi kurtarması bitene dek kapanmayı reddediyor olabilir)." >&2
+    echo "Bitmesini bekleyin ya da menüsünden Insomnia'dan çıkın, ardından yeniden çalıştırın. Hiçbir şey kaldırılmadı." >&2
     exit 1
   fi
 fi
 
 # 2. Take the recovery lock and keep it to the end ---------------------------
-step "Taking the recovery lock"
+step "Kurtarma kilidi alınıyor"
 "$MKDIR" -p "$APP_SUPPORT"
 exec 9<>"$LOCK"
 lock_rc=0
 "$LOCKF" -t "$LOCK_TIMEOUT_SECONDS" 9 2>/dev/null || lock_rc=$?
 if (( lock_rc != 0 )); then
-  echo "The recovery lock $LOCK is held by another process (a running backstop or the app)." >&2
-  echo "Wait a minute and rerun. Nothing was removed." >&2
+  echo "Kurtarma kilidi ($LOCK) başka bir sürecin elinde (çalışan bir backstop.sh ya da uygulama)." >&2
+  echo "Bir dakika bekleyip yeniden çalıştırın. Hiçbir şey kaldırılmadı." >&2
   exit 75
 fi
 if app_running; then
-  echo "Insomnia started again; quit it and rerun. Nothing was removed." >&2
+  echo "Insomnia yeniden açıldı; Insomnia'dan çıkıp yeniden çalıştırın. Hiçbir şey kaldırılmadı." >&2
   exit 1
 fi
 
@@ -863,9 +863,9 @@ fi
 # seal covers the script, so this is the check the LaunchAgent runs (without
 # the pinned requirement, which this script does not have), and an edited
 # copy is refused the same way.
-step "Restoring the machine via backstop --force"
+step "Mac, backstop --force ile eski hâline getiriliyor"
 if [[ -e "$SCRIPT_DIR/backstop.sh" ]] && ! in_checkout; then
-  echo "not running $SCRIPT_DIR/backstop.sh: $SCRIPT_DIR is not the scripts folder of a source checkout, and a release zip has no backstop.sh, so it was added after the zip was unpacked." >&2
+  echo "$SCRIPT_DIR/backstop.sh çalıştırılmıyor: $SCRIPT_DIR bir kaynak kod kopyasının scripts klasörü değil ve sürüm zip dosyalarında backstop.sh bulunmaz; yani bu dosya zip açıldıktan sonra eklenmiş." >&2
 fi
 CHECKOUT_BACKSTOP=""
 if in_checkout && [[ -f "$SCRIPT_DIR/backstop.sh" ]]; then
@@ -881,63 +881,63 @@ elif [[ -f "$APP/Contents/Resources/backstop.sh" ]]; then
   verify_rc=0
   bounded "$CODESIGN" --verify --strict "$APP" || verify_rc=$?
   if (( verify_rc == 124 )); then
-    echo "'codesign --verify --strict $APP' did not answer within ${CALL_TIMEOUT_SECONDS}s, so the backstop.sh sealed in it was not run." >&2
-    echo "Nothing was removed. Rerun once codesign answers, or run scripts/uninstall.sh from a checkout of the source: it runs its own backstop.sh when this app declares InsomniaResumeFrozenVersion $RESUME_FROZEN_VERSION." >&2
+    echo "'codesign --verify --strict $APP' ${CALL_TIMEOUT_SECONDS} saniye içinde yanıt vermedi; bu yüzden içinde mühürlü backstop.sh çalıştırılmadı." >&2
+    echo "Hiçbir şey kaldırılmadı. codesign yanıt verdiğinde yeniden çalıştırın ya da scripts/uninstall.sh betiğini kaynak kodun bir kopyasından çalıştırın: bu uygulama InsomniaResumeFrozenVersion $RESUME_FROZEN_VERSION bildiriyorsa betik kendi backstop.sh dosyasını çalıştırır." >&2
     exit 1
   elif (( verify_rc != 0 )); then
-    echo "$APP does not pass 'codesign --verify --strict' (exit $verify_rc: ${BOUNDED_OUTPUT:-no detail}), so the backstop.sh sealed in it was not run." >&2
-    echo "Nothing was removed. Reinstall and rerun, or run scripts/uninstall.sh from a checkout of the source: it runs its own backstop.sh when this app declares InsomniaResumeFrozenVersion $RESUME_FROZEN_VERSION." >&2
+    echo "$APP 'codesign --verify --strict' denetiminden geçmiyor (çıkış kodu $verify_rc: ${BOUNDED_OUTPUT:-ayrıntı yok}); bu yüzden içinde mühürlü backstop.sh çalıştırılmadı." >&2
+    echo "Hiçbir şey kaldırılmadı. Yeniden kurup yeniden çalıştırın ya da scripts/uninstall.sh betiğini kaynak kodun bir kopyasından çalıştırın: bu uygulama InsomniaResumeFrozenVersion $RESUME_FROZEN_VERSION bildiriyorsa betik kendi backstop.sh dosyasını çalıştırır." >&2
     exit 1
   fi
-  echo "$APP verifies"
+  echo "$APP doğrulandı"
   BACKSTOP="$APP/Contents/Resources/backstop.sh"
 elif in_checkout && [[ -f "$APP_SUPPORT/backstop.sh" ]]; then
   BACKSTOP="$APP_SUPPORT/backstop.sh"
 elif in_checkout; then
-  echo "no backstop.sh found in $SCRIPT_DIR, $APP/Contents/Resources or $APP_SUPPORT; nothing was removed" >&2
+  echo "$SCRIPT_DIR, $APP/Contents/Resources ya da $APP_SUPPORT içinde backstop.sh bulunamadı; hiçbir şey kaldırılmadı" >&2
   exit 1
 else
-  echo "no backstop.sh sealed in $APP/Contents/Resources, and outside a source checkout this script runs no other copy; nothing was removed." >&2
-  echo "Run scripts/uninstall.sh from a checkout of the source." >&2
+  echo "$APP/Contents/Resources içinde mühürlü backstop.sh yok ve bu betik, kaynak kod kopyası dışında başka bir kopya çalıştırmaz; hiçbir şey kaldırılmadı." >&2
+  echo "scripts/uninstall.sh betiğini kaynak kodun bir kopyasından çalıştırın." >&2
   exit 1
 fi
 if [[ -n "$CHECKOUT_BACKSTOP" && "$BACKSTOP" != "$CHECKOUT_BACKSTOP" ]]; then
-  echo "$APP does not declare InsomniaResumeFrozenVersion $RESUME_FROZEN_VERSION; using the backstop installed with it, $BACKSTOP"
+  echo "$APP, InsomniaResumeFrozenVersion $RESUME_FROZEN_VERSION bildirmiyor; onunla birlikte kurulan backstop kullanılıyor: $BACKSTOP"
 fi
-echo "using $BACKSTOP"
+echo "kullanılıyor: $BACKSTOP"
 recovery_rc=0
 /bin/bash "$BACKSTOP" --force || recovery_rc=$?
 
 # 4. Verify independently ------------------------------------------------------
-step "Verifying the recovery journal"
+step "Kurtarma kayıt defteri doğrulanıyor"
 problems=()
 while IFS= read -r line; do
   [[ -n "$line" ]] && problems+=("$line")
 done < <(journal_problems)
 if (( recovery_rc != 0 )) && (( ${#problems[@]} == 0 )); then
-  problems+=("backstop exited $recovery_rc; see $LOG_DIR/insomnia.log")
+  problems+=("backstop $recovery_rc çıkış koduyla sonlandı; bkz. $LOG_DIR/insomnia.log")
 fi
 if (( ${#problems[@]} > 0 )); then
   abort_incomplete "$recovery_rc" "${problems[@]}"
 fi
-echo "journal clean"
+echo "kayıt defteri temiz"
 kept_brightness=()
 while IFS= read -r line; do
   [[ -n "$line" ]] && kept_brightness+=("$line")
 done < <(refused_brightness)
 if (( ${#kept_brightness[@]} > 0 )); then
-  echo "Not restored, and kept in $STATE:"
+  echo "Geri yüklenmedi ve $STATE içinde tutuluyor:"
   for line in "${kept_brightness[@]}"; do echo "  - $line"; done
-  echo "Insomnia's private-call guard refused that restore on this macOS, so nothing here can"
-  echo "make it. Set the level with the brightness keys or Control Center. The file stays so a"
-  echo "later Insomnia that can make the call restores it at launch."
+  echo "Insomnia'nın özel çağrı koruması bu macOS sürümünde o geri yüklemeyi reddetti; bu yüzden"
+  echo "burada hiçbir adım bunu yapamaz. Düzeyi parlaklık tuşlarıyla ya da Denetim Merkezi'nden ayarlayın."
+  echo "Dosya yerinde kalır; böylece bu çağrıyı yapabilen sonraki bir Insomnia açılışta onu geri yükler."
 fi
 if app_running; then
-  echo "Insomnia started again; quit it and rerun. Nothing was removed." >&2
+  echo "Insomnia yeniden açıldı; Insomnia'dan çıkıp yeniden çalıştırın. Hiçbir şey kaldırılmadı." >&2
   exit 1
 fi
 
-step "Checking App Nap settings of agent apps"
+step "Ajan uygulamalarının App Nap ayarları denetleniyor"
 list_unrecorded_app_nap
 
 # 5. Remove, still under the lock -------------------------------------------
@@ -945,7 +945,7 @@ list_unrecorded_app_nap
 # runs, so nothing is left to reopen the journal once the files go. Then
 # prove the job is really gone; if launchd still lists it, stop here with
 # every recovery file intact.
-step "Removing LaunchAgent"
+step "LaunchAgent kaldırılıyor"
 bootout_rc=0
 bounded "$LAUNCHCTL" bootout "gui/$UID_NUM" "$PLIST" || bootout_rc=$?
 # `launchctl print` exits 113 only when the service is not loaded; 0 means
@@ -955,13 +955,13 @@ print_rc=0
 bounded "$LAUNCHCTL" print "gui/$UID_NUM/$LABEL" || print_rc=$?
 if (( print_rc != 113 )); then
   if (( print_rc == 0 )); then
-    echo "launchctl bootout exited $bootout_rc and $LABEL is still loaded in gui/$UID_NUM." >&2
+    echo "launchctl bootout $bootout_rc çıkış koduyla sonlandı ve $LABEL hâlâ gui/$UID_NUM içinde yüklü." >&2
   elif (( print_rc == 124 )); then
-    echo "launchctl bootout exited $bootout_rc and 'launchctl print' did not answer within ${CALL_TIMEOUT_SECONDS}s; cannot tell whether $LABEL is still loaded." >&2
+    echo "launchctl bootout $bootout_rc çıkış koduyla sonlandı ve 'launchctl print' ${CALL_TIMEOUT_SECONDS} saniye içinde yanıt vermedi; $LABEL görevinin hâlâ yüklü olup olmadığı anlaşılamıyor." >&2
   else
-    echo "launchctl bootout exited $bootout_rc and 'launchctl print' exited $print_rc; cannot tell whether $LABEL is still loaded." >&2
+    echo "launchctl bootout $bootout_rc çıkış koduyla, 'launchctl print' $print_rc çıkış koduyla sonlandı; $LABEL görevinin hâlâ yüklü olup olmadığı anlaşılamıyor." >&2
   fi
-  echo "Nothing was removed. Run 'launchctl bootout gui/$UID_NUM $PLIST' yourself, then rerun." >&2
+  echo "Hiçbir şey kaldırılmadı. 'launchctl bootout gui/$UID_NUM $PLIST' komutunu kendiniz çalıştırın, ardından bu betiği yeniden çalıştırın." >&2
   exit 1
 fi
 "$RM" -f "$PLIST"
@@ -976,12 +976,12 @@ for candidate in "$CANDIDATE_DIR/$LABEL.candidate-"* "$LAUNCH_AGENTS/$LABEL.cand
 done
 if [[ -d "$CANDIDATE_DIR" && ! -L "$CANDIDATE_DIR" ]]; then "$RMDIR" "$CANDIDATE_DIR" 2>/dev/null || true; fi
 
-step "Removing $SUDOERS (requires your password)"
+step "$SUDOERS kaldırılıyor (parolanız istenecek)"
 if [[ -e "$SUDOERS" ]] || "$SUDO" test -e "$SUDOERS"; then
   "$SUDO" rm -f "$SUDOERS"
 fi
 
-step "Removing app bundle"
+step "Uygulama paketi kaldırılıyor"
 "$RM" -rf "$APP"
 # install.sh's leftovers beside the bundle, by the exact names it gives them.
 # An upgrade sets the previous bundle aside at .Insomnia.app.previous during
@@ -995,7 +995,7 @@ APP_DIR="$(dirname "$APP")"
 PREVIOUS_APP="$APP_DIR/.Insomnia.app.previous"
 if [[ -d "$PREVIOUS_APP" && ! -L "$PREVIOUS_APP" ]]; then
   "$RM" -rf "$PREVIOUS_APP"
-  echo "removed $PREVIOUS_APP, the previous bundle an interrupted install set aside"
+  echo "yarıda kalmış bir kurulumun kenara ayırdığı önceki paket kaldırıldı: $PREVIOUS_APP"
 fi
 staging_re='^\.Insomnia\.app\.staging\.([0-9]+)\.[A-Za-z0-9]{6}$'
 for dir in "$APP_DIR"/.Insomnia.app.staging.*; do
@@ -1003,17 +1003,17 @@ for dir in "$APP_DIR"/.Insomnia.app.staging.*; do
   [[ "${dir##*/}" =~ $staging_re ]] || continue
   owner="${BASH_REMATCH[1]}"
   if "$KILL" -0 "$owner" 2>/dev/null; then
-    echo "kept $dir: the install.sh run that made it (pid $owner) is still running"
+    echo "$dir tutuldu: onu oluşturan install.sh çalıştırması (pid $owner) hâlâ sürüyor"
     continue
   fi
   "$RM" -rf "$dir"
-  echo "removed $dir, left by an install.sh run that is gone"
+  echo "artık çalışmayan bir install.sh çalıştırmasından kalan klasör kaldırıldı: $dir"
 done
 
 # $APP_SUPPORT/backstop.sh below is the writable copy of older installs; the
 # current one went with the bundle.
 if (( PURGE == 1 )); then
-  step "Purging Insomnia's files in $APP_SUPPORT and $LOG_DIR"
+  step "Insomnia'nın dosyaları temizleniyor: $APP_SUPPORT ve $LOG_DIR"
   remove_owned "$SESSION" "$APP_SUPPORT/config.json" "$APP_SUPPORT/backstop.sh" \
         "$APP_SUPPORT/unfinished-command.json" \
         "$LOG_DIR/insomnia.log" "$LOG_DIR/insomnia.log.1" \
@@ -1025,7 +1025,7 @@ if (( PURGE == 1 )); then
   fi
   if (( ${#NOT_MOVED_ASIDE[@]} > 0 )); then
     for f in "${NOT_MOVED_ASIDE[@]}"; do
-      echo "Left $f: it is named like a moved-aside session.json but is not a regular file, so purge does not remove it. Remove it yourself if you do not need it."
+      echo "$f bırakıldı: kenara taşınmış bir session.json gibi adlandırılmış ama normal bir dosya değil; bu yüzden --purge onu kaldırmaz. Gerekmiyorsa kendiniz kaldırın."
     done
   fi
   # The lock file itself is kept, even on purge: this process still holds
@@ -1035,28 +1035,28 @@ if (( PURGE == 1 )); then
   # empty lock file and its directory are the accepted cost.
   "$RMDIR" "$LOG_DIR" 2>/dev/null || true
   (( OWN_LAUNCH_AGENTS_DIR == 1 )) && { "$RMDIR" "$LAUNCH_AGENTS" 2>/dev/null || true; }
-  echo "Kept $LOCK (the recovery lock is never unlinked; delete $APP_SUPPORT by hand if you want it gone)."
-  [[ -d "$LOG_DIR" ]] && echo "Kept $LOG_DIR: it still holds files Insomnia did not create."
+  echo "$LOCK tutuldu (kurtarma kilidi hiçbir zaman silinmez; tamamen kaldırmak istiyorsanız $APP_SUPPORT klasörünü elle silin)."
+  [[ -d "$LOG_DIR" ]] && echo "$LOG_DIR tutuldu: içinde hâlâ Insomnia'nın oluşturmadığı dosyalar var."
 else
   # unfinished-command.json names a sudo pmset that held the recovery lock;
   # this run holds it now, so that command has exited.
   remove_owned "$APP_SUPPORT/backstop.sh" "$SESSION" "$APP_SUPPORT/unfinished-command.json"
   (( ${#kept_brightness[@]} > 0 )) || remove_owned "$STATE"
-  echo "Kept $APP_SUPPORT/config.json and $LOG_DIR (use --purge to remove)."
+  echo "$APP_SUPPORT/config.json ve $LOG_DIR tutuldu (kaldırmak için --purge kullanın)."
   collect_moved_aside_sessions
   if (( ${#MOVED_ASIDE[@]} > 0 )); then
-    echo "Kept ${#MOVED_ASIDE[@]} unreadable session.json file(s) moved aside in $APP_SUPPORT (use --purge to remove)."
+    echo "$APP_SUPPORT içinde kenara taşınmış ${#MOVED_ASIDE[@]} okunamayan session.json dosyası tutuldu (kaldırmak için --purge kullanın)."
   fi
   if (( ${#NOT_MOVED_ASIDE[@]} > 0 )); then
     for f in "${NOT_MOVED_ASIDE[@]}"; do
-      echo "Kept $f: it is named like a moved-aside session.json but is not a regular file, so purge does not remove it either. Remove it yourself if you do not need it."
+      echo "$f tutuldu: kenara taşınmış bir session.json gibi adlandırılmış ama normal bir dosya değil; bu yüzden --purge de onu kaldırmaz. Gerekmiyorsa kendiniz kaldırın."
     done
   fi
 fi
-(( ${#kept_brightness[@]} == 0 )) || echo "Kept $STATE: it holds the brightness listed above."
+(( ${#kept_brightness[@]} == 0 )) || echo "$STATE tutuldu: yukarıda listelenen parlaklık değerlerini içeriyor."
 
 if (( remove_failures > 0 )); then
-  echo "Done, except $remove_failures file(s) that could not be removed (named above)." >&2
+  echo "Bitti; yalnızca kaldırılamayan $remove_failures dosya kaldı (adları yukarıda)." >&2
   exit 1
 fi
-echo "Done."
+echo "Bitti."

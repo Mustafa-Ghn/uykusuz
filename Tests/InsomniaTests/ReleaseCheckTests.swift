@@ -56,8 +56,8 @@ final class ReleaseCheckTests: XCTestCase {
     func testABinaryWithoutAnInfoPlistSaysSo() {
         let build = AppBuild(info: [:])
         XCTAssertNil(build.version)
-        XCTAssertEqual(build.label, "no version: this build has no Info.plist")
-        XCTAssertEqual(AppBuild(info: ["CFBundleShortVersionString": "", "CFBundleVersion": 7]).label, "no version: this build has no Info.plist",
+        XCTAssertEqual(build.label, "sürüm yok: bu derlemede Info.plist yok")
+        XCTAssertEqual(AppBuild(info: ["CFBundleShortVersionString": "", "CFBundleVersion": 7]).label, "sürüm yok: bu derlemede Info.plist yok",
                        "an empty version and a build of the wrong type read as missing")
         XCTAssertEqual(AppBuild(info: ["CFBundleShortVersionString": "0.2.0"]).label, "0.2.0")
     }
@@ -102,7 +102,7 @@ final class ReleaseCheckTests: XCTestCase {
         XCTAssertEqual(report.standing, .newerStableAvailable)
         XCTAssertEqual(report.newestStable, SemanticVersion(0, 2, 0))
         XCTAssertEqual(report.newestNightly, "nightly-20261130-00000000001e")
-        XCTAssertEqual(report.summary, "A newer stable release exists: 0.2.0. You have 0.1.0. Newest nightly: nightly-20261130-00000000001e.")
+        XCTAssertEqual(report.summary, "Orijinal projede daha yeni bir kararlı sürüm var: 0.2.0. Sizdeki sürüm: 0.1.0. En yeni gecelik sürüm: nightly-20261130-00000000001e.")
         XCTAssertEqual(report.logLine, "installed 0.1.0 (1), newest stable 0.2.0, newest nightly nightly-20261130-00000000001e: newer stable release available")
     }
 
@@ -126,7 +126,7 @@ final class ReleaseCheckTests: XCTestCase {
         ])
 
         XCTAssertEqual(report.standing, .upToDate)
-        XCTAssertEqual(report.summary, "You have the newest stable release, 0.1.0. Newest nightly: nightly-20261011-2c116dd6399c.")
+        XCTAssertEqual(report.summary, "Orijinal projenin en yeni kararlı sürümü sizde: 0.1.0. En yeni gecelik sürüm: nightly-20261011-2c116dd6399c.")
     }
 
     /// A nightly reports the version Info.plist has on main, which is above
@@ -143,10 +143,10 @@ final class ReleaseCheckTests: XCTestCase {
         ])
 
         XCTAssertEqual(nightlyOfABumpedMain.standing, .aheadOfStable)
-        XCTAssertEqual(nightlyOfABumpedMain.summary, "You have 0.2.0, higher than the release marked Latest, 0.1.0. No nightly is published.")
+        XCTAssertEqual(nightlyOfABumpedMain.summary, "Sizdeki 0.2.0 sürümü, orijinal projede Latest olarak işaretlenen 0.1.0 sürümünden daha yüksek. Yayımlanmış gecelik sürüm yok.")
         XCTAssertEqual(stableAboveAnOlderLatest.standing, .aheadOfStable)
-        XCTAssertEqual(stableAboveAnOlderLatest.summary, "You have 0.2.0, higher than the release marked Latest, 0.1.1. No nightly is published.")
-        XCTAssertFalse(stableAboveAnOlderLatest.summary.contains("nightly or a source build"))
+        XCTAssertEqual(stableAboveAnOlderLatest.summary, "Sizdeki 0.2.0 sürümü, orijinal projede Latest olarak işaretlenen 0.1.1 sürümünden daha yüksek. Yayımlanmış gecelik sürüm yok.")
+        XCTAssertFalse(stableAboveAnOlderLatest.summary.contains("gecelik sürüm ya da kaynaktan derleme"))
         XCTAssertEqual(stableAboveAnOlderLatest.logLine, "installed 0.2.0 (1), newest stable 0.1.1, newest nightly none: higher than the release marked Latest")
     }
 
@@ -190,8 +190,8 @@ final class ReleaseCheckTests: XCTestCase {
         ])
 
         XCTAssertEqual(report.standing, .noStableRelease)
-        XCTAssertEqual(report.summary, "No stable release is published yet. Newest nightly: nightly-20261012-db9085ea12a8.")
-        XCTAssertEqual(ReleaseReport(installed: installed, latest: nil, releases: []).summary, "No stable release is published yet. No nightly is published.")
+        XCTAssertEqual(report.summary, "Orijinal projede henüz yayımlanmış kararlı sürüm yok. En yeni gecelik sürüm: nightly-20261012-db9085ea12a8.")
+        XCTAssertEqual(ReleaseReport(installed: installed, latest: nil, releases: []).summary, "Orijinal projede henüz yayımlanmış kararlı sürüm yok. Yayımlanmış gecelik sürüm yok.")
     }
 
     func testABuildWithoutAVersionStillLearnsTheNewestTags() {
@@ -199,7 +199,7 @@ final class ReleaseCheckTests: XCTestCase {
         let odd = ReleaseReport(installed: AppBuild(version: "0.1", build: "1"), latest: release("v0.1.0", prerelease: false), releases: [])
 
         XCTAssertEqual(unpackaged.standing, .installedVersionUnknown)
-        XCTAssertEqual(unpackaged.summary, "This build has no version to compare. The newest stable release is 0.1.0. No nightly is published.")
+        XCTAssertEqual(unpackaged.summary, "Bu derlemenin karşılaştırılacak bir sürümü yok. Orijinal projenin en yeni kararlı sürümü: 0.1.0. Yayımlanmış gecelik sürüm yok.")
         XCTAssertEqual(odd.standing, .installedVersionUnknown, "a version that is not major.minor.patch cannot be compared")
     }
 
@@ -352,9 +352,9 @@ final class ReleaseCheckTests: XCTestCase {
         checker.check()
         await checker.finish()
 
-        XCTAssertEqual(checker.state, .failed("GitHub answered HTTP 403"))
+        XCTAssertEqual(checker.state, .failed("GitHub HTTP 403 yanıtı verdi"))
         let log = try String(contentsOf: home.paths.logFile, encoding: .utf8)
-        XCTAssertTrue(log.contains("[error] insomnia: release check failed: GitHub answered HTTP 403"), log)
+        XCTAssertTrue(log.contains("[error] insomnia: release check failed: GitHub HTTP 403 yanıtı verdi"), log)
     }
 
     @MainActor
@@ -365,7 +365,7 @@ final class ReleaseCheckTests: XCTestCase {
         checker.check()
         await checker.finish()
 
-        XCTAssertEqual(checker.state, .failed("GitHub's answer was not a releases list"))
+        XCTAssertEqual(checker.state, .failed("GitHub'ın yanıtı bir sürüm listesi değildi"))
     }
 
     /// A second click while the requests are in flight makes no further

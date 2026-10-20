@@ -176,7 +176,7 @@ final class PmsetParsingTests: XCTestCase {
             let on = try await sleepGuard.isLowPowerModeOn()
             XCTFail("High Power read as \(on)")
         } catch let error as SleepGuardError {
-            XCTAssertEqual(error.errorDescription, "`pmset -g custom` failed with status 0: powermode 2 under Battery Power is High Power, not Low Power Mode on or off")
+            XCTAssertEqual(error.errorDescription, "`pmset -g custom` başarısız oldu (çıkış kodu 0): powermode 2 under Battery Power is High Power, not Low Power Mode on or off")
         }
     }
 }

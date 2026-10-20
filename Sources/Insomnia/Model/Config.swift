@@ -201,27 +201,27 @@ struct LidCloseDefaultsChange: Codable, Equatable, Sendable {
     var turnedOffFreezeAll: Bool
     var turnedOnMute: Bool
 
-    static let title = "Lid-close settings changed"
+    static let title = "Kapak kapanma ayarları değişti"
 
-    /// The changes as one clause, for example: "Mute audio on lid close"
-    /// is now on.
+    /// The changes as one clause, for example: "Kapak kapanınca sesi
+    /// kapat" artık açık. The quoted names are the Settings toggles'.
     var changes: String {
         var parts: [String] = []
-        if turnedOffFreezeAll { parts.append("\"Freeze every other app while the lid is closed\" is now off") }
-        if turnedOnMute { parts.append("\"Mute audio on lid close\" is now on") }
-        return parts.joined(separator: " and ")
+        if turnedOffFreezeAll { parts.append("\"Kapak kapalıyken diğer tüm uygulamaları dondur\" artık kapalı") }
+        if turnedOnMute { parts.append("\"Kapak kapanınca sesi kapat\" artık açık") }
+        return parts.joined(separator: " ve ")
     }
 
     private var both: Bool { turnedOffFreezeAll && turnedOnMute }
 
     var notificationBody: String {
-        "This update changed \(both ? "two lid-close settings" : "a lid-close setting"): \(changes). "
-            + "To change \(both ? "them" : "it") back, choose Settings\u{2026} from the Insomnia menu bar icon and look under Lid-close actions."
+        "Bu güncelleme \(both ? "iki kapak kapanma ayarını" : "bir kapak kapanma ayarını") değiştirdi: \(changes). "
+            + "\(both ? "Bunları" : "Bunu") geri almak için Insomnia menü çubuğu simgesinden Ayarlar\u{2026} öğesini seçin ve Kapak kapanınca yapılacaklar bölümüne bakın."
     }
 
     var settingsLine: String {
-        "This update changed \(both ? "two lid-close settings" : "a lid-close setting"): \(changes). "
-            + "\(both ? "Both toggles are" : "The toggle is") below."
+        "Bu güncelleme \(both ? "iki kapak kapanma ayarını" : "bir kapak kapanma ayarını") değiştirdi: \(changes). "
+            + "\(both ? "İki anahtar da" : "Anahtar") aşağıda."
     }
 }
 

@@ -98,14 +98,14 @@ struct SettingsView: View {
     // MARK: Sections
 
     private var sessionSection: some View {
-        Section("Session") {
+        Section("Oturum") {
             ForEach(manager.config.presets, id: \.self) { p in
                 HStack {
                     Text(chipLabel(for: p))
                         .monospacedDigit()
                     Spacer()
                     if p == manager.config.defaultPreset {
-                        Text("default").font(.caption).foregroundStyle(.secondary)
+                        Text("varsayılan").font(.caption).foregroundStyle(.secondary)
                     }
                     removeButton {
                         update { $0.presets.removeAll { $0 == p } }
@@ -113,16 +113,16 @@ struct SettingsView: View {
                 }
             }
             HStack {
-                TextField("Add preset (30m, 2h, 1h30m, 3d)", text: $newPreset)
+                TextField("Hazır süre ekle (30dk, 2sa, 1sa30dk, 3g)", text: $newPreset)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit(addPreset)
-                Button("Add", action: addPreset)
+                Button("Ekle", action: addPreset)
                     .disabled(DurationParser.seconds(from: newPreset) == nil)
             }
             if let presetError {
                 Text(presetError).font(.caption).foregroundStyle(.red)
             }
-            Picker("Default preset", selection: bind(\.defaultPreset)) {
+            Picker("Varsayılan hazır süre", selection: bind(\.defaultPreset)) {
                 ForEach(manager.config.presets, id: \.self) { p in
                     Text(chipLabel(for: p)).tag(p)
                 }
@@ -130,13 +130,13 @@ struct SettingsView: View {
                     Text(chipLabel(for: manager.config.defaultPreset)).tag(manager.config.defaultPreset)
                 }
             }
-            Picker("Default field", selection: bind(\.defaultFocusField)) {
+            Picker("Varsayılan alan", selection: bind(\.defaultFocusField)) {
                 ForEach(DurationInput.Field.allCases, id: \.self) { field in
                     Text(field.placeholder).tag(field)
                 }
             }
-            .help("The pill that is focused when the pills open")
-            LabeledContent("Maximum session") {
+            .help("Süre alanları açıldığında odaklanan alan")
+            LabeledContent("En uzun oturum") {
                 Text(chipLabel(for: manager.config.maxDuration)).foregroundStyle(.secondary)
             }
         }
@@ -145,7 +145,7 @@ struct SettingsView: View {
     private func addPreset() {
         guard let s = DurationParser.seconds(from: newPreset) else { return }
         guard s <= manager.config.maxDuration else {
-            presetError = "Presets cannot exceed \(chipLabel(for: manager.config.maxDuration))."
+            presetError = "Hazır süre en fazla \(chipLabel(for: manager.config.maxDuration)) olabilir."
             return
         }
         presetError = nil
@@ -160,7 +160,7 @@ struct SettingsView: View {
 
     /// Under the mute toggle and in the README. Apple Platform Security,
     /// "Hardware microphone disconnect".
-    static let microphoneNote = "On Mac laptops with Apple silicon or a T2 chip, closing the lid disconnects the built-in microphone in hardware. Recording a meeting with the lid closed needs AirPods or an external mic."
+    static let microphoneNote = "Apple çipli ya da T2 çipli Mac dizüstü bilgisayarlarda kapağı kapatmak, yerleşik mikrofonun bağlantısını donanım düzeyinde keser. Kapak kapalıyken bir toplantıyı kaydetmek için AirPods ya da harici bir mikrofon gerekir."
 
     private var lidSection: some View {
         Section {
@@ -171,67 +171,67 @@ struct SettingsView: View {
                     Text(notice.settingsLine)
                         .font(.callout)
                     Spacer()
-                    Button("Dismiss") { manager.dismissLidCloseNotice() }
+                    Button("Kapat") { manager.dismissLidCloseNotice() }
                 }
             }
-            Toggle("Turn off the display and keyboard backlight", isOn: bind(\.darkenDisplayOnLidClose))
+            Toggle("Ekranı ve klavye arka ışığını kapat", isOn: bind(\.darkenDisplayOnLidClose))
             ForEach(manager.darkenRefusals, id: \.self) { reason in
                 Text(reason)
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
             bundleList(
-                title: "Freeze while the lid is closed",
+                title: "Kapak kapalıyken dondurulacaklar",
                 items: manager.config.freezeList,
                 newValue: $newFreezeBundle,
                 add: { id in update { if !$0.freezeList.contains(id) { $0.freezeList.append(id) } } },
                 remove: { id in update { $0.freezeList.removeAll { $0 == id } } }
             )
-            Toggle("Freeze every other app while the lid is closed", isOn: bind(\.freezeAllApps))
+            Toggle("Kapak kapalıyken diğer tüm uygulamaları dondur", isOn: bind(\.freezeAllApps))
             Text(wouldFreezeText)
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Toggle("Pause Docker Desktop when no containers are running", isOn: bind(\.dockerRule))
-            Text("Off by default. When on, Docker Desktop is paused only if a second check right before the pause still finds no running container; a container that starts in that last moment is paused with it.")
+            Toggle("Çalışan kapsayıcı yokken Docker Desktop'ı duraklat", isOn: bind(\.dockerRule))
+            Text("Varsayılan olarak kapalıdır. Açıkken Docker Desktop, yalnızca duraklatmadan hemen önce yapılan ikinci bir denetim de çalışan kapsayıcı bulamazsa duraklatılır; tam o son anda başlayan bir kapsayıcı da onunla birlikte duraklatılır.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Toggle("Mute audio on lid close", isOn: bind(\.muteOnLidClose))
+            Toggle("Kapak kapanınca sesi kapat", isOn: bind(\.muteOnLidClose))
             Text(Self.microphoneNote)
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Toggle("Low Power Mode while the lid is closed", isOn: bind(\.lowPowerOnLidClose))
+            Toggle("Kapak kapalıyken Düşük Güç Modu", isOn: bind(\.lowPowerOnLidClose))
                 // A floor input: apply it now if the lid is already closed.
                 .onChange(of: manager.config.lowPowerOnLidClose) { manager.services?.reevaluateFloors() }
         } header: {
-            Text("Lid-close actions")
+            Text("Kapak kapanınca yapılacaklar")
         } footer: {
-            Text("Apps on the list above are stopped with SIGSTOP while the lid is closed and resumed when it opens. With \"Freeze every other app\" on (off by default), every other Dock app is stopped too, except agent apps, Apple apps, Docker Desktop and built-in protected apps (editors, terminals, browsers, AI apps, password managers, local databases, Tailscale, local model servers, and meeting, recording and dictation apps such as Zoom, Teams, Webex, Wispr Flow, Granola, Otter, OBS and Loom). Agent apps are never frozen. The display brightness and keyboard backlight are saved, set to zero and restored when the lid opens. If Insomnia is not running when you open the lid, press the brightness-up key.")
+            Text("Yukarıdaki listede bulunan uygulamalar kapak kapalıyken SIGSTOP ile dondurulur ve kapak açılınca çözülür. \"Diğer tüm uygulamaları dondur\" açıkken (varsayılan olarak kapalı) Dock'taki diğer tüm uygulamalar da dondurulur; ajan uygulamaları, Apple uygulamaları, Docker Desktop ve yerleşik olarak korunan uygulamalar (düzenleyiciler, terminaller, tarayıcılar, yapay zekâ uygulamaları, parola yöneticileri, yerel veritabanları, Tailscale, yerel model sunucuları ve Zoom, Teams, Webex, Wispr Flow, Granola, Otter, OBS ve Loom gibi toplantı, kayıt ve dikte uygulamaları) bunun dışındadır. Ajan uygulamaları hiçbir zaman dondurulmaz. Ekran parlaklığı ve klavye arka ışığı kaydedilir, sıfıra indirilir ve kapak açılınca geri yüklenir. Kapağı açtığınızda Insomnia çalışmıyorsa parlaklık artırma tuşuna basın.")
         }
     }
 
     private var agentSection: some View {
         Section {
             bundleList(
-                title: "Never throttle or freeze",
+                title: "Asla kısıtlanmayacak veya dondurulmayacaklar",
                 items: manager.config.agentList,
                 newValue: $newAgentBundle,
                 add: { id in update { if !$0.agentList.contains(id) { $0.agentList.append(id) } } },
                 remove: { id in update { $0.agentList.removeAll { $0 == id } } }
             )
-            Toggle("Turn App Nap off for these apps during a session", isOn: bind(\.disableAppNapForAgents))
-            Text("Writes NSAppSleepDisabled = YES into each listed app's preferences when a session starts and puts the previous value back when it ends.")
+            Toggle("Oturum sırasında bu uygulamalarda App Nap'i kapat", isOn: bind(\.disableAppNapForAgents))
+            Text("Oturum başlarken listedeki her uygulamanın tercihlerine NSAppSleepDisabled = YES yazar, oturum bitince önceki değeri geri koyar.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         } header: {
-            Text("Agent apps")
+            Text("Ajan uygulamaları")
         } footer: {
-            Text("Agent apps are never frozen or throttled. Editors, AI apps, terminals, browsers, password managers, local databases, Tailscale, local model servers, and meeting, recording and dictation apps are also protected from the automatic lid-close scope even when they are not listed here; adding one to the freeze list above overrides that.")
+            Text("Ajan uygulamaları hiçbir zaman dondurulmaz veya kısıtlanmaz. Düzenleyiciler, yapay zekâ uygulamaları, terminaller, tarayıcılar, parola yöneticileri, yerel veritabanları, Tailscale, yerel model sunucuları ve toplantı, kayıt ve dikte uygulamaları burada listelenmeseler bile otomatik kapak kapanma kapsamından korunur; bunlardan birini yukarıdaki dondurulacaklar listesine eklemek bu korumayı geçersiz kılar.")
         }
     }
 
     private var wouldFreezeText: String {
-        guard manager.config.freezeAllApps else { return "Would freeze now: the list above only" }
-        return wouldFreeze.isEmpty ? "Would freeze now: nothing else" : "Would freeze now: \(wouldFreeze.joined(separator: ", "))"
+        guard manager.config.freezeAllApps else { return "Şu anda dondurulacaklar: yalnızca yukarıdaki liste" }
+        return wouldFreeze.isEmpty ? "Şu anda dondurulacaklar: başka bir şey yok" : "Şu anda dondurulacaklar: \(wouldFreeze.joined(separator: ", "))"
     }
 
     /// Same planner as the lid-close action, over the apps running now.
@@ -241,25 +241,25 @@ struct SettingsView: View {
     }
 
     private var powerSection: some View {
-        Section("Battery and thermal") {
+        Section("Pil ve ısı") {
             Stepper(value: lowPowerFloor, in: 0...100, step: Config.floorStep) {
-                LabeledContent("Low Power Mode below", value: "\(manager.config.lowPowerFloor)%")
+                LabeledContent("Düşük Güç Modu için pil alt sınırı", value: "%\(manager.config.lowPowerFloor)")
             }
             Stepper(value: endFloor, in: 0...Config.maxEndFloor, step: Config.floorStep) {
-                LabeledContent("End session below", value: "\(manager.config.endFloor)%")
+                LabeledContent("Oturumu bitirmek için pil alt sınırı", value: "%\(manager.config.endFloor)")
             }
-            Text("0 turns the battery end off. The end floor stays below the Low Power Mode floor. Moving one onto the other moves it along.")
+            Text("0, pil nedeniyle oturumu bitirmeyi kapatır. Bitirme alt sınırı, Düşük Güç Modu alt sınırının altında kalır. Birini diğerinin üstüne getirmek onu da beraberinde kaydırır.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Toggle("Thermal rules (Low Power Mode when hot, end when critical)", isOn: bind(\.thermalRules))
+            Toggle("Isı kuralları (ısınınca Düşük Güç Modu, kritik düzeyde oturumu bitir)", isOn: bind(\.thermalRules))
         }
     }
 
     private var networkSection: some View {
         Section {
-            TextField("Hotspot SSID", text: bind(\.hotspotSSID))
+            TextField("Hotspot ağ adı (SSID)", text: bind(\.hotspotSSID))
             HStack {
-                SecureField("Hotspot password", text: Binding(get: { hotspot.password }, set: { hotspot.edit($0) }))
+                SecureField("Hotspot parolası", text: Binding(get: { hotspot.password }, set: { hotspot.edit($0) }))
                     .onSubmit(savePassword)
                 Button(hotspot.buttonTitle(ssid: manager.config.hotspotSSID), action: savePassword)
                     .disabled(hotspot.password.isEmpty || hotspot.saving)
@@ -269,32 +269,32 @@ struct SettingsView: View {
             }
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
-                    Text("Location: \(locationPermission.statusDescription)")
+                    Text("Konum: \(locationPermission.statusDescription)")
                         .foregroundStyle(.secondary)
                     Spacer()
                     if locationPermission.isDenied {
-                        Button("Open Location Services") {
+                        Button("Konum Servisleri'ni aç") {
                             locationPermission.openLocationServicesSettings()
                         }
                     }
                 }
                 // macOS has no when-in-use grant for Mac apps: the grant is
                 // recorded as Location Services access for Insomnia.
-                Text("macOS records this grant as Location Services access for Insomnia. Insomnia uses it only to read Wi-Fi network names and never requests your location.")
+                Text("macOS bu izni Insomnia için Konum Servisleri erişimi olarak kaydeder. Insomnia bu izni yalnızca Wi-Fi ağ adlarını okumak için kullanır ve konumunuzu hiçbir zaman istemez.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Stepper(value: nudgeSeconds, in: 10...900, step: 10) {
-                LabeledContent("Nudge tmux after", value: "\(Int(manager.config.nudgeThreshold)) s offline")
+                LabeledContent("tmux dürtmesi", value: "\(Int(manager.config.nudgeThreshold)) sn çevrimdışı kalınca")
             }
-            Text("After that long offline, Insomnia types \"continue\" into each pane listed below. Only a pane you have marked with this tmux command is nudged. Mark a dedicated pane, not one you type in.")
+            Text("Bu süre boyunca çevrimdışı kalındığında Insomnia aşağıda listelenen her bölmeye \"continue\" yazar. Yalnızca bu tmux komutuyla işaretlediğiniz bölmeler dürtülür. İçine yazı yazdığınız bir bölmeyi değil, bu iş için ayrılmış bir bölmeyi işaretleyin.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Text(TmuxNudge.markCommand())
                 .font(.system(.caption, design: .monospaced))
                 .textSelection(.enabled)
-            Toggle("Press Enter after continue", isOn: bind(\.tmuxNudgePressesEnter))
-            Text("Enter submits whatever is already typed in that pane, including a line that was never finished. When off, \"continue\" is typed and nothing submits it.")
+            Toggle("continue yazdıktan sonra Enter'a bas", isOn: bind(\.tmuxNudgePressesEnter))
+            Text("Enter, o bölmede önceden yazılmış ne varsa, hiç bitirilmemiş bir satır da dahil, gönderir. Kapalıyken \"continue\" yazılır ve hiçbir şey onu göndermez.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             ForEach(manager.config.tmuxTargets, id: \.self) { t in
@@ -307,16 +307,16 @@ struct SettingsView: View {
                 }
             }
             HStack {
-                TextField("tmux target (session:window.pane)", text: $newTmuxTarget)
+                TextField("tmux hedefi (oturum:pencere.bölme)", text: $newTmuxTarget)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit(addTmuxTarget)
-                Button("Add", action: addTmuxTarget)
+                Button("Ekle", action: addTmuxTarget)
                     .disabled(newTmuxTarget.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         } header: {
-            Text("Network failover")
+            Text("Ağ yedekleme")
         } footer: {
-            Text("The password is kept in the login keychain, readable without a prompt only by the build of Insomnia that saved it; after a reinstall, enter it again. Location permission lets macOS reveal Wi-Fi network names and find the configured hotspot.")
+            Text("Parola giriş anahtar zincirinde saklanır ve sormadan yalnızca onu kaydeden Insomnia derlemesi tarafından okunabilir; yeniden kurulumdan sonra parolayı tekrar girin. Konum izni, macOS'in Wi-Fi ağ adlarını göstermesini ve ayarlanan kişisel erişim noktasını (hotspot) bulmasını sağlar.")
         }
     }
 
@@ -472,7 +472,7 @@ struct SettingsView: View {
             return .stored(.init(ssid: change.ssid, password: password, removed: change.removed))
         } catch {
             Log.error("could not save hotspot password: \(error.localizedDescription)")
-            return .failed(notice: "Could not save the hotspot password: \(error.localizedDescription)")
+            return .failed(notice: "Hotspot parolası kaydedilemedi: \(error.localizedDescription)")
         }
     }
 
@@ -484,16 +484,16 @@ struct SettingsView: View {
     }
 
     private var appSection: some View {
-        Section("App") {
-            Toggle("Launch at login", isOn: launchAtLogin)
+        Section("Uygulama") {
+            Toggle("Girişte aç", isOn: launchAtLogin)
             loginItemNote
-            LabeledContent("Config") {
+            LabeledContent("Yapılandırma") {
                 Text(manager.paths.configFile.path)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
             }
-            LabeledContent("Version") {
+            LabeledContent("Sürüm") {
                 Text(AppBuild.current.label)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -510,17 +510,18 @@ struct SettingsView: View {
 
     /// The update check: one request to GitHub's releases list per click,
     /// and the report under the buttons. It opens the releases page and
-    /// installs nothing; the installer run again is the upgrade.
+    /// installs nothing; the installer run again is the upgrade. Both ask
+    /// the original (upstream) project, not this fork, and say so.
     @ViewBuilder
     private var releaseCheck: some View {
         HStack {
-            Button(releases.state == .checking ? "Checking" : "Check for updates") { releases.check() }
+            Button(releases.state == .checking ? "Denetleniyor" : "Orijinal projede güncellemeleri denetle") { releases.check() }
                 .disabled(releases.state == .checking)
-            Button("Open releases page") { NSWorkspace.shared.open(GitHubReleaseFetcher.releasesPage) }
+            Button("Sürümler sayfasını aç") { NSWorkspace.shared.open(GitHubReleaseFetcher.releasesPage) }
         }
         switch releases.state {
         case .idle:
-            Text("Asks GitHub when you click, and installs nothing. To upgrade, run the installer again.")
+            Text("Tıkladığınızda GitHub'daki orijinal projeye (krishhgg/Insomnia) sorar ve hiçbir şey kurmaz. Yükseltmek için yükleyiciyi yeniden çalıştırın.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         case .checking:
@@ -531,7 +532,7 @@ struct SettingsView: View {
                 .foregroundStyle(report.standing == .newerStableAvailable ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
                 .textSelection(.enabled)
         case let .failed(reason):
-            Text("Could not check: \(reason)")
+            Text("Denetlenemedi: \(reason)")
                 .font(.caption)
                 .foregroundStyle(.red)
         }
@@ -558,17 +559,17 @@ struct SettingsView: View {
     @ViewBuilder
     private var loginItemNote: some View {
         if let error = loginItem.error {
-            Text("Login item: \(error)").font(.caption).foregroundStyle(.red)
+            Text("Giriş öğesi: \(error)").font(.caption).foregroundStyle(.red)
         } else if loginItem.needsApproval {
             HStack {
-                Text("Waiting for approval in System Settings > General > Login Items. Turn the switch off to withdraw it.")
+                Text("Sistem Ayarları > Genel > Giriş Öğeleri bölümünde onay bekleniyor. Geri çekmek için anahtarı kapatın.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button("Open Login Items") { loginItem.openLoginItems() }
+                Button("Giriş Öğeleri'ni aç") { loginItem.openLoginItems() }
             }
         } else if manager.config.launchAtLogin, !loginItem.isRegistered {
-            Text("Login item: macOS reports it \(loginItem.status.description). Turn the switch on to register it again.")
+            Text("Giriş öğesi için macOS'in bildirdiği durum: \(loginItem.status.description). Yeniden kaydetmek için anahtarı açın.")
                 .font(.caption)
                 .foregroundStyle(.orange)
         }
@@ -596,7 +597,7 @@ struct SettingsView: View {
                 }
             }
             HStack {
-                TextField("Bundle identifier", text: newValue)
+                TextField("Paket kimliği", text: newValue)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit {
                         let v = newValue.wrappedValue.trimmingCharacters(in: .whitespaces)
@@ -604,17 +605,17 @@ struct SettingsView: View {
                         add(v)
                         newValue.wrappedValue = ""
                     }
-                Button("Add") {
+                Button("Ekle") {
                     let v = newValue.wrappedValue.trimmingCharacters(in: .whitespaces)
                     guard !v.isEmpty else { return }
                     add(v)
                     newValue.wrappedValue = ""
                 }
                 .disabled(newValue.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty)
-                Menu("Add running app…") {
+                Menu("Çalışan uygulama ekle…") {
                     let apps = RunningApps.candidates(excluding: items)
                     if apps.isEmpty {
-                        Text("No other apps running")
+                        Text("Çalışan başka uygulama yok")
                     }
                     ForEach(apps, id: \.bundleID) { app in
                         Button(app.name) { add(app.bundleID) }
@@ -631,12 +632,12 @@ struct SettingsView: View {
                 .foregroundStyle(.secondary)
         }
         .buttonStyle(.plain)
-        .help("Remove")
+        .help("Kaldır")
     }
 }
 
-/// Running apps offered by "Add running app…": everything with a bundle id
-/// that is not Apple's own.
+/// Running apps offered by "Çalışan uygulama ekle…": everything with a
+/// bundle id that is not Apple's own.
 @MainActor
 enum RunningApps {
     struct Entry: Hashable {

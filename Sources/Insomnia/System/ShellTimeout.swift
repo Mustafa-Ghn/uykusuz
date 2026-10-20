@@ -6,7 +6,7 @@ enum ShellTimeoutError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .timedOut(exe, seconds):
-            return "\(exe) did not finish within \(Int(seconds)) s"
+            return "\(exe) \(Int(seconds)) sn içinde bitmedi"
         }
     }
 }

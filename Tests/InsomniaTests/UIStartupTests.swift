@@ -99,8 +99,8 @@ final class UIStartupTests: XCTestCase {
         XCTAssertFalse(rig.model.phase.showsRunningControls)
         // The countdown the session will read is projected the moment Enter
         // is pressed; the live one replaces it on confirmation.
-        XCTAssertEqual(rig.model.pendingCountdown, "1d 0:00:00")
-        XCTAssertEqual(MenuBarModel.startingText, "Starting\u{2026}")
+        XCTAssertEqual(rig.model.pendingCountdown, "1g 0:00:00")
+        XCTAssertEqual(MenuBarModel.startingText, "Başlatılıyor\u{2026}")
         XCTAssertNil(rig.model.startError)
         // The typed value survives the wait, in case the start is refused.
         XCTAssertEqual(rig.model.input.total, 86400)
@@ -113,7 +113,7 @@ final class UIStartupTests: XCTestCase {
         XCTAssertTrue(rig.model.phase.showsRunningControls)
         XCTAssertNil(rig.model.pendingCountdown)
         XCTAssertNil(rig.model.startError)
-        XCTAssertEqual(rig.manager.countdownText, "1d 0:00:00")
+        XCTAssertEqual(rig.manager.countdownText, "1g 0:00:00")
         XCTAssertEqual(rig.h.backstop.arms, 1)
     }
 
@@ -160,7 +160,7 @@ final class UIStartupTests: XCTestCase {
         XCTAssertNil(rig.model.pendingCountdown)
         // Concise in the item; the manager keeps the full message for the menu.
         XCTAssertEqual(rig.model.startError, MenuBarModel.startFailedText)
-        XCTAssertEqual(rig.manager.lastError, "could not arm backstop: fake launchd refused")
+        XCTAssertEqual(rig.manager.lastError, "Kurtarma ajanı etkinleştirilemedi: fake launchd refused")
         XCTAssertLessThan(MenuBarModel.startFailedText.count, 24)
     }
 
@@ -216,7 +216,7 @@ final class UIStartupTests: XCTestCase {
         ok = await waitUntil { rig.model.startError == nil }
         XCTAssertTrue(ok)
         XCTAssertFalse(rig.model.slotsPresent)
-        XCTAssertEqual(rig.manager.countdownText, "1d 0:00:00")
+        XCTAssertEqual(rig.manager.countdownText, "1g 0:00:00")
     }
 
     /// Typing after a refusal dismisses the error; so does closing the pills.
@@ -467,7 +467,7 @@ final class UIStartupTests: XCTestCase {
         XCTAssertTrue(rig.manager.isActive)
         XCTAssertEqual(rig.manager.session?.endsAt, endsAt)
         XCTAssertEqual(rig.manager.countdownText, "1:00:00")
-        XCTAssertEqual(rig.manager.lastError, "could not confirm backstop: fake launchd refused")
+        XCTAssertEqual(rig.manager.lastError, "Kurtarma ajanı doğrulanamadı: fake launchd refused")
         XCTAssertEqual(rig.model.phase, .running)
         XCTAssertNil(rig.model.startError)
         XCTAssertEqual(rig.model.visiblePills, 0)

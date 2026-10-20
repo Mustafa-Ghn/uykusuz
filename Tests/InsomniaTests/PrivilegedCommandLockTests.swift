@@ -188,7 +188,7 @@ final class PrivilegedCommandLockTests: XCTestCase {
             XCTFail("ran without the recovery lock")
         } catch let error as SleepGuardError {
             XCTAssertEqual(error.status, -1)
-            XCTAssertTrue(error.stderr.contains("no recovery transaction holds the lock"), error.stderr)
+            XCTAssertTrue(error.stderr.contains("kilidi tutan bir kurtarma işlemi yok"), error.stderr)
         }
         try await Task.sleep(for: .milliseconds(200))
         XCTAssertFalse(FileManager.default.fileExists(atPath: file("ready")), "the command was launched")

@@ -1,124 +1,140 @@
-# Optional extras
+# Ek özellikler
 
-The [README](../README.md#optional-extras) has a summary of each.
+[README](../README.md#ek-özellikler) her birinin özetini içerir.
 
-## iPhone hotspot handoff
+## iPhone kişisel erişim noktasına (hotspot) geçiş
 
-Set **System Settings → Wi-Fi → Ask to join hotspots → Automatically**, then
-enter the hotspot SSID and password in Insomnia Settings. The password is
-stored in the login Keychain under service `insomnia-hotspot`. Insomnia uses
-CoreWLAN to find and join that network without putting the password in process
-arguments.
+**Sistem Ayarları → Wi-Fi → "Erişim noktalarına katılmak için sor" (Ask to
+join hotspots) → Otomatik** ayarını yapın, ardından hotspot ağ adını (SSID) ve
+parolasını Insomnia'nın Ayarlar penceresine girin. Parola giriş anahtar
+zincirinde `insomnia-hotspot` hizmet adıyla saklanır. Insomnia, parolayı süreç
+argümanlarına koymadan o ağı bulmak ve ona katılmak için CoreWLAN kullanır.
 
-The Keychain item's access list names only the build of Insomnia that saved
-it, and Insomnia reads it with Keychain prompts switched off, so a join during
-an outage never raises a dialog. The installer signs each build ad hoc, which
-gives every install a new identity: after a reinstall the saved password is
-unreadable by the new build. Insomnia then skips the join, shows "Hotspot
-password unreadable by this build" in the right-click menu and in Settings,
-and sends one notification per outage. The warning belongs to the SSID it was
-read for. Change the SSID and it goes, and Settings checks the new SSID's
-saved password instead. Enter the password again in Settings and save; the
-save writes the new password before it removes the old item,
-and macOS may ask you to allow Insomnia to delete the old one, or to unlock
-the login keychain. If that save is cut off after the old item is gone,
-the password reads as missing and you enter it once more: Insomnia never
-reads a half-finished save's copy. The Save button reads "Saving…" until
-macOS answers, and "Saved" only while the SSID and password fields still
-hold what was saved. A join that was waiting while you changed the SSID is
-dropped, and the next retry uses the new SSID. A Settings read that was
-waiting is dropped too, and Settings reads the new SSID's password instead.
-Anything you type in the password field while Settings is still loading the
-saved one stays, even if you delete it again. The rest of Insomnia,
-including the battery floor and End, keeps running while the dialog is open.
-A build signed with a stable identity would keep the item readable across
-upgrades.
+Anahtar Zinciri öğesinin erişim listesinde yalnızca onu kaydeden Insomnia
+derlemesi bulunur ve Insomnia öğeyi Anahtar Zinciri istemleri kapalıyken okur;
+böylece bir kesinti sırasında yapılan bir katılma hiçbir zaman bir iletişim
+kutusu açmaz. Kurulum betiği her derlemeyi ad-hoc imzalar ve bu, her kuruluma
+yeni bir kimlik verir: yeniden kurulumdan sonra kaydedilmiş parola yeni derleme
+tarafından okunamaz. Insomnia o zaman katılmayı atlar, sağ tıklama menüsünde ve
+Ayarlar'da "Bu derleme hotspot parolasını okuyamıyor" uyarısını gösterir ve her
+kesinti için bir bildirim gönderir. Uyarı, okunduğu SSID'ye
+aittir. SSID'yi değiştirdiğinizde uyarı kalkar ve Ayarlar bunun yerine yeni
+SSID'nin kayıtlı parolasını denetler. Parolayı Ayarlar'da yeniden girip
+kaydedin; kaydetme, eski öğeyi kaldırmadan önce yeni parolayı yazar ve macOS,
+Insomnia'nın eski öğeyi silmesine izin vermenizi ya da giriş anahtar
+zincirinin kilidini açmanızı isteyebilir. Eski öğe gittikten sonra kaydetme
+yarıda kesilirse parola eksik görünür ve onu bir kez daha girersiniz: Insomnia
+yarım kalmış bir kaydetmenin kopyasını hiçbir zaman okumaz. Kaydet düğmesi
+macOS yanıt verene kadar "Kaydediliyor…" yazar; "Kaydedildi" ise yalnızca SSID
+ve parola alanları kaydedileni içerdiği sürece görünür. SSID'yi değiştirdiğiniz
+sırada bekleyen bir katılma bırakılır ve bir sonraki yeniden deneme yeni SSID'yi
+kullanır. Bekleyen bir Ayarlar okuması da bırakılır ve Ayarlar bunun yerine yeni
+SSID'nin parolasını okur. Ayarlar kayıtlı parolayı hâlâ yüklerken parola
+alanına yazdığınız her şey, onu yeniden silseniz bile kalır. Pil alt sınırı ve
+oturumu bitirme dahil Insomnia'nın geri kalanı, iletişim kutusu açıkken
+çalışmayı sürdürür. Kararlı bir kimlikle imzalanmış bir derleme, öğeyi
+yükseltmeler boyunca okunabilir tutardı.
 
-macOS requires Location Services permission to reveal network names. Insomnia
-requests it on the first hotspot save, or when starting a session with a
-configured hotspot, not merely on launch. If denied, use the Location row in
-Settings to open **Privacy & Security → Location Services**. Mac apps have no
-when-in-use grant, so System Settings records it as Location Services access
-for Insomnia. Insomnia uses it only to read Wi-Fi network names through
-CoreWLAN and never requests your location.
+macOS, ağ adlarını göstermek için Konum Servisleri izni ister. Insomnia bu
+izni yalnızca açılışta değil, ilk hotspot kaydetmede ya da hotspot ayarlanmışken
+bir oturum başlatıldığında ister. İzin verilmezse **Gizlilik ve Güvenlik →
+Konum Servisleri** bölümünü açmak için Ayarlar'daki Konum satırını kullanın.
+Mac uygulamalarında "kullanılırken" türünde bir izin yoktur; bu yüzden Sistem
+Ayarları bunu Insomnia için Konum Servisleri erişimi olarak kaydeder. Insomnia
+bu izni yalnızca CoreWLAN üzerinden Wi-Fi ağ adlarını okumak için kullanır ve
+konumunuzu hiçbir zaman istemez.
 
-## tmux nudge
+## tmux dürtmesi
 
-After a long outage (90 seconds by default) Insomnia types `continue` into
-each configured tmux target. The default target list is empty, and a listed
-pane is only nudged if you have marked it yourself, with a pane option that
-is read again before every send:
+Uzun bir kesintiden sonra (varsayılan olarak 90 saniye) Insomnia ayarlanmış
+her tmux hedefine `continue` yazar. Varsayılan hedef listesi boştur ve
+listelenen bir bölme yalnızca onu kendiniz işaretlediyseniz dürtülür; bu
+işaret, her göndermeden önce yeniden okunan bir bölme seçeneğidir:
 
 ```bash
-tmux set-option -p -t <session:window.pane> @insomnia-nudge on
+tmux set-option -p -t <oturum:pencere.bölme> @insomnia-nudge on
 ```
 
-Mark a dedicated, disposable agent pane, not one you type in, because pending
-text is opaque to Insomnia. Enter is off by default, so the word is typed and
-nothing submits it. Turn on "Press Enter after continue" in Settings to submit
-it, knowing that Enter also submits anything already typed in that pane. The
-option must be on the pane itself (`-p`). One set on the session or window
-does not count. Pane options need tmux 3.0 or later. Ending a session cancels
-pending automation but cannot retract keystrokes already sent.
+İçine yazı yazdığınız bir bölmeyi değil, ajana ayrılmış ve gözden
+çıkarılabilir bir bölmeyi işaretleyin; çünkü bölmede bekleyen metni Insomnia
+göremez. Enter varsayılan olarak kapalıdır; bu yüzden sözcük yazılır ama hiçbir
+şey onu göndermez. Göndermek için Ayarlar'da "continue yazdıktan sonra Enter'a
+bas" seçeneğini açın; Enter'ın o bölmede önceden yazılmış her şeyi de
+göndereceğini unutmayın. Seçeneğin bölmenin kendisinde (`-p`) ayarlanmış
+olması gerekir; oturumda ya da pencerede ayarlanan bir seçenek sayılmaz. Bölme
+seçenekleri tmux 3.0 ya da üstünü gerektirir. Bir oturumu bitirmek bekleyen
+otomasyonu iptal eder ama gönderilmiş tuş vuruşlarını geri alamaz.
 
-## Chrome, Chromium, Arc and Comet throttling
+## Chrome, Chromium, Arc ve Comet kısıtlaması
 
-Chromium browsers can throttle windows macOS considers occluded, including
-when the lid is closed. Insomnia detects supported running browsers missing
-`--disable-backgrounding-occluded-windows` or `--disable-renderer-backgrounding`
-and offers **Relaunch [browser] unthrottled** in the right-click menu. The item
-asks first, because the browser is quit and its windows and tabs come back only
-if it is set to reopen them on startup. If the browser has quit by the time you
-confirm, nothing is quit or launched and a notification says so. Insomnia reads the browser's profile
-arguments before quitting and carries them over. If it cannot read them, cannot
-read the kernel's start time that ties them to the browser, or the browser
-quits on its own while they are read, it quits nothing and says so. If the
-browser has not quit after 10 s, nothing is launched, and a notification says
-so: a second copy beside the first would be worse than a throttled one. The
-quit request stands, so a browser that closes later has to be opened again by
-hand. After `open` returns, Insomnia waits up to 5 s for the browser to show up
-as running and notifies if it does not. Each of these reasons also stays in the
-right-click menu as a warning line, one per browser, until that browser's next
-relaunch or the next session, so it is there even with notifications off. A
-relaunch that ends after its session ended, or after a newer relaunch of the
-same browser started, reports nothing. This is not a guarantee that every web
-app will keep working while the lid is closed.
+Chromium tabanlı tarayıcılar, kapak kapalıyken de dahil olmak üzere macOS'in
+gizli (occluded) saydığı pencereleri kısıtlayabilir. Insomnia,
+`--disable-backgrounding-occluded-windows` ya da
+`--disable-renderer-backgrounding` bayrağı olmadan çalışan desteklenen
+tarayıcıları algılar ve sağ tıklama menüsünde **Kısıtlamasız yeniden başlat:
+[tarayıcı]** seçeneğini sunar. Öğe önce sorar, çünkü tarayıcı kapatılır ve
+pencereleriyle sekmeleri yalnızca tarayıcı açılışta onları yeniden açacak
+şekilde ayarlanmışsa geri gelir. Siz onaylayana kadar tarayıcı zaten
+kapanmışsa hiçbir şey kapatılmaz ya da başlatılmaz ve bir bildirim bunu söyler.
+Insomnia kapatmadan önce tarayıcının profil argümanlarını okur ve onları yeni
+açılışa taşır. Onları okuyamazsa, onları tarayıcıya bağlayan çekirdek
+başlangıç zamanını okuyamazsa ya da tarayıcı onlar okunurken kendiliğinden
+kapanırsa hiçbir şeyi kapatmaz ve bunu söyler. Tarayıcı 10 saniye sonra hâlâ
+kapanmamışsa hiçbir şey başlatılmaz ve bir bildirim bunu söyler: ilkinin
+yanında ikinci bir kopya, kısıtlanmış bir kopyadan daha kötü olurdu. Kapatma
+isteği geçerli kalır; bu yüzden daha sonra kapanan bir tarayıcının elle
+yeniden açılması gerekir. `open` döndükten sonra Insomnia tarayıcının çalışır
+görünmesini 5 saniyeye kadar bekler; görünmezse bildirim gönderir. Bu
+nedenlerin her biri, o tarayıcının bir sonraki yeniden başlatılmasına ya da bir
+sonraki oturuma kadar, tarayıcı başına bir satır olmak üzere sağ tıklama
+menüsünde bir uyarı satırı olarak da kalır; böylece bildirimler kapalıyken bile
+orada görünür. Oturumu bittikten sonra ya da aynı tarayıcının daha yeni bir
+yeniden başlatması başladıktan sonra biten bir yeniden başlatma hiçbir şey
+bildirmez. Bu, her web uygulamasının kapak kapalıyken çalışmayı sürdüreceğinin
+garantisi değildir.
 
-## Configuration and privacy
+## Yapılandırma ve gizlilik
 
-Configuration lives in `~/Library/Application Support/Insomnia/config.json`.
-Use Settings for the app's controls; [Config.swift](../Sources/Insomnia/Model/Config.swift)
-defines the full configuration and defaults. Local logs can contain SSIDs,
-process metadata, and tmux targets. Check them before sharing publicly.
-Lines the app writes to `insomnia.log` also go to the unified log with their
-bodies marked private, so `log show` and other local programs see `<private>`
-in place of the text unless private data logging is enabled on the Mac. The
-backstop's lines go only to `insomnia.log`, which keeps the full text of both.
-The files in Application Support/Insomnia and Logs/Insomnia (config, session,
-journal, recovery lock, the record of a power command left running, the two
-logs) are owner-only, mode 0600 with those two directories 0700, and one left
-looser by an older build is tightened the next time the app or the backstop
-opens it. Insomnia sets only these modes and
-leaves any access control list (ACL) on these files and folders as it is, so
-an ACL someone added, or one inherited from a parent folder, can still give
-another account access (`ls -le` shows it). The LaunchAgent plist and the installed
-scripts hold no private data and keep the modes the installer gives them.
-`insomnia.log` and `handoffs.log` are capped at 1 MiB: a
-log past the cap is renamed to `insomnia.log.1` or `handoffs.log.1`,
-replacing the previous copy, and a new file starts. The cap does not apply
-to a log you replace with a symlink. Insomnia writes through the link and
-never rotates it, since the rename would move the link and not the file it
-points to, and it logs that once. You set up the link, so trimming the file
-it points to is up to you.
+Yapılandırma `~/Library/Application Support/Insomnia/config.json` dosyasında
+tutulur. Uygulamanın denetimleri için Ayarlar'ı kullanın; tam yapılandırmayı
+ve varsayılanları [Config.swift](../Sources/Insomnia/Model/Config.swift)
+tanımlar. Yerel günlükler SSID'leri, süreç meta verilerini ve tmux hedeflerini
+içerebilir. Herkese açık olarak paylaşmadan önce onları gözden geçirin.
+Uygulamanın `insomnia.log` dosyasına yazdığı satırlar, gövdeleri özel
+(private) olarak işaretlenmiş biçimde birleşik günlüğe (unified log) de
+gider; bu yüzden Mac'te özel veri günlüğe kaydı açık değilse `log show` ve
+diğer yerel programlar metin yerine `<private>` görür. backstop.sh betiğinin
+satırları yalnızca `insomnia.log` dosyasına gider; bu dosya ikisinin de tam
+metnini tutar. Application Support/Insomnia ve Logs/Insomnia içindeki dosyalar
+(yapılandırma, oturum, kayıt defteri, kurtarma kilidi, çalışır durumda
+bırakılmış bir güç komutunun kaydı, iki günlük) yalnızca sahibine açıktır:
+dosyalar 0600, bu iki klasör 0700 izinlidir; daha eski bir derlemenin daha
+gevşek bıraktığı bir dosya, uygulama ya da backstop onu bir sonraki açışında
+sıkılaştırılır. Insomnia yalnızca bu izinleri ayarlar ve bu dosya ve
+klasörlerdeki erişim denetim listelerine (ACL) dokunmaz; bu yüzden birinin
+eklediği ya da üst klasörden devralınan bir ACL başka bir hesaba yine de erişim
+verebilir (`ls -le` bunu gösterir). LaunchAgent plist dosyası ve kurulu
+betikler hiçbir özel veri tutmaz ve kurulum betiğinin verdiği izinleri korur.
+`insomnia.log` ve `handoffs.log` 1 MiB ile sınırlıdır: sınırı aşan bir günlük,
+önceki kopyanın yerini alarak `insomnia.log.1` ya da `handoffs.log.1` olarak
+yeniden adlandırılır ve yeni bir dosya başlar. Sınır, bir sembolik bağlantıyla
+değiştirdiğiniz bir günlüğe uygulanmaz. Insomnia bağlantı üzerinden yazar ve
+onu hiçbir zaman döndürmez (rotate), çünkü yeniden adlandırma bağlantının işaret
+ettiği dosyayı değil bağlantının kendisini taşırdı; bunu da bir kez günlüğe
+yazar. Bağlantıyı siz kurduğunuz için işaret ettiği dosyayı kırpmak size
+kalmıştır.
 
-Insomnia makes one kind of network request, and only when you click "Check
-for updates" in Settings > App: two unauthenticated GETs at api.github.com,
-for the release this repository marks Latest and for the first page of its
-releases list, with the installed version as their user agent and nothing
-else about the Mac. It never checks on its own, opens the releases page only
-on request, and never downloads or installs a build.
+Insomnia yalnızca bir tür ağ isteği yapar ve bunu yalnızca Ayarlar > Uygulama
+bölümünde "Orijinal projede güncellemeleri denetle" düğmesine tıkladığınızda
+yapar: api.github.com adresine, özgün projenin (krishhgg/Insomnia) Latest
+olarak işaretlediği sürüm ve sürüm listesinin ilk sayfası için kimlik
+doğrulamasız iki GET isteği. İsteklerde kullanıcı aracısı (user agent) olarak
+kurulu sürüm gönderilir, Mac hakkında başka hiçbir şey gönderilmez. Insomnia
+hiçbir zaman kendiliğinden denetlemez, sürümler sayfasını yalnızca istek
+üzerine açar ve hiçbir zaman bir derleme indirmez ya da kurmaz.
 
-`INSOMNIA_HOME` relocates app support files, logs, and LaunchAgents for testing.
-It is **not an installation sandbox**: installation/removal also involves the
-app bundle and sudoers rule. The installer refuses a relocated home. See
-[Paths.swift](../Sources/Insomnia/Store/Paths.swift) for the layout.
+`INSOMNIA_HOME`, test amacıyla uygulama destek dosyalarının, günlüklerin ve
+LaunchAgents klasörünün yerini değiştirir. Bir **kurulum korumalı alanı
+(sandbox) değildir**: kurulum ve kaldırma, uygulama paketini ve sudoers kuralını
+da kapsar. Kurulum betiği yeri değiştirilmiş bir ana klasörü reddeder. Düzen
+için [Paths.swift](../Sources/Insomnia/Store/Paths.swift) dosyasına bakın.

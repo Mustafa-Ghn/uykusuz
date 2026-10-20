@@ -165,7 +165,7 @@ final class AppNapTests: XCTestCase {
         XCTAssertEqual(h.appNap.values, [chrome: true, terminal: false])
         let err = try XCTUnwrap(m.lastError)
         XCTAssertTrue(err.contains(chrome), err)
-        XCTAssertTrue(err.contains("kept in the journal"), err)
+        XCTAssertTrue(err.contains("kayıt defterinde tutuluyor"), err)
         XCTAssertEqual(h.notifier.posts.last?.title, SessionManager.incompleteTitle)
 
         h.appNap.failWrites = []
@@ -193,7 +193,7 @@ final class AppNapTests: XCTestCase {
         XCTAssertEqual(h.appNap.values, [:], "the preference was put back")
         XCTAssertEqual(try h.store.loadState()?.appNapOverrides, [AppNapOverride(bundleId: chrome, previous: nil)])
         let err = try XCTUnwrap(m.lastError)
-        XCTAssertTrue(err.contains("could not be cleared"), err)
+        XCTAssertTrue(err.contains("girdi temizlenemedi"), err)
 
         h.appNap.onWrite = nil
         await m.end(reason: .user)
@@ -223,8 +223,8 @@ final class AppNapTests: XCTestCase {
         XCTAssertEqual(h.appNap.values, [:])
         XCTAssertEqual(try h.store.loadState()?.appNapOverrides, [])
         let err = try XCTUnwrap(m.lastError)
-        XCTAssertTrue(err.contains("could not journal the App Nap setting"), err)
-        XCTAssertTrue(err.contains("left unchanged"), err)
+        XCTAssertTrue(err.contains("App Nap ayarı kayıt defterine yazılamadı"), err)
+        XCTAssertTrue(err.contains("değiştirilmeden bırakıldı"), err)
     }
 
     /// A preference write that fails after its entry was journaled keeps
@@ -283,7 +283,7 @@ final class AppNapTests: XCTestCase {
 
         XCTAssertEqual(h.appNap.values, [:])
         XCTAssertEqual(try h.store.loadState(), RuntimeState.clean)
-        XCTAssertEqual(h.notifier.posts.last?.title, "Sleep restored")
+        XCTAssertEqual(h.notifier.posts.last?.title, "Uyku geri yüklendi")
     }
 
     /// Relaunch under a valid session: apps already journaled keep their
@@ -335,7 +335,7 @@ final class AppNapTests: XCTestCase {
         ]
         for (label, value) in notBooleans {
             XCTAssertThrowsError(try AppNap.sleepDisabled(from: value, bundleId: chrome), label) { error in
-                XCTAssertEqual(error.localizedDescription, "NSAppSleepDisabled for com.google.Chrome is not a boolean; left alone", label)
+                XCTAssertEqual(error.localizedDescription, "com.google.Chrome için NSAppSleepDisabled bir Boolean değer değil; olduğu gibi bırakıldı", label)
             }
         }
     }

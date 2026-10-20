@@ -302,7 +302,7 @@ final class AppServices {
             }
             if let body = outcome.explanation(browser: target.name) {
                 self.status.relaunchProblems[target.bundleId] = body
-                self.notifier.post(title: "Browser not relaunched", body: body)
+                self.notifier.post(title: "Tarayıcı yeniden başlatılmadı", body: body)
             }
             guard !Task.isCancelled else { return }
             try? await Task.sleep(for: .seconds(2))

@@ -23,11 +23,11 @@ enum RecoveryLockError: Error, LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case let .busy(path, seconds):
-            return "recovery lock \(path) still held by another process after \(Int(seconds)) s (backstop running?)"
+            return "kurtarma kilidi \(path) \(Int(seconds)) sn sonra hâlâ başka bir sürecin elinde (kurtarma ajanı mı çalışıyor?)"
         case let .open(path, errno):
-            return "could not open recovery lock \(path): \(String(cString: strerror(errno)))"
+            return "kurtarma kilidi \(path) açılamadı: \(String(cString: strerror(errno)))"
         case let .lock(path, errno):
-            return "could not lock \(path): \(String(cString: strerror(errno)))"
+            return "\(path) kilitlenemedi: \(String(cString: strerror(errno)))"
         }
     }
 }

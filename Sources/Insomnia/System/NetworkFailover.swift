@@ -58,14 +58,14 @@ struct FailoverMachine: Sendable, Equatable {
         return "\(f.string(from: end)) outage start=\(f.string(from: start)) end=\(f.string(from: end)) gap=\(Int(gap.rounded()))s"
     }
 
-    /// "2m 10s", "45s", "1h 2m 3s".
+    /// "2dk 10sn", "45sn", "1sa 2dk 3sn".
     static func humanGap(_ gap: TimeInterval) -> String {
         let total = Int(gap.rounded())
         let h = total / 3600, m = (total % 3600) / 60, s = total % 60
         var parts: [String] = []
-        if h > 0 { parts.append("\(h)h") }
-        if m > 0 { parts.append("\(m)m") }
-        if s > 0 || parts.isEmpty { parts.append("\(s)s") }
+        if h > 0 { parts.append("\(h)sa") }
+        if m > 0 { parts.append("\(m)dk") }
+        if s > 0 || parts.isEmpty { parts.append("\(s)sn") }
         return parts.joined(separator: " ")
     }
 }
@@ -137,7 +137,7 @@ struct KeychainError: Error, LocalizedError, Sendable {
     let status: OSStatus
     var errorDescription: String? {
         let msg = SecCopyErrorMessageString(status, nil) as String? ?? "OSStatus \(status)"
-        return "keychain: \(msg)"
+        return "Anahtar Zinciri: \(msg)"
     }
 
     /// The item is there but macOS would have to show a keychain prompt to
@@ -180,11 +180,11 @@ enum HotspotPasswordProblem: Equatable, Sendable {
     var explanation: String {
         switch self {
         case .missing:
-            "No hotspot password is saved. Enter it in Settings."
+            "Kayıtlı bir hotspot parolası yok. Parolayı Ayarlar'da girin."
         case .unreadable:
-            "This build of Insomnia can't read the saved hotspot password (it was saved by another build, or the login keychain is locked). Enter it again in Settings."
+            "Insomnia'nın bu derlemesi kayıtlı hotspot parolasını okuyamıyor (parola başka bir derleme tarafından kaydedilmiş ya da giriş anahtar zinciri kilitli). Parolayı Ayarlar'da yeniden girin."
         case let .error(message):
-            "The hotspot password can't be read: \(message)"
+            "Hotspot parolası okunamıyor: \(message)"
         }
     }
 
@@ -192,11 +192,11 @@ enum HotspotPasswordProblem: Equatable, Sendable {
     var menuLine: String {
         switch self {
         case .missing:
-            "\u{26A0} Hotspot password not saved: enter it in Settings"
+            "\u{26A0} Hotspot parolası kayıtlı değil: Ayarlar'da girin"
         case .unreadable:
-            "\u{26A0} Hotspot password unreadable by this build: enter it again in Settings"
+            "\u{26A0} Bu derleme hotspot parolasını okuyamıyor: Ayarlar'da yeniden girin"
         case let .error(message):
-            "\u{26A0} Hotspot password unreadable: \(message)"
+            "\u{26A0} Hotspot parolası okunamıyor: \(message)"
         }
     }
 
@@ -207,9 +207,9 @@ enum HotspotPasswordProblem: Equatable, Sendable {
         case .missing:
             nil
         case .unreadable:
-            "This build of Insomnia can't read the saved password: it was saved by another build, or the login keychain is locked. Enter it again and save. macOS may ask you to allow Insomnia to replace the old item."
+            "Insomnia'nın bu derlemesi kayıtlı parolayı okuyamıyor: parola başka bir derleme tarafından kaydedilmiş ya da giriş anahtar zinciri kilitli. Parolayı yeniden girip kaydedin. macOS, Insomnia'nın eski öğeyi değiştirmesine izin vermenizi isteyebilir."
         case let .error(message):
-            "The saved password can't be read: \(message)"
+            "Kayıtlı parola okunamıyor: \(message)"
         }
     }
 }
@@ -484,7 +484,7 @@ struct SecurityItemCalls: KeychainItemCalls {
 struct KeychainStore: KeychainStoring, @unchecked Sendable {
     static let service = "insomnia-hotspot"
     /// What the keychain prompt names if another program asks for the item.
-    static let accessDescriptor = "Insomnia hotspot password"
+    static let accessDescriptor = "Insomnia hotspot parolası"
 
     /// Where a save keeps the new password while it replaces an item this
     /// build cannot read.
@@ -1062,7 +1062,7 @@ final class NetworkFailover {
         Log.error("hotspot join skipped: \(problem.explanation)")
         passwordReport = HotspotPasswordReport(ssid: ssid, problem: problem)
         guard notifiedThisOutage.insert(ssid).inserted else { return }
-        notifier.post(title: "Hotspot not joined", body: problem.explanation)
+        notifier.post(title: "Hotspot'a bağlanılmadı", body: problem.explanation)
     }
 
     private func recovered(start: Date, gap: TimeInterval) async {
@@ -1082,10 +1082,10 @@ final class NetworkFailover {
             }
             // A keystroke that went out before the stop is still reported.
             if !stopped || count > 0 {
-                let panes = count == 1 ? "1 tmux pane" : "\(count) tmux panes"
+                let panes = "\(count) tmux bölmesi"
                 notifier.post(
-                    title: "Network recovered",
-                    body: "Network was down \(FailoverMachine.humanGap(gap)). Nudged \(panes). Check GUI agents."
+                    title: "Ağ bağlantısı geri geldi",
+                    body: "Ağ \(FailoverMachine.humanGap(gap)) boyunca kesikti. \(panes) dürtüldü. GUI ajanlarını denetleyin."
                 )
             }
         }
