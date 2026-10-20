@@ -212,7 +212,7 @@ struct SettingsView: View {
         } header: {
             Text("Kapak kapanınca yapılacaklar")
         } footer: {
-            Text("Yukarıdaki listede bulunan uygulamalar kapak kapalıyken SIGSTOP ile dondurulur ve kapak açılınca çözülür. \"Diğer tüm uygulamaları dondur\" açıkken (bu fork'ta varsayılan olarak açık) Dock'taki diğer tüm uygulamalar da dondurulur; ajan uygulamaları, Apple uygulamaları, Docker Desktop ve yerleşik olarak korunan uygulamalar (düzenleyiciler, terminaller, tarayıcılar, yapay zekâ uygulamaları, parola yöneticileri, yerel veritabanları, Tailscale, ProtonVPN, AnyDesk, yerel model sunucuları ve Zoom, Teams, Webex, Wispr Flow, Granola, Otter, OBS ve Loom gibi toplantı, kayıt ve dikte uygulamaları) bunun dışındadır. Ajan uygulamaları hiçbir zaman dondurulmaz. Ekran parlaklığı ve klavye arka ışığı kaydedilir, sıfıra indirilir ve kapak açılınca geri yüklenir. Kapağı açtığınızda Uykusuz çalışmıyorsa parlaklık artırma tuşuna basın.")
+            Text("Yukarıdaki listede bulunan uygulamalar kapak kapalıyken SIGSTOP ile dondurulur ve kapak açılınca çözülür. \"Diğer tüm uygulamaları dondur\" açıkken (varsayılan olarak açık) Dock'taki diğer tüm uygulamalar da dondurulur; ajan uygulamaları, Apple uygulamaları, Docker Desktop ve yerleşik olarak korunan uygulamalar (düzenleyiciler, terminaller, tarayıcılar, yapay zekâ uygulamaları, parola yöneticileri, yerel veritabanları, Tailscale, ProtonVPN, AnyDesk, yerel model sunucuları ve Zoom, Teams, Webex, Wispr Flow, Granola, Otter, OBS ve Loom gibi toplantı, kayıt ve dikte uygulamaları) bunun dışındadır. Ajan uygulamaları hiçbir zaman dondurulmaz. Ekran parlaklığı ve klavye arka ışığı kaydedilir, sıfıra indirilir ve kapak açılınca geri yüklenir. Kapağı açtığınızda Uykusuz çalışmıyorsa parlaklık artırma tuşuna basın.")
         }
     }
 
@@ -283,7 +283,7 @@ struct SettingsView: View {
                     .foregroundStyle(.red)
             }
             Toggle("Claude çalışırken otomatik oturum", isOn: bind(\.autoSession))
-            Text("Claude bir görev yürüttüğü sürece oturum kendiliğinden başlar ve uzar; Claude 5 dakika çalışmayınca biter. Kapak kapansa da Mac uyanık kalır, bu yüzden Mac'i kapalı bir çantaya koymayın. Otomatik oturumu siz bitirirseniz Claude bir kez durana kadar yenisi başlamaz.")
+            Text("Claude bir görev yürüttüğü sürece oturum kendiliğinden başlar ve uzar; Claude 5 dakika çalışmayınca biter. Bu oturumda menü çubuğunda geri sayım yerine \"Claude\" yazar. Kapak kapansa da Mac uyanık kalır, bu yüzden Mac'i kapalı bir çantaya koymayın. \"Claude\" yazısına tıklayıp bir süre girerseniz oturum sizin olur ve o andan itibaren girdiğiniz süre kadar sürer. Oturumu siz bitirirseniz Claude bir kez durana kadar yenisi başlamaz.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Toggle("Kod modu: Claude çalışırken Düşük Güç Modu (kapak açıkken)", isOn: bind(\.codeMode))

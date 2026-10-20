@@ -59,6 +59,11 @@ final class MenuBarModel {
     /// What the item reads next to the pills after the manager refused a
     /// start. Short on purpose: the full reason is in the right-click menu.
     static let startFailedText = "Başlatılamadı"
+    /// What the item reads for the automatic session instead of a
+    /// countdown (fork addition): it lasts while Claude works, not to a
+    /// time anyone set.
+    static let autoSessionText = "Claude"
+    static let autoSessionAccessibilityText = "Claude çalıştıkça açık"
 
     var phase: Phase = .idle
     /// Concise start failure shown beside the pills; cleared on the next

@@ -1176,7 +1176,9 @@ final class SessionManager {
     /// setting may have been applied before the error or timeout), so it is
     /// undone from the journal like an end, and the journal keeps the entry
     /// until that undo is confirmed.
-    func start(duration: TimeInterval) async {
+    /// `auto` marks the session as the automatic one (`isAutoSession`)
+    /// from the moment it lands, so its countdown is never drawn.
+    func start(duration: TimeInterval, auto: Bool = false) async {
         guard !quitRequested else {
             Log.info("start ignored: quit requested")
             return
@@ -1186,13 +1188,13 @@ final class SessionManager {
             return
         }
         let ticket = endTicket
-        _ = await exclusive("Oturum başlatma") { await self.performStart(duration: duration, ticket: ticket) }
+        _ = await exclusive("Oturum başlatma") { await self.performStart(duration: duration, ticket: ticket, auto: auto) }
         // A start that goes through before a refused launch reconcile runs
         // again drops that reconcile, and takes over its check.
         await settleEarlierCommand()
     }
 
-    private func performStart(duration: TimeInterval, ticket: Int) async {
+    private func performStart(duration: TimeInterval, ticket: Int, auto: Bool) async {
         guard session == nil else {
             Log.info("start ignored: session already active")
             return
@@ -1266,6 +1268,7 @@ final class SessionManager {
             return
         }
 
+        autoStartedAt = auto ? new.startedAt : nil
         session = new
         lastError = nil
         countdownPaused = clamshell() == true
@@ -1281,12 +1284,54 @@ final class SessionManager {
     func extend(by extra: TimeInterval) async {
         guard session != nil else { return }
         let ticket = endTicket
-        _ = await exclusive("Oturum uzatma") { await self.performExtend(by: extra, ticket: ticket) }
+        _ = await exclusive("Oturum uzatma") {
+            await self.performReschedule(ticket: ticket) { current, now, maxDuration in
+                SessionMath.extended(current, by: extra, now: now, maxDuration: maxDuration)
+            }
+        }
     }
 
-    private func performExtend(by extra: TimeInterval, ticket: Int) async {
+    // MARK: Automatic session (fork addition)
+
+    /// `startedAt` of the session `AgentAutoSession` started (`start(auto:)`),
+    /// while that session is still its own: it lasts while the agent works,
+    /// not to a time the user set, so the status item shows no countdown
+    /// for it. In memory only: a session reconciled after a relaunch reads
+    /// as the user's, which only brings its countdown back.
+    private(set) var autoStartedAt: Date?
+
+    /// The running session is the automatic one.
+    var isAutoSession: Bool {
+        guard let autoStartedAt, let session else { return false }
+        return session.startedAt == autoStartedAt
+    }
+
+    /// The automatic session is no longer managed (the feature was turned
+    /// off): it runs out its time like the user's, countdown and all.
+    func releaseAutoSession() {
+        autoStartedAt = nil
+    }
+
+    /// The user sets a time on the automatic session: it becomes theirs and
+    /// ends `duration` from now, sooner or later than it would have. It is
+    /// released before the change is queued, so the automatic session
+    /// neither extends nor ends it meanwhile.
+    func takeOver(duration: TimeInterval) async {
+        guard session != nil else { return }
+        autoStartedAt = nil
+        let ticket = endTicket
+        _ = await exclusive("Oturum süresi") {
+            await self.performReschedule(ticket: ticket) { current, now, maxDuration in
+                SessionMath.restarted(current, duration: duration, now: now, maxDuration: maxDuration)
+            }
+        }
+    }
+
+    /// Moves the running session's deadline to what `reschedule` makes of
+    /// the session at the injected clock's now.
+    private func performReschedule(ticket: Int, _ reschedule: (Session, Date, TimeInterval) -> Session) async {
         guard let current = session, endTicket == ticket else { return }
-        let updated = SessionMath.extended(current, by: extra, now: clock(), maxDuration: config.maxDuration)
+        let updated = reschedule(current, clock(), config.maxDuration)
         // The agent enforces whatever deadline is on disk; confirm it is
         // still loaded before moving that deadline out.
         do {
@@ -1307,7 +1352,7 @@ final class SessionManager {
         }
         session = updated
         lastError = nil
-        Log.info("session extended by \(Int(extra))s until \(iso(updated.endsAt))")
+        Log.info("session moved by \(Int(updated.endsAt.timeIntervalSince(current.endsAt)))s until \(iso(updated.endsAt))")
         await armDeadline(updated.endsAt)
     }
 

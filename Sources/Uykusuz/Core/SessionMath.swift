@@ -34,6 +34,18 @@ enum SessionMath {
         return s
     }
 
+    /// Move `endsAt` to `duration` from `now`, clamped as a new session's,
+    /// sooner or later than it was (fork addition: the user setting a time
+    /// on the automatic session). The move is recorded as an extension,
+    /// negative when it comes sooner.
+    static func restarted(_ session: Session, duration: TimeInterval, now: Date, maxDuration: TimeInterval) -> Session {
+        let newEnd = endsAt(start: now, duration: duration, maxDuration: maxDuration)
+        var s = session
+        s.extensions.append(newEnd.timeIntervalSince(session.endsAt))
+        s.endsAt = newEnd
+        return s
+    }
+
     /// Seconds from `now` to `endsAt`, floored at zero.
     static func remaining(until endsAt: Date, at now: Date) -> TimeInterval {
         max(endsAt.timeIntervalSince(now), 0)

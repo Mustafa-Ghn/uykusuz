@@ -99,6 +99,141 @@ final class AutoSessionPolicyTests: XCTestCase {
         XCTAssertNil(p.step(inputs(60, active: true)))
         XCTAssertEqual(p.step(inputs(AutoSessionPolicy.retryAfterFailedStart, active: true)), .start(AutoSessionPolicy.chunk))
     }
+
+    func testASessionTheUserTookOverIsNoLongerExtendedOrEnded() {
+        var p = AutoSessionPolicy()
+        XCTAssertEqual(p.step(inputs(0, active: true)), .start(AutoSessionPolicy.chunk))
+        p.started(at: t0)
+        p.handOver()
+        XCTAssertNil(p.ownSession)
+        let endsAt = t0.addingTimeInterval(1800)
+        XCTAssertNil(p.step(inputs(60, active: true, started: t0, endsAt: endsAt)), "under an hour left, but not ours to extend")
+        XCTAssertNil(p.step(inputs(60 + AutoSessionPolicy.idleGrace * 2, active: false, started: t0, endsAt: endsAt)),
+                     "idle long enough, but not ours to end")
+        XCTAssertEqual(p.step(inputs(1800 + 15, active: true)), .start(AutoSessionPolicy.chunk),
+                       "the time the user set ran out with the agent at work: ours follows")
+    }
+
+    func testAUserSessionEndedBeforeItsTimeHoldsTheNextStartBackUntilTheAgentLetsGo() {
+        var p = AutoSessionPolicy()
+        let manual = t0.addingTimeInterval(-100)
+        XCTAssertNil(p.step(inputs(0, active: true, started: manual, endsAt: t0.addingTimeInterval(3600))))
+        // The user held the end control with the agent still at work.
+        XCTAssertNil(p.step(inputs(30, active: true)))
+        XCTAssertTrue(p.suppressed)
+        XCTAssertNil(p.step(inputs(45, active: true)))
+        XCTAssertNil(p.step(inputs(60, active: false)))
+        XCTAssertEqual(p.step(inputs(75, active: true)), .start(AutoSessionPolicy.chunk))
+    }
+
+    func testAUserSessionThatRanItsTimeOutLetsTheAgentsSessionFollow() {
+        var p = AutoSessionPolicy()
+        let manual = t0.addingTimeInterval(-100)
+        XCTAssertNil(p.step(inputs(0, active: true, started: manual, endsAt: t0.addingTimeInterval(60))))
+        XCTAssertEqual(p.step(inputs(75, active: true)), .start(AutoSessionPolicy.chunk))
+        XCTAssertFalse(p.suppressed)
+    }
+}
+
+/// The automatic session shows "Claude" instead of a countdown, and becomes
+/// the user's when they set a time on it.
+@MainActor
+final class AutoSessionDisplayTests: XCTestCase {
+    var h: Harness!
+
+    override func setUp() async throws {
+        h = Harness()
+    }
+
+    override func tearDown() async throws {
+        h.home.destroy()
+    }
+
+    func testOnlyAnAutomaticStartIsTheAutomaticSession() async throws {
+        let m = h.makeManager()
+        await m.start(duration: 3600, auto: true)
+        XCTAssertTrue(m.isAutoSession)
+        _ = await m.end(reason: .user)
+        XCTAssertFalse(m.isAutoSession)
+        await m.start(duration: 3600)
+        XCTAssertNotNil(m.session)
+        XCTAssertFalse(m.isAutoSession)
+    }
+
+    func testTakingOverEndsThatLongFromNowAndMakesItTheUsers() async throws {
+        let m = h.makeManager()
+        await m.start(duration: AutoSessionPolicy.chunk, auto: true)
+        let started = try XCTUnwrap(m.session)
+        h.clock.advance(600)
+        await m.takeOver(duration: 1800)
+        let s = try XCTUnwrap(m.session)
+        XCTAssertEqual(s.startedAt, started.startedAt)
+        XCTAssertEqual(s.endsAt, h.clock.now.addingTimeInterval(1800), "sooner than the automatic session would have ended")
+        XCTAssertEqual(s.extensions, [600 + 1800 - AutoSessionPolicy.chunk])
+        XCTAssertEqual(try h.store.loadSession(), s)
+        XCTAssertEqual(m.scheduledDeadline, s.endsAt)
+        XCTAssertFalse(m.isAutoSession)
+
+        await m.takeOver(duration: 3 * 3600)
+        XCTAssertEqual(m.session?.endsAt, h.clock.now.addingTimeInterval(3 * 3600), "or later")
+    }
+
+    func testTheAutomaticSessionIsLeftAloneOnceTheUserSetsATime() async throws {
+        let m = h.makeManager()
+        m.config.autoSession = true
+        var agent = true
+        let clock = h.clock
+        let auto = AgentAutoSession(
+            manager: m,
+            isAgentActive: { _ in agent },
+            readPower: { (80, false) },
+            thermal: { .nominal },
+            clock: { clock.now }
+        )
+        await auto.tick()
+        XCTAssertTrue(m.isAutoSession)
+        await m.takeOver(duration: 3600)
+        agent = false
+        await auto.tick()
+        clock.advance(AutoSessionPolicy.idleGrace + 60)
+        await auto.tick()
+        XCTAssertNotNil(m.session, "idle past the grace, but the session is the user's now")
+        XCTAssertNil(auto.policy.ownSession)
+    }
+
+    func testTurningTheFeatureOffLeavesTheSessionToRunOutItsTime() async throws {
+        let m = h.makeManager()
+        m.config.autoSession = true
+        let clock = h.clock
+        let auto = AgentAutoSession(manager: m, isAgentActive: { _ in true }, readPower: { (80, false) }, thermal: { .nominal }, clock: { clock.now })
+        await auto.tick()
+        XCTAssertTrue(m.isAutoSession)
+        m.config.autoSession = false
+        await auto.tick()
+        XCTAssertFalse(m.isAutoSession)
+        XCTAssertNotNil(m.session)
+        XCTAssertNil(auto.policy.ownSession)
+    }
+
+    func testTheStatusItemReadsClaudeAndNeverTheCountdown() {
+        XCTAssertEqual(StatusRootView.liveText(isAutoSession: true, countdown: {
+            XCTFail("the countdown is not read for the automatic session")
+            return "1:59:59"
+        }), MenuBarModel.autoSessionText)
+        XCTAssertEqual(StatusRootView.liveText(isAutoSession: false, countdown: { "1:59:59" }), "1:59:59")
+        XCTAssertEqual(StatusRootView.countdownText(pending: "0:30:00", live: MenuBarModel.autoSessionText, phase: .running), "0:30:00",
+                       "a time being set shows its countdown at once")
+    }
+
+    func testTheMenuSaysHowTheAutomaticSessionEnds() {
+        func titles(auto: Bool, active: Bool = true) -> [String] {
+            StatusMenu.items(sessionActive: active, sleepHeld: active, autoSession: auto, machine: nil, actions: nil,
+                             throttledBrowsers: [], error: nil).map(\.title)
+        }
+        XCTAssertEqual(titles(auto: true).prefix(2).last, StatusMenu.autoSessionLine)
+        XCTAssertFalse(titles(auto: false).contains(StatusMenu.autoSessionLine))
+        XCTAssertFalse(titles(auto: true, active: false).contains(StatusMenu.autoSessionLine))
+    }
 }
 
 @MainActor

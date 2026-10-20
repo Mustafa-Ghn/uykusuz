@@ -2,8 +2,9 @@ import Foundation
 
 /// When to start, extend and end a session for an agent at work (fork
 /// addition). Pure: `AgentAutoSession` feeds it readings and runs what it
-/// returns. A session is "ours" only if this policy started it; a session
-/// the user started is never extended or ended here.
+/// returns. A session is "ours" only if this policy started it and the
+/// user has not set a time on it since (`handOver`); a session the user
+/// started or took over is never extended or ended here.
 ///
 /// - Start: an agent is at work, no session is active, the last start did
 ///   not fail within `retryAfterFailedStart`, the Mac is not hot, and on
@@ -14,7 +15,8 @@ import Foundation
 /// - Hands off after an end it did not ask for (the user held the end
 ///   control, a floor or the timer ended it): no new start until the agent
 ///   lets go once, so a session the user ended is not started again under
-///   them.
+///   them. The same when a session of the user's ends before its time; one
+///   that ran its time out lets ours follow while the agent works.
 struct AutoSessionPolicy: Equatable, Sendable {
     enum Action: Equatable, Sendable {
         case start(TimeInterval)
@@ -49,6 +51,15 @@ struct AutoSessionPolicy: Equatable, Sendable {
     /// is not taken for an end someone else made.
     private(set) var ending = false
 
+    /// A session of the user's (started by them, taken over, or one a
+    /// relaunch reconciled) as last seen, so its end can be told apart:
+    /// before its time (the end control, a floor, a quit) or at it.
+    struct UserSession: Equatable, Sendable {
+        var startedAt: Date
+        var endsAt: Date
+    }
+    private(set) var userSession: UserSession?
+
     mutating func step(_ i: Inputs) -> Action? {
         if i.agentActive { lastActive = i.now }
         if let own = ownSession, i.sessionStartedAt != own {
@@ -58,10 +69,21 @@ struct AutoSessionPolicy: Equatable, Sendable {
             if i.agentActive, !ending { suppressed = true }
             ending = false
         }
+        if let user = userSession, i.sessionStartedAt != user.startedAt {
+            // Theirs is gone: ended before its time, so no start under them;
+            // at its time, what they set has run out.
+            userSession = nil
+            if i.agentActive, i.now < user.endsAt { suppressed = true }
+        }
         if !i.agentActive { suppressed = false }
 
         if let started = i.sessionStartedAt {
-            guard started == ownSession else { return nil }
+            guard started == ownSession else {
+                if let endsAt = i.sessionEndsAt {
+                    userSession = UserSession(startedAt: started, endsAt: endsAt)
+                }
+                return nil
+            }
             if i.agentActive {
                 ending = false
                 if let endsAt = i.sessionEndsAt, endsAt.timeIntervalSince(i.now) < Self.extendBelow {
@@ -90,6 +112,13 @@ struct AutoSessionPolicy: Equatable, Sendable {
 
     mutating func startFailed(at now: Date) {
         retryAt = now.addingTimeInterval(Self.retryAfterFailedStart)
+    }
+
+    /// The user set a time on our session (or turned the feature off): it is
+    /// theirs from now on.
+    mutating func handOver() {
+        ownSession = nil
+        ending = false
     }
 
     static func powerAllowsStart(_ i: Inputs) -> Bool {
@@ -159,7 +188,16 @@ final class AgentAutoSession {
             Log.info("agent \(active ? "at work" : "idle")")
             onAgentActivityChange?(active)
         }
-        guard config.autoSession else { return }
+        guard config.autoSession else {
+            // Turned off: a session of ours runs out its time as the user's.
+            if policy.ownSession != nil { policy.handOver() }
+            if manager.isAutoSession { manager.releaseAutoSession() }
+            return
+        }
+        // The user set a time on ours (`SessionManager.takeOver`).
+        if let own = policy.ownSession, manager.session?.startedAt == own, !manager.isAutoSession {
+            policy.handOver()
+        }
         let power = readPower()
         let now = clock()
         let action = policy.step(.init(
@@ -175,7 +213,7 @@ final class AgentAutoSession {
         switch action {
         case let .start(duration)?:
             Log.info("auto session: starting for \(Int(duration / 60)) min, an agent is at work")
-            await manager.start(duration: duration)
+            await manager.start(duration: duration, auto: true)
             if let started = manager.session?.startedAt {
                 policy.started(at: started)
             } else {

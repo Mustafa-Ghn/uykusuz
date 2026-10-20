@@ -30,6 +30,9 @@ enum StatusMenu {
     }
 
     static let settingsTitle = "Ayarlar\u{2026}"
+    /// The line under the sleep line while the automatic session runs (fork
+    /// addition), in place of the deadline the status item does not show.
+    static let autoSessionLine = "Claude çalıştıkça açık; Claude durunca \(Int(AutoSessionPolicy.idleGrace / 60)) dk sonra biter"
     static let quitTitle = "Uykusuz'dan Çık"
 
     /// Disabled status lines, a separator, then Settings… and Quit. Empty
@@ -49,6 +52,7 @@ enum StatusMenu {
     static func items(
         sessionActive: Bool,
         sleepHeld: Bool,
+        autoSession: Bool = false,
         machine: String?,
         actions: String?,
         throttledBrowsers: [ThrottledBrowser],
@@ -63,6 +67,9 @@ enum StatusMenu {
         var out: [Item] = []
         if let held = SleepHeldLine.line(sessionActive: sessionActive, sleepHeld: sleepHeld) {
             out.append(Item(title: held.text, kind: held.isWarning ? .warning : .info))
+        }
+        if sessionActive, autoSession {
+            out.append(Item(title: autoSessionLine, kind: .info))
         }
         if let machine = present(machine) {
             out.append(Item(title: machine, kind: .info))

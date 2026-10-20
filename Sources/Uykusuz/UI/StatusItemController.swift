@@ -216,6 +216,7 @@ final class StatusItemController: NSObject {
     private func observeManager() {
         withObservationTracking {
             _ = manager.session
+            _ = manager.autoStartedAt
         } onChange: { [weak self] in
             Task { @MainActor in
                 guard let self else { return }
@@ -226,7 +227,8 @@ final class StatusItemController: NSObject {
     }
 
     private func managerChanged() {
-        reminder.sync(endsAt: manager.session?.endsAt)
+        // The automatic session has no time of the user's to remind of.
+        reminder.sync(endsAt: manager.isAutoSession ? nil : manager.session?.endsAt)
         if let next = Self.phase(forActive: manager.isActive, phase: model.phase) {
             switch next {
             case .idle, .running:
@@ -498,11 +500,16 @@ final class StatusItemController: NSObject {
         // in the layout until the slots leave, so the bar is written once,
         // then, and never under the folding pills.
         let now = clock()
+        // A time set on the automatic session makes it the user's, ending
+        // that long from now (`SessionManager.takeOver`).
+        let takesOver = mode == .extend && manager.isAutoSession
         if mode == .extend, let s = manager.session {
             // The session is live, so the countdown stays up. Project the
             // session so the countdown already has the final shape while the
             // manager catches up (pmset takes a moment).
-            let projected = SessionMath.extended(s, by: duration, now: now, maxDuration: manager.config.maxDuration)
+            let projected = takesOver
+                ? SessionMath.restarted(s, duration: duration, now: now, maxDuration: manager.config.maxDuration)
+                : SessionMath.extended(s, by: duration, now: now, maxDuration: manager.config.maxDuration)
             model.pendingProjection = nil
             model.pendingCountdown = SessionMath.formatCountdown(remaining: projected.remaining(at: now), shape: projected.countdownShape)
         } else {
@@ -530,7 +537,12 @@ final class StatusItemController: NSObject {
         Task { @MainActor in
             switch mode {
             case .start: await manager.start(duration: duration)
-            case .extend: await manager.extend(by: duration)
+            case .extend:
+                if takesOver {
+                    await manager.takeOver(duration: duration)
+                } else {
+                    await manager.extend(by: duration)
+                }
             }
             guard generation == startGeneration else { return }
             stopPendingTick()
@@ -665,6 +677,7 @@ final class StatusItemController: NSObject {
         StatusMenu.items(
             sessionActive: manager.isActive,
             sleepHeld: manager.state.sleepDisabledByUs,
+            autoSession: manager.isAutoSession,
             machine: StatusLines.machine(
                 lidClosed: status.lidClosed,
                 watts: status.instantWatts(),

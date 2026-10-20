@@ -49,7 +49,18 @@ struct StatusRootView: View {
     private var eyeOpen: Bool { isRunning || model.phase == .starting }
 
     private var countdownText: String {
-        Self.countdownText(pending: model.pendingCountdown, live: manager.countdownText, phase: model.phase)
+        Self.countdownText(pending: model.pendingCountdown, live: liveText, phase: model.phase)
+    }
+
+    /// The automatic session reads what keeps the Mac awake instead of a
+    /// countdown. Its countdown text is not read at all then, so it does
+    /// not redraw the item every second.
+    private var liveText: String {
+        Self.liveText(isAutoSession: manager.isAutoSession, countdown: { manager.countdownText })
+    }
+
+    static func liveText(isAutoSession: Bool, countdown: () -> String) -> String {
+        isAutoSession ? MenuBarModel.autoSessionText : countdown()
     }
 
     /// What the countdown reads. A projection, when there is one, wins over
@@ -195,7 +206,13 @@ struct StatusRootView: View {
             .transition(Motion.countdownTransition(reduceMotion: reduceMotion))
             .contentShape(Rectangle())
             .onTapGesture(perform: onTapCountdown)
-            .accessibilityLabel(model.phase == .starting ? "Oturum başlatılıyor" : countdownText)
+            .accessibilityLabel(accessibilityText)
+    }
+
+    private var accessibilityText: String {
+        if model.phase == .starting { return "Oturum başlatılıyor" }
+        if countdownText == MenuBarModel.autoSessionText { return MenuBarModel.autoSessionAccessibilityText }
+        return countdownText
     }
 
     /// The manager refused the start: say so next to the pills the value is
