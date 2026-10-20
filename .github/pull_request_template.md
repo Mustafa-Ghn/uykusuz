@@ -10,7 +10,7 @@
 
 <!--
 Pull request yalnızca docs/, Tests/, .github/, README.md, CONTRIBUTING.md,
-SECURITY.md, LICENSE ya da .gitignore dosyalarını değiştirmiyorsa gerekir.
+SECURITY.md ya da .gitignore dosyalarını değiştirmiyorsa gerekir.
 Son push'unuzdan sonra o commit için bir raporu yorum olarak ekleyin:
 docs/releasing.md içindeki "Real-Mac checks before a release" listesinden
 değişikliğin etkileyebileceği her madde, ham çıktısıyla birlikte.
