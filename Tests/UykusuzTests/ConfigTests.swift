@@ -9,17 +9,20 @@ final class ConfigTests: XCTestCase {
         var c = Config()
         c.lidCloseDefaultsApplied = false
         c.muteOnLidClose = false
+        // Earlier builds read a missing key as off; this fork's fresh
+        // default is on (`testDefaults`).
+        c.freezeAllApps = false
         return c
     }
 
     func testDefaults() {
         let c = Config()
         XCTAssertEqual(c.presets, [1800, 3600, 7200, 14400, 28800, 43200, 86400, 259200])
-        XCTAssertEqual(c.lowPowerFloor, 40)
-        XCTAssertEqual(c.endFloor, 10)
+        XCTAssertEqual(c.lowPowerFloor, 30)
+        XCTAssertEqual(c.endFloor, 20)
         XCTAssertEqual(c.nudgeThreshold, 90)
         XCTAssertEqual(c.maxDuration, 30 * 24 * 3600)
-        XCTAssertEqual(c.freezeList, ["com.tinyspeck.slackmacgap", "net.whatsapp.WhatsApp", "com.hnc.Discord"])
+        XCTAssertEqual(c.freezeList, ["net.whatsapp.WhatsApp", "com.microsoft.Word", "com.microsoft.Excel", "org.paraview.ParaView"])
         XCTAssertTrue(c.agentList.contains("com.apple.Terminal"))
         XCTAssertTrue(c.agentList.contains("com.t3tools.t3code"))
         XCTAssertTrue(c.agentList.contains("com.docker.docker"))
@@ -31,7 +34,7 @@ final class ConfigTests: XCTestCase {
         XCTAssertTrue(c.lidCloseDefaultsApplied, "a config this build creates never needs the lid-close update")
         XCTAssertNil(c.lidCloseDefaultsNotice)
         XCTAssertTrue(c.darkenDisplayOnLidClose)
-        XCTAssertFalse(c.freezeAllApps, "freeze-all is opt in")
+        XCTAssertTrue(c.freezeAllApps, "this fork freezes every app an agent does not use on a fresh install")
         XCTAssertTrue(c.lowPowerOnLidClose)
         XCTAssertTrue(c.thermalRules)
         XCTAssertFalse(c.disableAppNapForAgents, "writing other apps' preferences is opt-in")
@@ -133,8 +136,8 @@ final class ConfigTests: XCTestCase {
 
         var d = Config()
         d.endFloor = -3
-        XCTAssertEqual(d.normalizeFloors(), "battery floors corrected: lowPowerFloor 40 -> 40, endFloor -3 -> 0")
-        XCTAssertEqual([d.lowPowerFloor, d.endFloor], [40, 0])
+        XCTAssertEqual(d.normalizeFloors(), "battery floors corrected: lowPowerFloor 30 -> 30, endFloor -3 -> 0")
+        XCTAssertEqual([d.lowPowerFloor, d.endFloor], [30, 0])
 
         var e = Config()
         e.lowPowerFloor = 40
@@ -194,14 +197,18 @@ final class ConfigTests: XCTestCase {
         XCTAssertEqual(c, earlierBuild())
         XCTAssertEqual(c.applyLidCloseDefaults(), LidCloseDefaultsChange(turnedOffFreezeAll: false, turnedOnMute: true))
         c.lidCloseDefaultsNotice = nil
-        XCTAssertEqual(c, Config())
+        var updated = Config()
+        updated.freezeAllApps = false // a missing key never opts in
+        XCTAssertEqual(c, updated)
     }
 
     /// A config.json this build saved carries the mark; a missing mute key
     /// there (a hand edit) gets this build's default, on.
     func testThisBuildsConfigWithoutMuteKeyIsMutedByDefault() throws {
         let c = try Store.makeDecoder().decode(Config.self, from: Data(#"{"lidCloseDefaultsApplied": true}"#.utf8))
-        XCTAssertEqual(c, Config())
+        var expected = Config()
+        expected.freezeAllApps = false // a missing key never opts in
+        XCTAssertEqual(c, expected)
         XCTAssertTrue(c.muteOnLidClose)
         let data = try Store.makeEncoder().encode(Config())
         let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
@@ -514,11 +521,11 @@ final class ConfigLoadTests: XCTestCase {
     func testFreshInstallGetsTheNewDefaultsWithoutANotice() async throws {
         XCTAssertFalse(FileManager.default.fileExists(atPath: h.home.paths.configFile.path))
 
-        let m = h.makeManager()
+        let m = h.makeManager(upstreamScenarioDefaults: false)
         await m.reconcile()
 
         XCTAssertTrue(m.config.muteOnLidClose)
-        XCTAssertFalse(m.config.freezeAllApps)
+        XCTAssertTrue(m.config.freezeAllApps, "this fork's fresh install freezes every app an agent does not use")
         XCTAssertNil(m.config.lidCloseDefaultsNotice)
         XCTAssertEqual(try h.store.loadConfig()?.lidCloseDefaultsApplied, true, "the first config.json carries the mark")
         await h.makeManager().reconcile()

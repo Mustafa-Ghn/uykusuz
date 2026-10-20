@@ -44,6 +44,31 @@
   <img src="docs/assets/session-flow.svg" alt="Menü çubuğu denetimlerinin çizimi: Gün, Saat ve Dakika girin, geri sayımı izleyin ve erken bitirmek için bitirme denetimini basılı tutun. Süre eklemek için göze ya da geri sayıma tıklayın. Kapağı kapatmak isteğe bağlıdır; tamamlanmamış bir kurtarma ilgilenmenizi gerektirir." width="880">
 </p>
 
+## Bu fork'a özel
+
+Upstream Insomnia'dan farklı olarak Uykusuz'da:
+
+- **Claude çalışırken otomatik oturum.** Claude masaüstü uygulaması bir
+  Claude Code oturumu yürüttüğü sürece (uykuyu engelleyen güç kilidini
+  tuttuğu sürece) oturum kendiliğinden 2 saatlik başlar, kalan süre 1 saatin
+  altına indikçe 2 saat uzar ve Claude 5 dakika boşta kalınca biter. Kapak
+  kapansa da Mac uyanık kalır: **Mac'i kapalı bir çantaya koymayın.** Mac
+  ısınıyorsa ya da pil bitiş eşiğine yakınsa otomatik oturum başlamaz.
+  Otomatik oturumu siz bitirirseniz Claude kapanıp yeniden çalışana kadar
+  yenisi başlamaz. Elle başlattığınız oturumlara dokunulmaz.
+- **Kod modu.** Bir oturum sürerken kapak açıksa ve Claude çalışıyorsa
+  Düşük Güç Modu açılır (pildeyken etkili); 60 sn girdi olmazsa ekran %15
+  parlaklığa iner, 30 sn olmazsa klavye ışığı kapanır. Bir tuşa ya da
+  fareye dokununca ikisi de eski seviyesine döner. Süreler Ayarlar >
+  Claude ve kod modu bölümünden değişir.
+- **Kapak kapalıyken sesli uyarı.** Kapak kapalıyken bildirimler
+  görünmediği için pil eşiği, ısınma ve oturum sonu Türkçe sesle (Yelda)
+  söylenir: Uykusuz sesi bir an açar, söyler ve eski ses ayarını geri koyar.
+- **Varsayılanlar.** Pil eşikleri %30 (Düşük Güç Modu) ve %20 (oturum
+  sonu). "Diğer tüm uygulamaları dondur" açık; dondurma listesinde WhatsApp,
+  Word, Excel ve ParaView var. ProtonVPN ve AnyDesk hiç dondurulmaz.
+- **Ağ isteği yok.** Upstream'in "güncellemeleri denetle" düğmesi kaldırıldı.
+
 ## Gereksinimler
 
 - macOS 26 ya da üstü.
@@ -72,9 +97,8 @@ parolanızı bir kez sorar; bu istem, derleme bittikten sonra ve önceki
 kurulumdaki hiçbir şeye dokunulmadan önce gelir. Her adımın neyi denetlediği
 [docs/install.md](docs/install.md) sayfasında anlatılır.
 
-Ayarlar > Uygulama kurulu sürümü gösterir. Oradaki "Orijinal projede
-güncellemeleri denetle" düğmesi yalnızca özgün projenin (krishhgg/Insomnia)
-İngilizce sürümlerini sorar ve hiçbir şey kurmaz. Bu çatalı güncellemek için
+Ayarlar > Uygulama kurulu sürümü gösterir. Bu çatalda güncelleme denetimi
+kaldırıldı: Uykusuz hiçbir ağ isteği yapmaz. Güncellemek için
 [Güncelleme](#güncelleme) bölümündeki adımları izleyin.
 
 <details>
@@ -153,8 +177,8 @@ git merge upstream/main
 
 Kapağı kapatmanız gerekmez; kapağı açmak da oturumu bitirmez.
 
-Pil gücündeyken Uykusuz, pil düzeyi %40 eşiğinin altına inince Düşük Güç
-Modu'nu açar ve %10 eşiğinin altında oturumu bitirir. Bunlar varsayılan
+Pil gücündeyken Uykusuz, pil düzeyi %30 eşiğinin altına inince Düşük Güç
+Modu'nu açar ve %20 eşiğinin altında oturumu bitirir. Bunlar varsayılan
 değerlerdir. İkisini de Ayarlar'da değiştirebilirsiniz; bitirme alt sınırını 0
 yapmak pil nedeniyle bitirmeyi kapatır. Isı kuralları, Mac ciddi ölçüde
 ısındığında Düşük Güç Modu'nu açar ve kritik ısıda oturumu bitirir. Bu kurallar
@@ -168,7 +192,7 @@ durabileceğiniz kısa bir oturum çalıştırın ve sonrasında
 ## Kapak kapanınca neler olur
 
 <p align="center">
-  <img src="docs/assets/lid-actions.svg" alt="Ayarlar varsayılanlarının çizimi: dondurma listesinde Slack, WhatsApp ve Discord var, Docker'ın boşta kuralı kapalı, sesi kapatma açık. Oturum sırasında kapağın kapanması ayarlanan eylemleri uygular; kapağı yeniden açmak, Uykusuz'un yaptığı doğrulanmış dondurmaları çözmeye ve kaydedilmiş sesi geri yüklemeye çalışır. Oturum sürer. Etkin bir oturum yokken kapak değişiklikleri hiçbir şey yapmaz." width="880">
+  <img src="docs/assets/lid-actions.svg" alt="Ayarlar varsayılanlarının çizimi: dondurma listesinde WhatsApp, Word ve Excel var, Docker'ın boşta kuralı kapalı, sesi kapatma açık. Oturum sırasında kapağın kapanması ayarlanan eylemleri uygular; kapağı yeniden açmak, Uykusuz'un yaptığı doğrulanmış dondurmaları çözmeye ve kaydedilmiş sesi geri yüklemeye çalışır. Oturum sürer. Etkin bir oturum yokken kapak değişiklikleri hiçbir şey yapmaz." width="880">
 </p>
 
 Oturum sırasında kapağı kapatmak aşağıdakilerin her birini yapar; kapağı açmak
@@ -178,7 +202,8 @@ bunları geri almaya çalışır. Kapak kapalıyken zamanlayıcı geri saymayı 
   Uyku kapalıyken macOS bunu artık kendiliğinden yapmaz.
 - **Dondurma listesindeki uygulamalar dondurulur.** Dondurma, bir uygulamanın
   süreçlerine `SIGSTOP` gönderir; süreçler kapak açılınca `SIGCONT`
-  gönderilene kadar duraklar. Liste Slack, WhatsApp ve Discord ile başlar.
+  gönderilene kadar duraklar. Liste WhatsApp, Word, Excel ve ParaView ile başlar; bu fork'ta "diğer tüm
+  uygulamaları dondur" de varsayılan olarak açıktır.
   "Diğer tüm uygulamaları dondur" varsayılan olarak kapalıdır. Açıkken bile
   toplantı, kayıt ve dikte uygulamalarını atlar: Zoom, Teams, Webex, FaceTime,
   Wispr Flow, Granola, Otter, OBS ve Loom.

@@ -837,12 +837,14 @@ struct Harness {
         display: (any DisplayDimming)? = nil,
         keyboard: (any KeyboardBacklighting)? = nil,
         sleepGuard: (any SleepGuarding)? = nil,
-        bootSession: String = SignalProcessControl.bootSession
+        bootSession: String = SignalProcessControl.bootSession,
+        upstreamScenarioDefaults: Bool = true
     ) -> SessionManager {
         let c = clock
         let lid = clamshell
         let table = processes
-        return SessionManager(
+        let fresh = !FileManager.default.fileExists(atPath: home.paths.configFile.path)
+        let m = SessionManager(
             paths: home.paths,
             sleepGuard: sleepGuard ?? guardFake,
             processControl: procs,
@@ -863,6 +865,27 @@ struct Harness {
             keptRecheckSlowDelay: keptRecheckSlowDelay,
             bootSession: bootSession
         )
+        if fresh, upstreamScenarioDefaults {
+            Harness.applyUpstreamScenarioDefaults(&m.config)
+            try? store.saveConfig(m.config)
+        }
+        return m
+    }
+
+    /// The upstream defaults these scenarios were written for: battery
+    /// floors 40 % / 10 %, freeze-all off, Slack, WhatsApp and Discord on
+    /// the freeze list, and none of this fork's additions. The fork ships
+    /// other defaults (`ConfigTests.testDefaults`, `ForkConfigTests`), so a
+    /// manager made on a fresh home gets these unless a test asks for the
+    /// fork's own with `upstreamScenarioDefaults: false`.
+    static func applyUpstreamScenarioDefaults(_ c: inout Config) {
+        c.lowPowerFloor = 40
+        c.endFloor = 10
+        c.freezeAllApps = false
+        c.freezeList = ["com.tinyspeck.slackmacgap", "net.whatsapp.WhatsApp", "com.hnc.Discord"]
+        c.voiceAlerts = false
+        c.codeMode = false
+        c.autoSession = false
     }
 }
 

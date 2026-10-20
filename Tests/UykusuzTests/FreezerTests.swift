@@ -307,8 +307,10 @@ final class FreezerTests: XCTestCase {
     /// A fresh config does not opt in to the automatic scope: with Dock
     /// apps running, the lid-close scope is the freeze list alone.
     func testLidCloseScopeIsTheFreezeListOnlyByDefault() {
-        let c = Config()
-        XCTAssertFalse(c.freezeAllApps)
+        // Upstream's default. This fork turns freeze-all on
+        // (`ConfigTests.testDefaults`).
+        var c = Config()
+        c.freezeAllApps = false
         XCTAssertEqual(scope(c, apps + [spotify, figma]), Config.defaultFreezeList)
         XCTAssertEqual(FreezePlanner.automaticCandidates(config: c, apps: apps + [spotify, figma]), [])
     }

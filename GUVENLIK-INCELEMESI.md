@@ -9,7 +9,16 @@
 > - `~/Library/…/Insomnia` → `~/Library/…/Uykusuz`
 > - `insomnia-hotspot` → `uykusuz-hotspot`
 >
-> Davranış aynı kaldı.
+> Davranış aynı kaldı. Ayrıca güncelleme denetimi (uygulamanın tek ağ
+> isteği) fork'ta kaldırıldı; Uykusuz artık hiç ağ isteği yapmaz.
+> Fork'ta sonradan eklenen özellikler de yereldir ve ağ isteği yapmaz:
+> - **Otomatik oturum:** Güç kilitlerini IOKit üzerinden yalnızca okur
+>   (`IOPMCopyAssertionsByProcess`).
+> - **Sesli uyarı:** `/usr/bin/say` ile konuşur; metin tek bir argüman
+>   olarak, `--` ayıracından sonra verilir.
+> - **Kod modu:** Parlaklığı mevcut ekran ve klavye arayüzleriyle değiştirir.
+>
+> Yeni bir yetki, `sudo` komutu ya da kalıcı bileşen eklenmedi.
 
 Bu fork'a alınmadan önce [krishhgg/Insomnia](https://github.com/krishhgg/Insomnia)
 kaynak kodu ve yayınlanan derlemesi incelendi. Amaç, uygulamanın saldırgan bir

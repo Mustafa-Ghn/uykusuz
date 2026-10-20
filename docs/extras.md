@@ -124,14 +124,9 @@ ettiği dosyayı değil bağlantının kendisini taşırdı; bunu da bir kez gü
 yazar. Bağlantıyı siz kurduğunuz için işaret ettiği dosyayı kırpmak size
 kalmıştır.
 
-Uykusuz yalnızca bir tür ağ isteği yapar ve bunu yalnızca Ayarlar > Uygulama
-bölümünde "Orijinal projede güncellemeleri denetle" düğmesine tıkladığınızda
-yapar: api.github.com adresine, özgün projenin (krishhgg/Insomnia) Latest
-olarak işaretlediği sürüm ve sürüm listesinin ilk sayfası için kimlik
-doğrulamasız iki GET isteği. İsteklerde kullanıcı aracısı (user agent) olarak
-kurulu sürüm gönderilir, Mac hakkında başka hiçbir şey gönderilmez. Uykusuz
-hiçbir zaman kendiliğinden denetlemez, sürümler sayfasını yalnızca istek
-üzerine açar ve hiçbir zaman bir derleme indirmez ya da kurmaz.
+Uykusuz hiçbir ağ isteği yapmaz. Özgün projedeki "güncellemeleri denetle"
+düğmesi (api.github.com'a iki GET isteği) bu çatalda kaldırıldı. Hotspot'a
+bağlanma ve Wi-Fi durumunu izleme yerel işlemlerdir; dışarıya veri gitmez.
 
 `UYKUSUZ_HOME`, test amacıyla uygulama destek dosyalarının, günlüklerin ve
 LaunchAgents klasörünün yerini değiştirir. Bir **kurulum korumalı alanı

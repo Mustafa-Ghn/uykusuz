@@ -23,7 +23,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let secrets: any HotspotSecretStore
     let locationPermission: LocationPermission
     let loginItem = LoginItem()
-    let releases = ReleaseChecker()
+    /// Starts, extends and ends sessions while an agent is at work (fork
+    /// addition).
+    let autoSession: AgentAutoSession
     private var statusItem: StatusItemController?
     private var settingsWindow: SettingsWindow?
     private var terminating = false
@@ -31,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     override init() {
         let manager = SessionManager.live()
         self.manager = manager
+        autoSession = AgentAutoSession(manager: manager)
         secrets = KeychainHotspotSecretStore(keychain: KeychainStore()) {
             manager.config.hotspotSSID
         }
@@ -71,14 +74,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 Log.error("could not save config after the launch at login check: \(error.localizedDescription)")
             }
         }
-        let settings = SettingsWindow { [manager, secrets, locationPermission, loginItem, releases] in
+        let settings = SettingsWindow { [manager, secrets, locationPermission, loginItem] in
             AnyView(
                 SettingsView(
                     manager: manager,
                     secrets: secrets,
                     locationPermission: locationPermission,
-                    loginItem: loginItem,
-                    releases: releases
+                    loginItem: loginItem
                 )
             )
         }
@@ -86,7 +88,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = StatusItemController(manager: manager, status: status) { [weak settings] in
             settings?.show()
         }
-        Task { await manager.reconcile() }
+        autoSession.onAgentActivityChange = { [weak services = manager.services] active in
+            services?.setAgentActive(active)
+        }
+        // After the launch reconcile, so a session left on disk is settled
+        // before an automatic one can start.
+        Task { [manager, autoSession] in
+            await manager.reconcile()
+            autoSession.start()
+        }
     }
 
     /// Quitting always ends the session (spec 1). Terminate is deferred until
@@ -103,6 +113,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard !terminating else { return .terminateCancel }
         terminating = true
+        autoSession.stop()
         Task {
             let outcome = await manager.end(reason: .quit)
             if outcome.letsQuitGo {

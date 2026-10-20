@@ -9,8 +9,6 @@ struct SettingsView: View {
     let locationPermission: LocationPermission
     /// Launch at login as macOS reports it, not as config.json remembers it.
     let loginItem: LoginItem
-    /// The "Check for updates" button's one request and its report.
-    let releases: ReleaseChecker
 
     @State private var newPreset = ""
     @State private var presetError: String?
@@ -30,6 +28,7 @@ struct SettingsView: View {
             lidSection
             agentSection
             powerSection
+            agentModeSection
             networkSection
             appSection
         }
@@ -202,10 +201,14 @@ struct SettingsView: View {
             Toggle("Kapak kapalıyken Düşük Güç Modu", isOn: bind(\.lowPowerOnLidClose))
                 // A floor input: apply it now if the lid is already closed.
                 .onChange(of: manager.config.lowPowerOnLidClose) { manager.services?.reevaluateFloors() }
+            Toggle("Kapak kapalıyken sesli uyar (pil, ısı, oturum sonu)", isOn: bind(\.voiceAlerts))
+            Text("Kapak kapalıyken bildirimler görünmez. Uykusuz sesi bir an açar, uyarıyı Türkçe söyler ve eski ses ayarını geri koyar.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
         } header: {
             Text("Kapak kapanınca yapılacaklar")
         } footer: {
-            Text("Yukarıdaki listede bulunan uygulamalar kapak kapalıyken SIGSTOP ile dondurulur ve kapak açılınca çözülür. \"Diğer tüm uygulamaları dondur\" açıkken (varsayılan olarak kapalı) Dock'taki diğer tüm uygulamalar da dondurulur; ajan uygulamaları, Apple uygulamaları, Docker Desktop ve yerleşik olarak korunan uygulamalar (düzenleyiciler, terminaller, tarayıcılar, yapay zekâ uygulamaları, parola yöneticileri, yerel veritabanları, Tailscale, yerel model sunucuları ve Zoom, Teams, Webex, Wispr Flow, Granola, Otter, OBS ve Loom gibi toplantı, kayıt ve dikte uygulamaları) bunun dışındadır. Ajan uygulamaları hiçbir zaman dondurulmaz. Ekran parlaklığı ve klavye arka ışığı kaydedilir, sıfıra indirilir ve kapak açılınca geri yüklenir. Kapağı açtığınızda Uykusuz çalışmıyorsa parlaklık artırma tuşuna basın.")
+            Text("Yukarıdaki listede bulunan uygulamalar kapak kapalıyken SIGSTOP ile dondurulur ve kapak açılınca çözülür. \"Diğer tüm uygulamaları dondur\" açıkken (bu fork'ta varsayılan olarak açık) Dock'taki diğer tüm uygulamalar da dondurulur; ajan uygulamaları, Apple uygulamaları, Docker Desktop ve yerleşik olarak korunan uygulamalar (düzenleyiciler, terminaller, tarayıcılar, yapay zekâ uygulamaları, parola yöneticileri, yerel veritabanları, Tailscale, ProtonVPN, AnyDesk, yerel model sunucuları ve Zoom, Teams, Webex, Wispr Flow, Granola, Otter, OBS ve Loom gibi toplantı, kayıt ve dikte uygulamaları) bunun dışındadır. Ajan uygulamaları hiçbir zaman dondurulmaz. Ekran parlaklığı ve klavye arka ışığı kaydedilir, sıfıra indirilir ve kapak açılınca geri yüklenir. Kapağı açtığınızda Uykusuz çalışmıyorsa parlaklık artırma tuşuna basın.")
         }
     }
 
@@ -252,6 +255,27 @@ struct SettingsView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Toggle("Isı kuralları (ısınınca Düşük Güç Modu, kritik düzeyde oturumu bitir)", isOn: bind(\.thermalRules))
+        }
+    }
+
+    /// Fork additions: the automatic session for Claude and code mode.
+    private var agentModeSection: some View {
+        Section("Claude ve kod modu") {
+            Toggle("Claude çalışırken otomatik oturum", isOn: bind(\.autoSession))
+            Text("Claude bir Claude Code oturumu yürüttüğü sürece oturum kendiliğinden başlar ve uzar; Claude 5 dakika boşta kalınca biter. Kapak kapansa da Mac uyanık kalır, bu yüzden Mac'i kapalı bir çantaya koymayın. Otomatik oturumu siz bitirirseniz Claude kapanana kadar yenisi başlamaz.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Toggle("Kod modu (kapak açıkken, Claude çalışırken)", isOn: bind(\.codeMode))
+                .onChange(of: manager.config.codeMode) { manager.services?.reevaluateFloors() }
+            Stepper(value: bind(\.codeModeDimAfter), in: 30...600, step: 30) {
+                LabeledContent("Ekranı kısma süresi", value: "\(Int(manager.config.codeModeDimAfter)) sn")
+            }
+            Stepper(value: bind(\.codeModeKeyboardOffAfter), in: 10...600, step: 10) {
+                LabeledContent("Klavye ışığını kapatma süresi", value: "\(Int(manager.config.codeModeKeyboardOffAfter)) sn")
+            }
+            Text("Kod modunda Düşük Güç Modu açılır (pildeyken etkili). Bu sürelerde girdi olmazsa ekran %\(Int((manager.config.codeModeDimLevel * 100).rounded())) parlaklığa iner ve klavye ışığı kapanır; bir tuşa ya da fareye dokununca ikisi de geri gelir.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -499,42 +523,11 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
             }
-            releaseCheck
             if LidSimulationBuild.isCompiledIn {
                 Text(LidSimulationBuild.marker)
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
-        }
-    }
-
-    /// The update check: one request to GitHub's releases list per click,
-    /// and the report under the buttons. It opens the releases page and
-    /// installs nothing; the installer run again is the upgrade. Both ask
-    /// the original (upstream) project, not this fork, and say so.
-    @ViewBuilder
-    private var releaseCheck: some View {
-        HStack {
-            Button(releases.state == .checking ? "Denetleniyor" : "Orijinal projede güncellemeleri denetle") { releases.check() }
-                .disabled(releases.state == .checking)
-            Button("Sürümler sayfasını aç") { NSWorkspace.shared.open(GitHubReleaseFetcher.releasesPage) }
-        }
-        switch releases.state {
-        case .idle:
-            Text("Tıkladığınızda GitHub'daki orijinal projeye (krishhgg/Insomnia) sorar ve hiçbir şey kurmaz. Yükseltmek için yükleyiciyi yeniden çalıştırın.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        case .checking:
-            EmptyView()
-        case let .checked(report):
-            Text(report.summary)
-                .font(.caption)
-                .foregroundStyle(report.standing == .newerStableAvailable ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
-                .textSelection(.enabled)
-        case let .failed(reason):
-            Text("Denetlenemedi: \(reason)")
-                .font(.caption)
-                .foregroundStyle(.red)
         }
     }
 

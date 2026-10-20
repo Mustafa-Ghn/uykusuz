@@ -243,13 +243,9 @@ ajanını yükleyebilir, uygulamayı kapatıp yerine başkasını başlatabilir 
 
 ## Yükseltmeler
 
-Ayarlar > Uygulama kurulu sürümü gösterir. Oradaki "Orijinal projede
-güncellemeleri denetle" düğmesi, siz tıkladığınızda GitHub'a bir kez özgün
-projenin (krishhgg/Insomnia) Latest olarak işaretlenen sürümünü ve en yeni
-gecelik sürümünü sorar; iki etiketi ve daha yeni bir kararlı sürüm olup
-olmadığını söyler. Hiçbir şey kurmaz; yükseltme, yukarıdaki adımların yeniden
-çalıştırılmasıdır. Bu çatalda bu, çalışma kopyasında `git pull` ve ardından
-`./scripts/install.sh` demektir.
+Ayarlar > Uygulama kurulu sürümü gösterir. Bu çatalda güncelleme denetimi
+yoktur; yükseltme, yukarıdaki adımların yeniden çalıştırılmasıdır: çalışma
+kopyasında `git pull` ve ardından `./scripts/install.sh`.
 
 Bir yükseltme çalışan uygulamadan kapanmasını ister ve uygulama reddederse
 durur. Yeni paket, uygulamanın yanındaki bir hazırlık klasöründe oluşturulur ve

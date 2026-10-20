@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1000" height="460" viewBox="0 0 1000 460" role="img" aria-labelledby="la-title la-desc">
   <title id="la-title">Uykusuz lid actions during a session</title>
-  <desc id="la-desc">A simplified three-column diagram. Left, an illustrated Settings excerpt titled Lid-close actions: the freeze list contains Slack, WhatsApp and Discord; Pause idle Docker is off; Mute audio is on. Arrows lead to the middle column, Lid closes: freeze selected apps, pause idle Docker, mute if enabled. Docker is paused only if the rule is on and two checks, the second right before the pause, find no containers running; a container that is still starting can slip past the second check. Muting saves your volume first. An arrow leads to the right column, Lid opens: try to restore, session continues. Uykusuz resumes only the freezes it can verify it made, resumes Docker only if this rule paused it, and restores the saved volume. The timer never stopped; only its on-screen redraw paused. This repeats every time the lid closes and opens. Without an active session the lid does nothing. The Settings panel is a simplified illustration, not a screenshot.</desc>
+  <desc id="la-desc">A simplified three-column diagram. Left, an illustrated Settings excerpt titled Lid-close actions: the freeze list contains WhatsApp, Word and Excel; Pause idle Docker is off; Mute audio is on. Arrows lead to the middle column, Lid closes: freeze selected apps, pause idle Docker, mute if enabled. Docker is paused only if the rule is on and two checks, the second right before the pause, find no containers running; a container that is still starting can slip past the second check. Muting saves your volume first. An arrow leads to the right column, Lid opens: try to restore, session continues. Uykusuz resumes only the freezes it can verify it made, resumes Docker only if this rule paused it, and restores the saved volume. The timer never stopped; only its on-screen redraw paused. This repeats every time the lid closes and opens. Without an active session the lid does nothing. The Settings panel is a simplified illustration, not a screenshot.</desc>
   <style>
     svg { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif; }
     .bg { fill: #F3F2EF; }
@@ -65,13 +65,13 @@
     <rect class="panel" x="32" y="80" width="300" height="300" rx="16"/>
     <text class="t" x="52" y="114" font-size="20" font-weight="700">Lid-close actions</text>
 
-    <text class="t" x="52" y="158" font-size="19">Slack</text>
+    <text class="t" x="52" y="158" font-size="19">WhatsApp</text>
     <circle class="remove" cx="302" cy="152" r="10"/>
     <path class="minus" d="M296 152 H308"/>
-    <text class="t" x="52" y="192" font-size="19">WhatsApp</text>
+    <text class="t" x="52" y="192" font-size="19">Word</text>
     <circle class="remove" cx="302" cy="186" r="10"/>
     <path class="minus" d="M296 186 H308"/>
-    <text class="t" x="52" y="226" font-size="19">Discord</text>
+    <text class="t" x="52" y="226" font-size="19">Excel</text>
     <circle class="remove" cx="302" cy="220" r="10"/>
     <path class="minus" d="M296 220 H308"/>
 

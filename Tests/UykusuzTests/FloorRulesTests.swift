@@ -3,11 +3,11 @@ import XCTest
 
 final class FloorRulesTests: XCTestCase {
     /// nil is a machine with no battery (desktop).
-    func eval(_ percent: Int?, charging: Bool = false, thermal: ProcessInfo.ThermalState = .nominal, lid: Bool = false, lp: Bool = false, config: Config = Config()) -> [FloorRules.Action] {
+    func eval(_ percent: Int?, charging: Bool = false, thermal: ProcessInfo.ThermalState = .nominal, lid: Bool = false, lp: Bool = false, config: Config = .upstreamFloors) -> [FloorRules.Action] {
         eval(battery: percent.map { .percent($0) } ?? .none, charging: charging, thermal: thermal, lid: lid, lp: lp, config: config)
     }
 
-    func eval(battery: BatteryStatus, charging: Bool = false, thermal: ProcessInfo.ThermalState = .nominal, lid: Bool = false, lp: Bool = false, config: Config = Config()) -> [FloorRules.Action] {
+    func eval(battery: BatteryStatus, charging: Bool = false, thermal: ProcessInfo.ThermalState = .nominal, lid: Bool = false, lp: Bool = false, config: Config = .upstreamFloors) -> [FloorRules.Action] {
         FloorRules.evaluate(battery: battery, isCharging: charging, thermal: thermal, lidClosed: lid, lowPowerSetByUs: lp, config: config)
     }
 
@@ -85,7 +85,7 @@ final class FloorRulesTests: XCTestCase {
 
     // No end floor (0) means nothing to apply, read or not.
     func testUnreadableBatteryWithEndFloorDisabledDoesNotEnd() {
-        var c = Config()
+        var c = Config.upstreamFloors
         c.endFloor = 0
         XCTAssertEqual(eval(battery: .unreadable(misses: 2), config: c), [])
     }
@@ -102,7 +102,7 @@ final class FloorRulesTests: XCTestCase {
     }
 
     func testThermalRulesOffIgnoresThermal() {
-        var c = Config()
+        var c = Config.upstreamFloors
         c.thermalRules = false
         XCTAssertEqual(eval(80, thermal: .serious, config: c), [])
         XCTAssertEqual(eval(80, thermal: .critical, config: c), [])
@@ -123,7 +123,7 @@ final class FloorRulesTests: XCTestCase {
     }
 
     func testCustomFloors() {
-        var c = Config()
+        var c = Config.upstreamFloors
         c.lowPowerFloor = 60
         c.endFloor = 25
         XCTAssertEqual(eval(59, config: c), [.enableLowPower(.battery)])
@@ -138,7 +138,7 @@ final class FloorRulesTests: XCTestCase {
     }
 
     func testLidClosedWithOptionOffDoesNothing() {
-        var c = Config()
+        var c = Config.upstreamFloors
         c.lowPowerOnLidClose = false
         XCTAssertEqual(eval(80, lid: true, config: c), [])
         XCTAssertEqual(eval(80, lid: true, lp: true, config: c), [.disableLowPower])
@@ -172,7 +172,7 @@ final class FloorRulesTests: XCTestCase {
         XCTAssertEqual(eval(80, thermal: .serious, lid: true), [.enableLowPower(.thermal)])
     }
 
-    func cause(_ percent: Int?, charging: Bool = false, thermal: ProcessInfo.ThermalState = .nominal, lid: Bool = false, config: Config = Config()) -> FloorRules.LowPowerCause? {
+    func cause(_ percent: Int?, charging: Bool = false, thermal: ProcessInfo.ThermalState = .nominal, lid: Bool = false, config: Config = .upstreamFloors) -> FloorRules.LowPowerCause? {
         FloorRules.lowPowerCause(percent: percent, isCharging: charging, thermal: thermal, lidClosed: lid, config: config)
     }
 
@@ -190,7 +190,7 @@ final class FloorRulesTests: XCTestCase {
     }
 
     func testLowPowerCauseHonorsTheOptions() {
-        var c = Config()
+        var c = Config.upstreamFloors
         c.lowPowerOnLidClose = false
         c.thermalRules = false
         XCTAssertNil(cause(80, thermal: .serious, lid: true, config: c))
@@ -205,8 +205,16 @@ final class FloorRuleDriverTests: XCTestCase {
     override func setUp() async throws { h = Harness() }
     override func tearDown() async throws { h.home.destroy() }
 
-    func testLowPowerIsJournaledBeforePmsetAndNotified() async throws {
+    /// A manager on the floors these scenarios were written for.
+    private func makeManager() -> SessionManager {
         let m = h.makeManager()
+        m.config.lowPowerFloor = Config.upstreamFloors.lowPowerFloor
+        m.config.endFloor = Config.upstreamFloors.endFloor
+        return m
+    }
+
+    func testLowPowerIsJournaledBeforePmsetAndNotified() async throws {
+        let m = makeManager()
         await m.start(duration: 3600)
         let driver = FloorRuleDriver(manager: m, notifier: h.notifier)
         await driver.run(battery: .percent(35), isCharging: false, thermal: .nominal, lidClosed: false)
@@ -223,7 +231,7 @@ final class FloorRuleDriverTests: XCTestCase {
     }
 
     func testLowPowerFailureRollsBackJournal() async throws {
-        let m = h.makeManager()
+        let m = makeManager()
         await m.start(duration: 3600)
         h.guardFake.throwOn = ["lowpowermode 1"]
         let driver = FloorRuleDriver(manager: m, notifier: h.notifier)
@@ -233,7 +241,7 @@ final class FloorRuleDriverTests: XCTestCase {
     }
 
     func testEndFloorEndsSessionWithReason() async throws {
-        let m = h.makeManager()
+        let m = makeManager()
         await m.start(duration: 3600)
         let driver = FloorRuleDriver(manager: m, notifier: h.notifier)
         await driver.run(battery: .percent(8), isCharging: false, thermal: .nominal, lidClosed: false)
@@ -245,7 +253,7 @@ final class FloorRuleDriverTests: XCTestCase {
     }
 
     func testUnreadableBatteryEndsSessionAndSaysWhy() async throws {
-        let m = h.makeManager()
+        let m = makeManager()
         await m.start(duration: 3600)
         let driver = FloorRuleDriver(manager: m, notifier: h.notifier)
         await driver.run(battery: .unreadable(misses: 1), isCharging: false, thermal: .nominal, lidClosed: false)
@@ -263,7 +271,7 @@ final class FloorRuleDriverTests: XCTestCase {
     }
 
     func testThermalCriticalEndsSession() async throws {
-        let m = h.makeManager()
+        let m = makeManager()
         await m.start(duration: 3600)
         await m.setLowPower(true)
         let driver = FloorRuleDriver(manager: m, notifier: h.notifier)
@@ -275,7 +283,7 @@ final class FloorRuleDriverTests: XCTestCase {
     }
 
     func testNoSessionDoesNothing() async throws {
-        let m = h.makeManager()
+        let m = makeManager()
         let driver = FloorRuleDriver(manager: m, notifier: h.notifier)
         await driver.run(battery: .percent(5), isCharging: false, thermal: .critical, lidClosed: false)
         XCTAssertEqual(h.guardFake.calls, [])
@@ -285,7 +293,7 @@ final class FloorRuleDriverTests: XCTestCase {
     func testSessionEndWhileLowPowerEnableIsSuspendedLeavesCleanState() async throws {
         let gate = AsyncGate()
         h.guardFake.lowPowerGate = gate
-        let m = h.makeManager()
+        let m = makeManager()
         await m.start(duration: 3600)
         let driver = FloorRuleDriver(manager: m, notifier: h.notifier)
         let floor = Task { await driver.run(battery: .percent(35), isCharging: false, thermal: .nominal, lidClosed: false) }
@@ -308,7 +316,7 @@ final class FloorRuleDriverTests: XCTestCase {
     /// journals it as its own nor switches it off when the session ends.
     func testPreexistingLowPowerModeIsNeverTakenOver() async throws {
         h.guardFake.lowPowerOn = true
-        let m = h.makeManager()
+        let m = makeManager()
         await m.start(duration: 3600)
         let driver = FloorRuleDriver(manager: m, notifier: h.notifier)
         await driver.run(battery: .percent(35), isCharging: false, thermal: .nominal, lidClosed: false)
@@ -326,7 +334,7 @@ final class FloorRuleDriverTests: XCTestCase {
     /// switching it off later could undo the user's own choice.
     func testUnreadableLowPowerModeIsLeftAlone() async throws {
         h.guardFake.throwOn = ["pmset -g custom"]
-        let m = h.makeManager()
+        let m = makeManager()
         await m.start(duration: 3600)
         let driver = FloorRuleDriver(manager: m, notifier: h.notifier)
         await driver.run(battery: .percent(35), isCharging: false, thermal: .nominal, lidClosed: false)
@@ -341,7 +349,7 @@ final class FloorRuleDriverTests: XCTestCase {
     /// off and only then drops ownership.
     func testLowPowerCommandFailingAfterTakingEffectIsSwitchedBackOff() async throws {
         h.guardFake.throwAfterEffect = ["lowpowermode 1"]
-        let m = h.makeManager()
+        let m = makeManager()
         await m.start(duration: 3600)
         let changed = await m.setLowPower(true)
 
@@ -356,7 +364,7 @@ final class FloorRuleDriverTests: XCTestCase {
     func testLowPowerAmbiguousFailureKeepsOwnershipWhenTheUndoFails() async throws {
         h.guardFake.throwAfterEffect = ["lowpowermode 1"]
         h.guardFake.throwOn = ["lowpowermode 0"]
-        let m = h.makeManager()
+        let m = makeManager()
         await m.start(duration: 3600)
         let changed = await m.setLowPower(true)
 
@@ -374,7 +382,7 @@ final class FloorRuleDriverTests: XCTestCase {
     /// session end (`restoreAll`) clears it, but it is not announced: the
     /// user just closed the lid and is not looking.
     func testLidCausedLowPowerIsJournaledAndSilent() async throws {
-        let m = h.makeManager()
+        let m = makeManager()
         await m.start(duration: 3600)
         let driver = FloorRuleDriver(manager: m, notifier: h.notifier)
         await driver.run(battery: .percent(80), isCharging: true, thermal: .nominal, lidClosed: true)
@@ -390,7 +398,7 @@ final class FloorRuleDriverTests: XCTestCase {
     }
 
     func testLidOpenClearsLidCausedLowPowerSilently() async throws {
-        let m = h.makeManager()
+        let m = makeManager()
         await m.start(duration: 3600)
         let driver = FloorRuleDriver(manager: m, notifier: h.notifier)
         await driver.run(battery: .percent(80), isCharging: false, thermal: .nominal, lidClosed: true)
@@ -404,7 +412,7 @@ final class FloorRuleDriverTests: XCTestCase {
     }
 
     func testLidOpenKeepsLowPowerWhileBatteryIsBelowFloor() async throws {
-        let m = h.makeManager()
+        let m = makeManager()
         await m.start(duration: 3600)
         let driver = FloorRuleDriver(manager: m, notifier: h.notifier)
         await driver.run(battery: .percent(80), isCharging: false, thermal: .nominal, lidClosed: true)
@@ -416,7 +424,7 @@ final class FloorRuleDriverTests: XCTestCase {
 
     /// With the lid closed, a battery or thermal cause is still announced.
     func testBatteryCauseIsNotifiedEvenWithTheLidClosed() async throws {
-        let m = h.makeManager()
+        let m = makeManager()
         await m.start(duration: 3600)
         let driver = FloorRuleDriver(manager: m, notifier: h.notifier)
         await driver.run(battery: .percent(35), isCharging: false, thermal: .nominal, lidClosed: true)
@@ -429,7 +437,7 @@ final class FloorRuleDriverTests: XCTestCase {
     }
 
     func testLidOptionOffLeavesLowPowerAlone() async throws {
-        let m = h.makeManager()
+        let m = makeManager()
         m.config.lowPowerOnLidClose = false
         await m.start(duration: 3600)
         let driver = FloorRuleDriver(manager: m, notifier: h.notifier)
@@ -446,7 +454,7 @@ final class FloorRuleDriverTests: XCTestCase {
     /// closed (the lid holds the mode: no action), then lid open: the last
     /// holding cause was the lid, so the disable is silent.
     func testBatteryTakeoverThenRecoveryUnderClosedLidEndsSilentlyOnLidOpen() async throws {
-        let m = h.makeManager()
+        let m = makeManager()
         await m.start(duration: 3600)
         let driver = FloorRuleDriver(manager: m, notifier: h.notifier)
         await driver.run(battery: .percent(80), isCharging: false, thermal: .nominal, lidClosed: true)
@@ -471,7 +479,7 @@ final class FloorRuleDriverTests: XCTestCase {
     /// connected: the last holding cause was the battery, so the recovery
     /// is announced.
     func testBatteryTakeoverThenLidOpenAnnouncesTheChargerRecovery() async throws {
-        let m = h.makeManager()
+        let m = makeManager()
         await m.start(duration: 3600)
         let driver = FloorRuleDriver(manager: m, notifier: h.notifier)
         await driver.run(battery: .percent(80), isCharging: false, thermal: .nominal, lidClosed: true)
@@ -497,7 +505,7 @@ final class FloorRuleDriverTests: XCTestCase {
     /// announce), then lid open: the last holding cause was the lid, so
     /// the disable is silent.
     func testBatteryEnableThenLidTakeoverEndsSilentlyOnLidOpen() async throws {
-        let m = h.makeManager()
+        let m = makeManager()
         await m.start(duration: 3600)
         let driver = FloorRuleDriver(manager: m, notifier: h.notifier)
         await driver.run(battery: .percent(35), isCharging: false, thermal: .nominal, lidClosed: false)
@@ -520,7 +528,7 @@ final class FloorRuleDriverTests: XCTestCase {
     /// The thermal cause is tracked the same way: lid enable, thermal
     /// takes over, lid opens (thermal holds), cools down: announced.
     func testThermalTakeoverThenLidOpenAnnouncesTheCooldown() async throws {
-        let m = h.makeManager()
+        let m = makeManager()
         await m.start(duration: 3600)
         let driver = FloorRuleDriver(manager: m, notifier: h.notifier)
         await driver.run(battery: .percent(80), isCharging: false, thermal: .nominal, lidClosed: true)
@@ -538,7 +546,7 @@ final class FloorRuleDriverTests: XCTestCase {
     /// Flipping the lid option while the lid is closed takes effect on the
     /// next floor run (`AppServices.reevaluateFloors()` queues one).
     func testTogglingLidOptionWhileLidIsClosedAppliesOnTheNextRun() async throws {
-        let m = h.makeManager()
+        let m = makeManager()
         await m.start(duration: 3600)
         let driver = FloorRuleDriver(manager: m, notifier: h.notifier)
         await driver.run(battery: .percent(80), isCharging: true, thermal: .nominal, lidClosed: true)
@@ -554,5 +562,17 @@ final class FloorRuleDriverTests: XCTestCase {
         XCTAssertTrue(h.guardFake.lowPowerOn)
         XCTAssertEqual(try h.store.loadState()?.lowPowerSetByUs, true)
         XCTAssertEqual(h.notifier.posts.count, 0)
+    }
+}
+
+extension Config {
+    /// The upstream battery floors (40 % for Low Power Mode, 10 % to end)
+    /// the floor scenarios were written for. This fork ships 30 % / 20 %
+    /// (`ConfigTests.testDefaults`).
+    static var upstreamFloors: Config {
+        var c = Config()
+        c.lowPowerFloor = 40
+        c.endFloor = 10
+        return c
     }
 }

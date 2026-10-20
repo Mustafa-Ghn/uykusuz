@@ -55,7 +55,9 @@ basın.
 
 Varsayılanları bilmekte yarar var:
 
-- **Seçili uygulamalar:** Slack, WhatsApp ve Discord dondurma listesindedir.
+- **Seçili uygulamalar:** WhatsApp, Word, Excel ve ParaView dondurma listesindedir.
+  Bu fork'ta "diğer tüm uygulamaları dondur" de varsayılan olarak açıktır;
+  ajanlar, Apple uygulamaları, ProtonVPN ve AnyDesk hiç dondurulmaz.
   Ayarlanmış ajan uygulamaları bu sıradan listenin dışında tutulur.
 - **Diğer tüm uygulamalar:** "Kapak kapalıyken diğer tüm uygulamaları dondur"
   kapalıdır; bu yüzden yeni bir kurulum yalnızca dondurma listesini dondurur.
@@ -103,8 +105,8 @@ Varsayılanları bilmekte yarar var:
 - **Kapak kapalıyken Düşük Güç Modu:** açık. Uyku kapalıyken kapalı bir Mac
   aksi hâlde tam hızda çalışmayı sürdürür; bir pil ya da ısı kuralı hâlâ
   istemiyorsa mod kapak açılınca yeniden kapatılır.
-- **Pil kuralları:** pil gücündeyken pil düzeyi %40 eşiğinin altına inince
-  Düşük Güç Modu istenir; %10 eşiğinin altında oturum biter. Pil gücündeyken
+- **Pil kuralları:** pil gücündeyken pil düzeyi %30 eşiğinin altına inince
+  Düşük Güç Modu istenir; %20 eşiğinin altında oturum biter. Pil gücündeyken
   var olan ama art arda iki okumada okunamayan bir pil de oturumu bitirir ve
   nedenini söyleyen bir bildirim gösterilir: kimsenin okuyamadığı bir düzeye
   alt sınır uygulanamaz. Tek bir başarısız okumaya göz yumulur ve düzey yeniden

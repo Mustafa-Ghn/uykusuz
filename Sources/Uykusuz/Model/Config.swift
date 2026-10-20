@@ -23,7 +23,7 @@ struct Config: Codable, Equatable, Sendable {
     /// install freezes only the freeze list until the user opts in. A
     /// config.json an earlier build saved with it on gets it turned off
     /// once (`applyLidCloseDefaults`).
-    var freezeAllApps: Bool = false
+    var freezeAllApps: Bool = true
     /// SIGSTOP Docker Desktop on lid close when `docker ps` finds no running
     /// container, checked once more right before the signal. Off by default
     /// (and for a config.json without the key): a container that starts
@@ -52,13 +52,13 @@ struct Config: Codable, Equatable, Sendable {
 
     // Battery / thermal floors
     /// Battery percentage below which Low Power Mode is switched on.
-    var lowPowerFloor: Int = 40
+    var lowPowerFloor: Int = 30
     /// Battery percentage below which the session is ended. 0 turns the
     /// battery end off. Otherwise kept below `lowPowerFloor`, which gives Low
     /// Power Mode a chance to come on before the session ends; a reading
     /// already below both floors still ends it. See `setEndFloor`,
     /// `setLowPowerFloor` and `normalizeFloors`.
-    var endFloor: Int = 10
+    var endFloor: Int = 20
     var thermalRules: Bool = true
 
     // Network failover
@@ -72,6 +72,27 @@ struct Config: Codable, Equatable, Sendable {
     /// for the user or the program; on: Enter also submits anything already
     /// typed in that pane.
     var tmuxNudgePressesEnter: Bool = false
+
+    // Fork additions: voice alerts, the agent's automatic session, code mode
+    /// Speak short Turkish alerts (battery, heat, session end) while the lid
+    /// is closed, where a notification is never seen (`VoiceAnnouncer`).
+    var voiceAlerts: Bool = true
+    /// Start a session on its own while an app in `autoSessionAgents` holds
+    /// a sleep assertion, keep it extended while it does, and end it once it
+    /// has let go for `AutoSessionPolicy.idleGrace` (`AgentAutoSession`).
+    var autoSession: Bool = true
+    /// Bundle ids whose sleep assertion means an agent is at work.
+    var autoSessionAgents: [String] = Config.defaultAutoSessionAgents
+    /// Code mode: with the lid open during a session and an agent at work,
+    /// Low Power Mode is on (`FloorRules.LowPowerCause.codeMode`), the display
+    /// dims after `codeModeDimAfter` seconds without input and the keyboard
+    /// backlight goes off after `codeModeKeyboardOffAfter` (`CodeModeDimmer`).
+    var codeMode: Bool = true
+    var codeModeDimAfter: TimeInterval = 60
+    /// The display level code mode dims to, 0...1. A panel already at or
+    /// below it is left alone.
+    var codeModeDimLevel: Float = 0.15
+    var codeModeKeyboardOffAfter: TimeInterval = 30
 
     // App
     var launchAtLogin: Bool = false
@@ -107,11 +128,21 @@ struct Config: Codable, Equatable, Sendable {
         3 * 24 * 3600,
     ]
 
-    /// Default freeze list: chat apps that burn battery in the background.
+    /// Claude's desktop app: it holds a "prevent idle sleep" assertion while
+    /// it runs Claude Code sessions.
+    static let defaultAutoSessionAgents: [String] = [
+        "com.anthropic.claudefordesktop", // Claude
+    ]
+
+    /// Default freeze list for this fork's Macs: apps a coding agent does
+    /// not use that burn battery in the background. Every other Dock app
+    /// is frozen too (`freezeAllApps`), except agents, Apple apps and
+    /// `FreezePlanner.builtInProtected`.
     static let defaultFreezeList: [String] = [
-        "com.tinyspeck.slackmacgap",      // Slack
         "net.whatsapp.WhatsApp",          // WhatsApp
-        "com.hnc.Discord",                // Discord
+        "com.microsoft.Word",             // Microsoft Word
+        "com.microsoft.Excel",            // Microsoft Excel
+        "org.paraview.ParaView",          // ParaView
     ]
 
     /// Default agent list (spec section 5). Bundle ids confirmed against
@@ -151,7 +182,7 @@ struct Config: Codable, Equatable, Sendable {
         defaultFocusField = (try? c.decodeIfPresent(DurationInput.Field.self, forKey: .defaultFocusField)) ?? d.defaultFocusField
         maxDuration = try c.decodeIfPresent(TimeInterval.self, forKey: .maxDuration) ?? d.maxDuration
         freezeList = try c.decodeIfPresent([String].self, forKey: .freezeList) ?? d.freezeList
-        freezeAllApps = try c.decodeIfPresent(Bool.self, forKey: .freezeAllApps) ?? d.freezeAllApps
+        freezeAllApps = try c.decodeIfPresent(Bool.self, forKey: .freezeAllApps) ?? false
         dockerRule = try c.decodeIfPresent(Bool.self, forKey: .dockerRule) ?? d.dockerRule
         lidCloseDefaultsApplied = try c.decodeIfPresent(Bool.self, forKey: .lidCloseDefaultsApplied) ?? false
         lidCloseDefaultsNotice = try c.decodeIfPresent(LidCloseDefaultsChange.self, forKey: .lidCloseDefaultsNotice)
@@ -169,6 +200,13 @@ struct Config: Codable, Equatable, Sendable {
         nudgeThreshold = try c.decodeIfPresent(TimeInterval.self, forKey: .nudgeThreshold) ?? d.nudgeThreshold
         tmuxTargets = try c.decodeIfPresent([String].self, forKey: .tmuxTargets) ?? d.tmuxTargets
         tmuxNudgePressesEnter = try c.decodeIfPresent(Bool.self, forKey: .tmuxNudgePressesEnter) ?? d.tmuxNudgePressesEnter
+        voiceAlerts = try c.decodeIfPresent(Bool.self, forKey: .voiceAlerts) ?? d.voiceAlerts
+        autoSession = try c.decodeIfPresent(Bool.self, forKey: .autoSession) ?? d.autoSession
+        autoSessionAgents = try c.decodeIfPresent([String].self, forKey: .autoSessionAgents) ?? d.autoSessionAgents
+        codeMode = try c.decodeIfPresent(Bool.self, forKey: .codeMode) ?? d.codeMode
+        codeModeDimAfter = try c.decodeIfPresent(TimeInterval.self, forKey: .codeModeDimAfter) ?? d.codeModeDimAfter
+        codeModeDimLevel = try c.decodeIfPresent(Float.self, forKey: .codeModeDimLevel) ?? d.codeModeDimLevel
+        codeModeKeyboardOffAfter = try c.decodeIfPresent(TimeInterval.self, forKey: .codeModeKeyboardOffAfter) ?? d.codeModeKeyboardOffAfter
         launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? d.launchAtLogin
         launchAtLoginInstall = try c.decodeIfPresent(String.self, forKey: .launchAtLoginInstall)
     }

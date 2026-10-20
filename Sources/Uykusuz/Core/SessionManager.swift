@@ -19,6 +19,9 @@ enum EndReason: String, Sendable {
     /// may still have been applied, so the start is undone from the journal
     /// like an end rather than rolled back from memory.
     case startFailed
+    /// A session `AgentAutoSession` started for an agent app ended because
+    /// that app stopped holding its sleep assertion (fork addition).
+    case agentIdle
 }
 
 /// What `end` achieved. Callers that are about to quit need to know whether
@@ -415,6 +418,11 @@ final class SessionManager {
     /// then, so the value journaled at a later lid close is the user's,
     /// not the mode's rescaled one. nil in tests that do not wire it.
     var willEnableLowPower: (@MainActor () -> Void)?
+    /// Runs at the start of `end(reason:)` while a session is active, before
+    /// anything is restored: with the lid closed the Mac sleeps as soon as
+    /// sleep is given back, so a spoken alert has to come first (fork
+    /// addition, `VoiceAnnouncer`).
+    @ObservationIgnored var willEnd: (@MainActor (EndReason) async -> Void)?
     /// Called with each brightness level known to be the user's: a value
     /// written from the journal, and the reading that finds a kept value
     /// set since. `AppServices` gives it to the sampler, which does not
@@ -650,7 +658,8 @@ final class SessionManager {
             audio: audio,
             processControl: processControl,
             display: display,
-            keyboard: keyboard
+            keyboard: keyboard,
+            speech: SaySpeech()
         )
         m.services = services
         services.logStartupSnapshot()
@@ -1311,6 +1320,7 @@ final class SessionManager {
     /// be read the end changes nothing and waits for a person.
     @discardableResult
     func end(reason: EndReason) async -> EndOutcome {
+        if session != nil, let willEnd { await willEnd(reason) }
         endTicket += 1
         if reason == .quit { quitRequested = true }
         retryTimer?.invalidate()
@@ -3185,6 +3195,7 @@ final class SessionManager {
             : "Önceki bir oturum geride değişiklikler bıraktı; hepsi geri alındı."
         case .recoveryUnavailable: "Uykusuz, diskte bulunan oturum için kurtarma ajanını etkinleştiremediğinden oturumu bitirdi. Uyku normale döndü."
         case .startFailed: "Uykusuz uykuyu devre dışı bırakamadığından hiçbir oturum başlatılmadı. Uyku normale döndü."
+        case .agentIdle: "Claude kapandı; otomatik oturum bitti. Uyku normale döndü."
         }
     }
 }

@@ -147,6 +147,10 @@ enum FreezePlanner {
         "com.bitwarden.desktop",            // Bitwarden (cask bitwarden)
         "com.postgresapp.Postgres2",        // Postgres.app (cask postgres-app)
         "dev.kdrag0n.MacVirt",              // OrbStack (cask orbstack)
+        // This fork's Macs: a VPN carries the agent's traffic and remote
+        // desktop is how the closed Mac is reached.
+        "ch.protonvpn.mac",                 // ProtonVPN
+        "com.philandro.anydesk",            // AnyDesk
     ]).union(meetingApps)
 
     /// Meeting, recording and dictation apps. Freezing one ends a call, a

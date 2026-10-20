@@ -9,6 +9,9 @@ enum FloorRules {
         case battery
         case thermal
         case lid
+        /// Code mode: the lid is open, an agent is at work and `codeMode`
+        /// is on (fork addition). Silent, like the lid.
+        case codeMode
     }
 
     enum Action: Equatable, Sendable {
@@ -38,6 +41,7 @@ enum FloorRules {
         thermal: ProcessInfo.ThermalState,
         lidClosed: Bool,
         lowPowerSetByUs: Bool,
+        agentActive: Bool = false,
         config: Config
     ) -> [Action] {
         let onBattery = !isCharging
@@ -51,7 +55,7 @@ enum FloorRules {
         if case let .unreadable(misses) = battery, onBattery, misses >= 2, config.endFloor > 0 {
             return [.endSession(.batteryUnreadable)]
         }
-        let cause = lowPowerCause(percent: percent, isCharging: isCharging, thermal: thermal, lidClosed: lidClosed, config: config)
+        let cause = lowPowerCause(percent: percent, isCharging: isCharging, thermal: thermal, lidClosed: lidClosed, agentActive: agentActive, config: config)
         if let cause, !lowPowerSetByUs { return [.enableLowPower(cause)] }
         if cause == nil, lowPowerSetByUs { return [.disableLowPower] }
         return []
@@ -66,11 +70,13 @@ enum FloorRules {
         isCharging: Bool,
         thermal: ProcessInfo.ThermalState,
         lidClosed: Bool,
+        agentActive: Bool = false,
         config: Config
     ) -> LowPowerCause? {
         if config.thermalRules, thermal == .serious { return .thermal }
         if let p = percent, !isCharging, p < config.lowPowerFloor { return .battery }
         if lidClosed, config.lowPowerOnLidClose { return .lid }
+        if !lidClosed, agentActive, config.codeMode { return .codeMode }
         return nil
     }
 }
@@ -89,6 +95,9 @@ enum FloorRules {
 struct FloorRuleDriver {
     weak var manager: SessionManager?
     let notifier: any Notifying
+    /// Speaks a Turkish alert while the lid is closed (`VoiceAnnouncer`);
+    /// nil in tests that do not wire it.
+    let announce: (@MainActor (String) async -> Void)?
     /// The cause that most recently held while Uykusuz had the mode on,
     /// so the matching disable knows whether it is announced. Not
     /// journaled: after a relaunch the disable is announced as before.
@@ -99,12 +108,13 @@ struct FloorRuleDriver {
         var value: FloorRules.LowPowerCause?
     }
 
-    init(manager: SessionManager, notifier: any Notifying) {
+    init(manager: SessionManager, notifier: any Notifying, announce: (@MainActor (String) async -> Void)? = nil) {
+        self.announce = announce
         self.manager = manager
         self.notifier = notifier
     }
 
-    func run(battery: BatteryStatus, isCharging: Bool, thermal: ProcessInfo.ThermalState, lidClosed: Bool) async {
+    func run(battery: BatteryStatus, isCharging: Bool, thermal: ProcessInfo.ThermalState, lidClosed: Bool, agentActive: Bool = false) async {
         guard let manager, manager.isActive, !Task.isCancelled else { return }
         let config = manager.config
         let percent = battery.percent
@@ -114,12 +124,13 @@ struct FloorRuleDriver {
             thermal: thermal,
             lidClosed: lidClosed,
             lowPowerSetByUs: manager.state.lowPowerSetByUs,
+            agentActive: agentActive,
             config: config
         )
         // Track the effective cause while the mode is ours, not only at the
         // enable: another cause may have taken over since.
         if manager.state.lowPowerSetByUs,
-           let cause = FloorRules.lowPowerCause(percent: percent, isCharging: isCharging, thermal: thermal, lidClosed: lidClosed, config: config) {
+           let cause = FloorRules.lowPowerCause(percent: percent, isCharging: isCharging, thermal: thermal, lidClosed: lidClosed, agentActive: agentActive, config: config) {
             lastCause.value = cause
         }
         for action in actions {
@@ -132,10 +143,14 @@ struct FloorRuleDriver {
                 switch cause {
                 case .thermal:
                     notifier.post(title: "Düşük Güç Modu açık", body: "Isı durumu ciddi. Mac soğuyana kadar Düşük Güç Modu açık.")
+                    await announce?("Mac ısınıyor. Düşük Güç Modu açıldı. Kapağı açın.")
                 case .battery:
                     notifier.post(title: "Düşük Güç Modu açık", body: "Pil %\(percent ?? 0), %\(config.lowPowerFloor) alt sınırının altında.")
+                    await announce?("Pil yüzde \(percent ?? 0). Düşük Güç Modu açıldı.")
                 case .lid:
                     Log.info("low power mode on (lid closed)")
+                case .codeMode:
+                    Log.info("low power mode on (code mode: lid open, agent at work)")
                 }
             case .disableLowPower:
                 if await manager.setLowPower(false) {
@@ -144,6 +159,8 @@ struct FloorRuleDriver {
                     guard manager.isActive, !Task.isCancelled else { return }
                     if cause == .lid {
                         Log.info("low power mode off (lid opened)")
+                    } else if cause == .codeMode {
+                        Log.info("low power mode off (code mode over)")
                     } else {
                         notifier.post(title: "Düşük Güç Modu kapalı", body: isCharging ? "Şarj aleti bağlandı." : "Pil ve ısı yeniden sınırların içinde.")
                     }

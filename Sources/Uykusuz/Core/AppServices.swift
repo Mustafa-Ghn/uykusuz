@@ -73,6 +73,21 @@ final class AppServices {
     /// after each lid open (the backlight stays suppressed briefly after the
     /// wake), and given each level the manager restores (see `follow`).
     private let sampler: BrightnessSampler
+    private let idleSeconds: @Sendable () -> Double
+    /// Whether an agent is at work, as `AgentAutoSession` last read it.
+    /// Kept between sessions so the next one starts with it.
+    private(set) var agentActive = false
+    /// Code mode's idle dimming (fork addition).
+    private(set) lazy var codeMode = CodeModeDimmer(
+        display: display,
+        keyboard: keyboard,
+        idleSeconds: idleSeconds,
+        config: { [weak self] in self?.manager?.config ?? Config() }
+    )
+    /// Spoken alerts while the lid is closed (fork addition); nil outside a
+    /// session.
+    private(set) var announcer: VoiceAnnouncer?
+    private let speech: any SpeechSynthesizing
     private static let sampleInterval: TimeInterval = 30
     private static let sampleLeeway: DispatchTimeInterval = .seconds(5)
     private static let postOpenSampleDelay: Duration = .seconds(3)
@@ -110,8 +125,11 @@ final class AppServices {
         browser: BrowserThrottle? = nil,
         idleSeconds: @escaping @Sendable () -> Double = { UserInput.secondsSinceLastInput() },
         lidSimulation: (any LidSimulating)? = LidSimulationBuild.makeWatcher(),
-        lidSimulationEnabled: Bool = LidSimulationBuild.isCompiledIn
+        lidSimulationEnabled: Bool = LidSimulationBuild.isCompiledIn,
+        speech: any SpeechSynthesizing = NoSpeech()
     ) {
+        self.idleSeconds = idleSeconds
+        self.speech = speech
         self.paths = paths
         self.notifier = notifier
         self.audio = audio
@@ -145,7 +163,17 @@ final class AppServices {
         (notifier as? Notifier)?.requestAuthorizationIfNeeded()
 
         lidActions = LidActions(manager: manager, freezer: freezer, docker: docker, audio: audio, display: display, keyboard: keyboard, sampler: sampler)
-        floors = FloorRuleDriver(manager: manager, notifier: notifier)
+        let announcer = VoiceAnnouncer(
+            audio: audio,
+            speech: speech,
+            lidClosed: { [weak self] in self?.status.lidClosed ?? false },
+            enabled: { [weak manager] in manager?.config.voiceAlerts ?? false }
+        )
+        self.announcer = announcer
+        floors = FloorRuleDriver(manager: manager, notifier: notifier) { [weak announcer] text in
+            await announcer?.announce(text)
+        }
+        manager.willEnd = { [weak self] reason in await self?.announceEnd(reason) }
         // The panel under Uykusuz's own Low Power Mode reads the mode's
         // rescaled value: sample once more just before the mode goes on
         // and keep that sample until it is off (spec section 4).
@@ -154,6 +182,11 @@ final class AppServices {
         // until it exits; the manager calls back then.
         manager.resyncAfterCommand = { [weak self] replayLid in self?.resyncAfterCommand(replayLid: replayLid) }
         sampler.follow(manager)
+        // A level code mode dimmed is not the user's: hold the sampler.
+        let displayHeld = sampler.displayHeld
+        let keyboardHeld = sampler.keyboardHeld
+        sampler.displayHeld = { [weak self] in displayHeld() || (self?.codeMode.isHoldingDisplay ?? false) }
+        sampler.keyboardHeld = { [weak self] in keyboardHeld() || (self?.codeMode.isHoldingKeyboard ?? false) }
 
         lid.onChange = { [weak self] closed in self?.lidChanged(closed) }
         lid.start()
@@ -190,11 +223,15 @@ final class AppServices {
 
         browserTasks.append(Task { await self.refreshBrowsers() })
         syncState()
+        updateCodeMode()
     }
 
     func stop() {
         guard running else { return }
         running = false
+        codeMode.setActive(false)
+        manager?.willEnd = nil
+        announcer = nil
         lid.stop()
         lid.onChange = nil
         lastLidEvent = nil
@@ -330,7 +367,32 @@ final class AppServices {
     /// not at the next battery, thermal or lid event. Queued on the floor
     /// chain like a power event; a no-op outside a session.
     func reevaluateFloors() {
+        updateCodeMode()
         powerChanged()
+    }
+
+    // MARK: Fork additions: agent activity, code mode, spoken alerts
+
+    /// `AgentAutoSession` read a change. Code mode and the floors follow.
+    func setAgentActive(_ active: Bool) {
+        guard active != agentActive else { return }
+        agentActive = active
+        updateCodeMode()
+        powerChanged()
+    }
+
+    /// Code mode is on while a session runs with the lid open and an agent
+    /// at work, if Settings has it on.
+    func updateCodeMode() {
+        let on = running && !status.lidClosed && agentActive && (manager?.config.codeMode ?? false)
+        codeMode.setActive(on)
+    }
+
+    /// Before a session ends with the lid closed: say why, while sleep is
+    /// still held (`SessionManager.willEnd`).
+    private func announceEnd(_ reason: EndReason) async {
+        guard let text = VoiceAnnouncer.endSentence(reason, batteryPercent: status.batteryPercent) else { return }
+        await announcer?.announce(text)
     }
 
     // MARK: Lid simulation
@@ -382,6 +444,8 @@ final class AppServices {
     private func lidChanged(_ closed: Bool) {
         lastLidEvent = closed
         status.lidClosed = closed
+        // Put dimmed levels back before the close journals them.
+        if closed { codeMode.setActive(false) }
         guard let actions = lidActions else { return }
         // Numbered now, not when its turn comes: an open makes a close that
         // is still queued or waiting on a Docker probe stale at once.
@@ -397,7 +461,10 @@ final class AppServices {
             // floors now that the lid transaction is done. Queued on the
             // floor chain, so it stays serialized with battery events.
             self.powerChanged()
-            if !closed { self.scheduleSampleAfterOpen() }
+            if !closed {
+                self.scheduleSampleAfterOpen()
+                self.updateCodeMode()
+            }
         }
         lidTasks.append(task)
     }
@@ -429,11 +496,12 @@ final class AppServices {
         let charging = power.isCharging
         let thermal = power.thermalState
         let lidClosed = status.lidClosed
+        let agentActive = self.agentActive
         let previous = floorTasks.last
         let task = Task { @MainActor in
             await previous?.value
             guard !Task.isCancelled, self.running else { return }
-            await floors.run(battery: battery, isCharging: charging, thermal: thermal, lidClosed: lidClosed)
+            await floors.run(battery: battery, isCharging: charging, thermal: thermal, lidClosed: lidClosed, agentActive: agentActive)
             guard !Task.isCancelled, self.running else { return }
             self.syncState()
         }
