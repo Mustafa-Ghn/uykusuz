@@ -27,6 +27,13 @@ final class StatusItemController: NSObject {
     /// Asks before a browser is quit for a relaunch; true means go ahead.
     /// Injected so tests never see the NSAlert.
     private let confirmRelaunch: @MainActor (String) -> Bool
+    /// Asks for the time of day an automatic session pause lasts until; nil
+    /// is cancel. Injected so tests never see the NSAlert.
+    private let askPauseUntil: @MainActor () -> Date?
+    /// Shows the pause choices after the automatic session was ended by
+    /// hand; nil pops them up at the status item. Tests take the menu
+    /// instead, as a popped-up menu tracks until dismissed.
+    private let presentPauseMenu: (@MainActor (NSMenu) -> Void)?
     /// What the projected countdown reads the time from. Tests inject the
     /// manager's fake clock so the text does not depend on when the tick
     /// happens to run.
@@ -70,6 +77,8 @@ final class StatusItemController: NSObject {
         showSettings: @escaping () -> Void,
         makeWidthWriter: WidthWriterFactory? = nil,
         confirmRelaunch: (@MainActor (String) -> Bool)? = nil,
+        askPauseUntil: (@MainActor () -> Date?)? = nil,
+        presentPauseMenu: (@MainActor (NSMenu) -> Void)? = nil,
         clock: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.manager = manager
@@ -77,6 +86,8 @@ final class StatusItemController: NSObject {
         self.showSettings = showSettings
         self.makeWidthWriter = makeWidthWriter
         self.confirmRelaunch = confirmRelaunch ?? Self.askBeforeRelaunch
+        self.askPauseUntil = askPauseUntil ?? Self.askPauseTime
+        self.presentPauseMenu = presentPauseMenu
         self.clock = clock
         Self.seedPreferredPositionIfNeeded()
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -623,17 +634,58 @@ final class StatusItemController: NSObject {
 
     // MARK: Session actions
 
-    private func endNow() {
+    /// The status item's hold-to-end ring completed. Ignored while a start is
+    /// still in flight. Ending the automatic session offers to pause
+    /// automatic sessions, so the next task does not start one again.
+    func holdToEnd() {
+        guard manager.isActive else { return }
+        let wasAuto = manager.isAutoSession
         Task { @MainActor in
             await manager.end(reason: .user)
+            if wasAuto, !manager.isActive { offerPause() }
         }
     }
 
-    /// The status item's hold-to-end ring completed. Ignored while a start is
-    /// still in flight.
-    func holdToEnd() {
-        guard manager.isActive else { return }
-        endNow()
+    /// The pause choices, at the status item, after the automatic session
+    /// was ended by hand. Dismissing the menu is "no pause".
+    private func offerPause() {
+        let menu = StatusMenu.pauseMenu(target: self, choose: #selector(menuPauseChoice(_:)), offeredAfterEnd: true)
+        if let presentPauseMenu {
+            presentPauseMenu(menu)
+            return
+        }
+        guard let button else { return }
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.height + 4), in: button)
+    }
+
+    /// What a pause menu item does; for tests, which cannot click one.
+    func choose(_ item: NSMenuItem) {
+        menuPauseChoice(item)
+    }
+
+    /// Runs a pause choice: a duration from now, a time of day the user
+    /// picks (the next one to come, so 07:00 asked for at 23:00 is
+    /// tomorrow's), or nothing. Internal so tests drive it.
+    func applyPause(_ choice: StatusMenu.PauseChoice) {
+        let now = clock()
+        let until: Date
+        switch choice {
+        case let .duration(d):
+            until = now.addingTimeInterval(d)
+        case .untilTime:
+            guard let picked = askPauseUntil() else { return }
+            until = Self.nextOccurrence(of: picked, after: now)
+        case .none:
+            return
+        }
+        Task { @MainActor in await manager.pauseAutoSessions(until: until) }
+    }
+
+    /// `picked`'s time of day, today if that is still to come, else
+    /// tomorrow.
+    static func nextOccurrence(of picked: Date, after now: Date, calendar: Calendar = .current) -> Date {
+        let parts = calendar.dateComponents([.hour, .minute], from: picked)
+        return calendar.nextDate(after: now, matching: parts, matchingPolicy: .nextTime) ?? now.addingTimeInterval(3600)
     }
 
     /// Clicking the mark or the countdown while a session runs: reopen the
@@ -666,7 +718,9 @@ final class StatusItemController: NSObject {
             settings: #selector(menuOpenSettings),
             quit: #selector(menuQuit),
             relaunchBrowser: #selector(menuRelaunchBrowser(_:)),
-            stopWaitingForOutput: #selector(menuStopWaitingForOutput(_:))
+            stopWaitingForOutput: #selector(menuStopWaitingForOutput(_:)),
+            pauseChoice: #selector(menuPauseChoice(_:)),
+            resumeAuto: #selector(menuResumeAuto)
         )
         menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.height + 4), in: button)
     }
@@ -678,6 +732,8 @@ final class StatusItemController: NSObject {
             sessionActive: manager.isActive,
             sleepHeld: manager.state.sleepDisabledByUs,
             autoSession: manager.isAutoSession,
+            autoSessionOn: manager.config.autoSession,
+            autoPausedUntil: manager.config.autoPausedUntil,
             machine: StatusLines.machine(
                 lidClosed: status.lidClosed,
                 watts: status.instantWatts(),
@@ -741,6 +797,33 @@ final class StatusItemController: NSObject {
 
     @objc private func menuQuit() {
         NSApplication.shared.terminate(nil)
+    }
+
+    @objc private func menuPauseChoice(_ sender: NSMenuItem) {
+        applyPause(StatusMenu.PauseChoice(tag: sender.tag))
+    }
+
+    @objc private func menuResumeAuto() {
+        Task { @MainActor in await manager.pauseAutoSessions(until: nil) }
+    }
+
+    /// "Saat seç…": a time-of-day picker in an alert, an hour from now to
+    /// start with.
+    private static func askPauseTime() -> Date? {
+        let alert = NSAlert()
+        alert.messageText = "Otomatik oturum hangi saate kadar duraklatılsın?"
+        alert.informativeText = "Bu saate kadar Claude çalışsa da otomatik oturum açılmaz. Geçmiş bir saat seçerseniz yarının o saati kullanılır."
+        let picker = NSDatePicker()
+        picker.datePickerStyle = .textFieldAndStepper
+        picker.datePickerElements = .hourMinute
+        picker.locale = Locale(identifier: "tr_TR")
+        picker.dateValue = Date().addingTimeInterval(3600)
+        picker.sizeToFit()
+        alert.accessoryView = picker
+        alert.addButton(withTitle: "Duraklat")
+        alert.addButton(withTitle: "Vazgeç")
+        NSApp.activate(ignoringOtherApps: true)
+        return alert.runModal() == .alertFirstButtonReturn ? picker.dateValue : nil
     }
 
     @objc private func menuOpenSettings() {

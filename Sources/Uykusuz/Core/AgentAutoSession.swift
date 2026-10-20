@@ -12,6 +12,8 @@ import Foundation
 /// - Extend: our session has less than `extendBelow` left while the agent
 ///   is still at work, by `chunk`.
 /// - End: the agent has not been at work for `idleGrace`.
+/// - Paused (`Inputs.pausedUntil`, the user's choice): no start before
+///   then, and our session, if one still runs, ends.
 /// - Hands off after an end it did not ask for (the user held the end
 ///   control, a floor or the timer ended it): no new start until the agent
 ///   lets go once, so a session the user ended is not started again under
@@ -34,6 +36,10 @@ struct AutoSessionPolicy: Equatable, Sendable {
         var isCharging: Bool
         var thermal: ProcessInfo.ThermalState
         var endFloor: Int
+        /// `Config.autoPausedUntil`.
+        var pausedUntil: Date? = nil
+
+        var paused: Bool { pausedUntil.map { now < $0 } ?? false }
     }
 
     static let chunk: TimeInterval = 2 * 3600
@@ -75,7 +81,10 @@ struct AutoSessionPolicy: Equatable, Sendable {
             userSession = nil
             if i.agentActive, i.now < user.endsAt { suppressed = true }
         }
-        if !i.agentActive { suppressed = false }
+        // Letting go clears the hand-off; so does a pause the user chose,
+        // which takes its place: once it is over, ours starts again if the
+        // agent is still at work.
+        if !i.agentActive || i.paused { suppressed = false }
 
         if let started = i.sessionStartedAt {
             guard started == ownSession else {
@@ -83,6 +92,10 @@ struct AutoSessionPolicy: Equatable, Sendable {
                     userSession = UserSession(startedAt: started, endsAt: endsAt)
                 }
                 return nil
+            }
+            if i.paused {
+                ending = true
+                return .end
             }
             if i.agentActive {
                 ending = false
@@ -98,7 +111,7 @@ struct AutoSessionPolicy: Equatable, Sendable {
             return .end
         }
 
-        guard i.agentActive, !suppressed else { return nil }
+        guard i.agentActive, !suppressed, !i.paused else { return nil }
         if let retryAt, i.now < retryAt { return nil }
         guard Self.powerAllowsStart(i) else { return nil }
         return .start(Self.chunk)
@@ -200,6 +213,9 @@ final class AgentAutoSession {
         }
         let power = readPower()
         let now = clock()
+        if let until = config.autoPausedUntil, now >= until {
+            await manager.pauseAutoSessions(until: nil)
+        }
         let action = policy.step(.init(
             now: now,
             agentActive: active,
@@ -208,7 +224,8 @@ final class AgentAutoSession {
             batteryPercent: power.percent,
             isCharging: power.isCharging,
             thermal: thermal(),
-            endFloor: config.endFloor
+            endFloor: config.endFloor,
+            pausedUntil: manager.config.autoPausedUntil
         ))
         switch action {
         case let .start(duration)?:
@@ -223,6 +240,9 @@ final class AgentAutoSession {
         case let .extend(extra)?:
             Log.info("auto session: extending by \(Int(extra / 60)) min, the agent is still at work")
             await manager.extend(by: extra)
+        case .end? where manager.autoSessionsPaused(at: now):
+            Log.info("auto session: ending, automatic sessions are paused")
+            _ = await manager.end(reason: .user)
         case .end?:
             Log.info("auto session: ending, the agent has been idle for \(Int(AutoSessionPolicy.idleGrace / 60)) min")
             _ = await manager.end(reason: .agentIdle)

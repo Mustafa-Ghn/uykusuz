@@ -15,7 +15,8 @@ final class AutoSessionPolicyTests: XCTestCase {
         percent: Int? = 80,
         charging: Bool = false,
         thermal: ProcessInfo.ThermalState = .nominal,
-        endFloor: Int = 20
+        endFloor: Int = 20,
+        pausedUntil: Date? = nil
     ) -> AutoSessionPolicy.Inputs {
         .init(
             now: t0.addingTimeInterval(offset),
@@ -25,7 +26,8 @@ final class AutoSessionPolicyTests: XCTestCase {
             batteryPercent: percent,
             isCharging: charging,
             thermal: thermal,
-            endFloor: endFloor
+            endFloor: endFloor,
+            pausedUntil: pausedUntil
         )
     }
 
@@ -126,12 +128,175 @@ final class AutoSessionPolicyTests: XCTestCase {
         XCTAssertEqual(p.step(inputs(75, active: true)), .start(AutoSessionPolicy.chunk))
     }
 
+    func testNothingStartsWhilePausedAndOursEndsWhenAPauseBegins() {
+        var p = AutoSessionPolicy()
+        let until = t0.addingTimeInterval(900)
+        XCTAssertNil(p.step(inputs(0, active: true, pausedUntil: until)))
+        XCTAssertEqual(p.step(inputs(900, active: true, pausedUntil: until)), .start(AutoSessionPolicy.chunk), "the pause is over")
+        p.started(at: t0.addingTimeInterval(900))
+        let later = t0.addingTimeInterval(4000)
+        XCTAssertEqual(p.step(inputs(960, active: true, started: t0.addingTimeInterval(900),
+                                     endsAt: t0.addingTimeInterval(900 + AutoSessionPolicy.chunk), pausedUntil: later)), .end)
+    }
+
+    func testAPauseTakesTheHandOffsPlace() {
+        var p = AutoSessionPolicy()
+        XCTAssertEqual(p.step(inputs(0, active: true)), .start(AutoSessionPolicy.chunk))
+        p.started(at: t0)
+        // The user held the end control and chose 15 minutes, the agent
+        // still at work throughout.
+        let until = t0.addingTimeInterval(30 + 900)
+        XCTAssertNil(p.step(inputs(30, active: true, pausedUntil: until)))
+        XCTAssertFalse(p.suppressed)
+        XCTAssertEqual(p.step(inputs(30 + 900, active: true, pausedUntil: until)), .start(AutoSessionPolicy.chunk),
+                       "once the pause is over a session starts again for the work still going on")
+    }
+
     func testAUserSessionThatRanItsTimeOutLetsTheAgentsSessionFollow() {
         var p = AutoSessionPolicy()
         let manual = t0.addingTimeInterval(-100)
         XCTAssertNil(p.step(inputs(0, active: true, started: manual, endsAt: t0.addingTimeInterval(60))))
         XCTAssertEqual(p.step(inputs(75, active: true)), .start(AutoSessionPolicy.chunk))
         XCTAssertFalse(p.suppressed)
+    }
+}
+
+/// Ending the automatic session by hand offers a pause; the menu offers
+/// one at any time and shows it while it lasts.
+@MainActor
+final class AutoSessionPauseTests: XCTestCase {
+    var h: Harness!
+
+    override func setUp() async throws {
+        h = Harness()
+    }
+
+    override func tearDown() async throws {
+        h.home.destroy()
+    }
+
+    private func eventually(_ condition: @MainActor () -> Bool) async -> Bool {
+        let deadline = Date().addingTimeInterval(3)
+        while Date() < deadline {
+            if condition() { return true }
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return condition()
+    }
+
+    private func automatic(_ m: SessionManager, agent: @escaping @MainActor () -> Bool = { true }) -> AgentAutoSession {
+        m.config.autoSession = true
+        let clock = h.clock
+        return AgentAutoSession(manager: m, isAgentActive: { _ in agent() }, readPower: { (80, false) }, thermal: { .nominal }, clock: { clock.now })
+    }
+
+    func testAPauseEndsTheAutomaticSessionAndHoldsTheNextOneUntilItIsOver() async throws {
+        let m = h.makeManager()
+        let auto = automatic(m)
+        await auto.tick()
+        XCTAssertTrue(m.isAutoSession)
+
+        await m.pauseAutoSessions(until: h.clock.now.addingTimeInterval(900))
+        XCTAssertNil(m.session)
+        XCTAssertNotNil(try h.store.loadConfig()?.autoPausedUntil, "saved, so a relaunch keeps it")
+        h.clock.advance(60)
+        await auto.tick()
+        XCTAssertNil(m.session, "paused, with Claude still at work")
+
+        h.clock.advance(900)
+        await auto.tick()
+        XCTAssertNil(m.config.autoPausedUntil, "the pause is over and cleared")
+        XCTAssertTrue(m.isAutoSession, "Claude is still at work, so the automatic session is back")
+    }
+
+    func testAPauseLeavesASessionTheUserStartedAlone() async throws {
+        let m = h.makeManager()
+        m.config.autoSession = true
+        await m.start(duration: 3600)
+        await m.pauseAutoSessions(until: h.clock.now.addingTimeInterval(900))
+        XCTAssertNotNil(m.session)
+    }
+
+    func testHoldingTheEndOnTheAutomaticSessionOffersThePauseChoices() async throws {
+        let m = h.makeManager()
+        let auto = automatic(m)
+        await auto.tick()
+        var offered: NSMenu?
+        let clock = h.clock
+        let controller = StatusItemController(
+            manager: m, status: PlaceholderStatus(), showSettings: {},
+            askPauseUntil: { nil }, presentPauseMenu: { offered = $0 }, clock: { clock.now }
+        )
+        controller.holdToEnd()
+        let shown = await eventually { offered != nil }
+        XCTAssertTrue(shown)
+        XCTAssertNil(m.session)
+        let titles = offered?.items.map(\.title) ?? []
+        XCTAssertEqual(titles, [StatusMenu.pauseTitle, "15 dakika", "1 saat", "3 saat", "Saat seç\u{2026}", "", "Duraklatma"])
+
+        let oneHour = try XCTUnwrap(offered?.items.first { $0.title == "1 saat" })
+        controller.choose(oneHour)
+        let paused = await eventually { m.config.autoPausedUntil != nil }
+        XCTAssertTrue(paused)
+        XCTAssertEqual(m.config.autoPausedUntil, clock.now.addingTimeInterval(3600))
+    }
+
+    func testEndingASessionTheUserStartedOffersNoPause() async throws {
+        let m = h.makeManager()
+        await m.start(duration: 3600)
+        var offered = false
+        let controller = StatusItemController(manager: m, status: PlaceholderStatus(), showSettings: {}, presentPauseMenu: { _ in offered = true })
+        controller.holdToEnd()
+        let ended = await eventually { m.session == nil }
+        XCTAssertTrue(ended)
+        try? await Task.sleep(for: .milliseconds(50))
+        XCTAssertFalse(offered)
+    }
+
+    func testAPickedTimeIsTheNextOneToCome() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Istanbul")!
+        let now = calendar.date(from: DateComponents(year: 2026, month: 10, day: 20, hour: 23, minute: 10))!
+        let seven = calendar.date(from: DateComponents(year: 2026, month: 10, day: 20, hour: 7, minute: 0))!
+        XCTAssertEqual(StatusItemController.nextOccurrence(of: seven, after: now, calendar: calendar),
+                       calendar.date(from: DateComponents(year: 2026, month: 10, day: 21, hour: 7, minute: 0)))
+        let half = calendar.date(from: DateComponents(year: 2026, month: 10, day: 20, hour: 23, minute: 30))!
+        XCTAssertEqual(StatusItemController.nextOccurrence(of: half, after: now, calendar: calendar), half)
+    }
+
+    func testTheMenuOffersAPauseAndShowsOneThatLasts() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Istanbul")!
+        let now = calendar.date(from: DateComponents(year: 2026, month: 10, day: 20, hour: 23, minute: 10))!
+        func items(on: Bool, until: Date?) -> [StatusMenu.Item] {
+            StatusMenu.items(sessionActive: false, sleepHeld: false, autoSessionOn: on, autoPausedUntil: until, now: now,
+                             machine: nil, actions: nil, throttledBrowsers: [], error: nil)
+        }
+        XCTAssertEqual(items(on: true, until: nil).first?.kind, .pauseAuto)
+        XCTAssertFalse(items(on: false, until: nil).contains { $0.kind == .pauseAuto }, "nothing to pause with the feature off")
+        let paused = items(on: true, until: now.addingTimeInterval(600))
+        XCTAssertEqual(paused.prefix(2).map(\.kind), [.info, .resumeAuto])
+        XCTAssertEqual(paused.first?.title, StatusMenu.pauseLine(until: now.addingTimeInterval(600), now: now, calendar: calendar))
+        XCTAssertEqual(items(on: true, until: now.addingTimeInterval(-1)).first?.kind, .pauseAuto, "a pause that is over")
+
+        XCTAssertEqual(StatusMenu.pauseLine(until: now.addingTimeInterval(600), now: now, calendar: calendar),
+                       "Otomatik oturum duraklatıldı; saat 23:20 itibarıyla yeniden açılır")
+        XCTAssertEqual(StatusMenu.pauseLine(until: now.addingTimeInterval(8 * 3600), now: now, calendar: calendar),
+                       "Otomatik oturum duraklatıldı; yarın 07:10 itibarıyla yeniden açılır")
+    }
+
+    func testThePauseMarkOnlyWhileIdleAndPaused() {
+        XCTAssertTrue(StatusRootView.showsPauseMark(phase: .idle, isRunning: false, autoSessionOn: true, paused: true))
+        XCTAssertFalse(StatusRootView.showsPauseMark(phase: .idle, isRunning: true, autoSessionOn: true, paused: true))
+        XCTAssertFalse(StatusRootView.showsPauseMark(phase: .entering(.start), isRunning: false, autoSessionOn: true, paused: true))
+        XCTAssertFalse(StatusRootView.showsPauseMark(phase: .idle, isRunning: false, autoSessionOn: false, paused: true))
+        XCTAssertFalse(StatusRootView.showsPauseMark(phase: .idle, isRunning: false, autoSessionOn: true, paused: false))
+    }
+
+    func testTheChoicesRoundTripThroughTheirTags() {
+        for choice in StatusMenu.PauseChoice.menuChoices + [.none] {
+            XCTAssertEqual(StatusMenu.PauseChoice(tag: choice.tag), choice)
+        }
     }
 }
 

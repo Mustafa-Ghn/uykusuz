@@ -1312,6 +1312,30 @@ final class SessionManager {
         autoStartedAt = nil
     }
 
+    /// Pauses automatic sessions until `until`, or resumes them (nil).
+    /// Pausing also ends the automatic session if one runs; a session the
+    /// user started is left alone. Saved, so a relaunch keeps the pause.
+    func pauseAutoSessions(until: Date?) async {
+        config.autoPausedUntil = until
+        do {
+            try store.saveConfig(config)
+        } catch {
+            Log.error("could not save the automatic session pause: \(error.localizedDescription)")
+        }
+        guard let until else {
+            Log.info("auto session: pause over")
+            return
+        }
+        Log.info("auto session: paused until \(iso(until))")
+        if isAutoSession { _ = await end(reason: .user) }
+    }
+
+    /// Automatic sessions are paused at `now`.
+    func autoSessionsPaused(at now: Date) -> Bool {
+        guard let until = config.autoPausedUntil else { return false }
+        return now < until
+    }
+
     /// The user sets a time on the automatic session: it becomes theirs and
     /// ends `duration` from now, sooner or later than it would have. It is
     /// released before the change is queued, so the automatic session

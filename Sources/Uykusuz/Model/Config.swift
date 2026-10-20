@@ -93,6 +93,10 @@ struct Config: Codable, Equatable, Sendable {
     var idleBlackout: Bool = true
     var idleBlackoutAfter: TimeInterval = 60
     var keyboardOffAfter: TimeInterval = 30
+    /// Automatic sessions are paused until this moment: the user chose a
+    /// pause after ending one, or from the menu, and none starts before it
+    /// (`AutoSessionPolicy`). nil: not paused. Saved, so a relaunch keeps it.
+    var autoPausedUntil: Date?
 
     // App
     var launchAtLogin: Bool = false
@@ -207,6 +211,7 @@ struct Config: Codable, Equatable, Sendable {
         idleBlackout = try c.decodeIfPresent(Bool.self, forKey: .idleBlackout) ?? d.idleBlackout
         idleBlackoutAfter = try c.decodeIfPresent(TimeInterval.self, forKey: .idleBlackoutAfter) ?? d.idleBlackoutAfter
         keyboardOffAfter = try c.decodeIfPresent(TimeInterval.self, forKey: .keyboardOffAfter) ?? d.keyboardOffAfter
+        autoPausedUntil = try c.decodeIfPresent(Date.self, forKey: .autoPausedUntil)
         launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? d.launchAtLogin
         launchAtLoginInstall = try c.decodeIfPresent(String.self, forKey: .launchAtLoginInstall)
     }

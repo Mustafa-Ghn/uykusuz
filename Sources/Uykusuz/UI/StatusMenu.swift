@@ -23,6 +23,10 @@ enum StatusMenu {
             /// save the item was built for, its save ID included, so a
             /// later one is not dropped.
             case stopWaitingForOutput(SavedAudioOutput)
+            /// A submenu of `PauseChoice.menuChoices` (fork addition).
+            case pauseAuto
+            /// End the automatic session pause.
+            case resumeAuto
         }
 
         let title: String
@@ -33,6 +37,67 @@ enum StatusMenu {
     /// The line under the sleep line while the automatic session runs (fork
     /// addition), in place of the deadline the status item does not show.
     static let autoSessionLine = "Claude çalıştıkça açık; Claude durunca \(Int(AutoSessionPolicy.idleGrace / 60)) dk sonra biter"
+    static let pauseTitle = "Otomatik oturumu duraklat"
+    static let resumeTitle = "Otomatik oturumu sürdür"
+
+    /// What the automatic session can be paused for (fork addition): offered
+    /// when the user ends it with the hold control, and from this menu.
+    enum PauseChoice: Equatable, Sendable {
+        case duration(TimeInterval)
+        /// Until a time of day the user picks.
+        case untilTime
+        /// No pause: only the hand-off until Claude stops once.
+        case none
+
+        static let menuChoices: [PauseChoice] = [.duration(15 * 60), .duration(3600), .duration(3 * 3600), .untilTime]
+
+        var title: String {
+            switch self {
+            case let .duration(d) where d < 3600: "\(Int(d / 60)) dakika"
+            case let .duration(d): "\(Int(d / 3600)) saat"
+            case .untilTime: "Saat seç\u{2026}"
+            case .none: "Duraklatma"
+            }
+        }
+
+        /// The menu item's tag: seconds for a duration.
+        var tag: Int {
+            switch self {
+            case let .duration(d): Int(d)
+            case .untilTime: -1
+            case .none: 0
+            }
+        }
+
+        init(tag: Int) {
+            switch tag {
+            case -1: self = .untilTime
+            case let s where s > 0: self = .duration(TimeInterval(s))
+            default: self = .none
+            }
+        }
+    }
+
+    /// The menu line while automatic sessions are paused. A fixed Turkish
+    /// 24-hour clock, and no case suffix after it, which would depend on how
+    /// the number is read.
+    static func pauseLine(until: Date, now: Date, calendar: Calendar = .current) -> String {
+        let clock = DateFormatter()
+        clock.locale = Locale(identifier: "tr_TR")
+        clock.calendar = calendar
+        clock.timeZone = calendar.timeZone
+        clock.dateFormat = "HH:mm"
+        let when: String
+        if calendar.isDate(until, inSameDayAs: now) {
+            when = "saat \(clock.string(from: until))"
+        } else if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now), calendar.isDate(until, inSameDayAs: tomorrow) {
+            when = "yarın \(clock.string(from: until))"
+        } else {
+            clock.dateFormat = "d MMMM HH:mm"
+            when = clock.string(from: until)
+        }
+        return "Otomatik oturum duraklatıldı; \(when) itibarıyla yeniden açılır"
+    }
     static let quitTitle = "Uykusuz'dan Çık"
 
     /// Disabled status lines, a separator, then Settings… and Quit. Empty
@@ -53,6 +118,9 @@ enum StatusMenu {
         sessionActive: Bool,
         sleepHeld: Bool,
         autoSession: Bool = false,
+        autoSessionOn: Bool = false,
+        autoPausedUntil: Date? = nil,
+        now: Date = Date(),
         machine: String?,
         actions: String?,
         throttledBrowsers: [ThrottledBrowser],
@@ -70,6 +138,14 @@ enum StatusMenu {
         }
         if sessionActive, autoSession {
             out.append(Item(title: autoSessionLine, kind: .info))
+        }
+        if autoSessionOn {
+            if let until = autoPausedUntil, now < until {
+                out.append(Item(title: pauseLine(until: until, now: now), kind: .info))
+                out.append(Item(title: resumeTitle, kind: .resumeAuto))
+            } else {
+                out.append(Item(title: pauseTitle, kind: .pauseAuto))
+            }
         }
         if let machine = present(machine) {
             out.append(Item(title: machine, kind: .info))
@@ -136,7 +212,9 @@ enum StatusMenu {
         settings: Selector,
         quit: Selector,
         relaunchBrowser: Selector,
-        stopWaitingForOutput: Selector
+        stopWaitingForOutput: Selector,
+        pauseChoice: Selector? = nil,
+        resumeAuto: Selector? = nil
     ) -> NSMenu {
         let menu = NSMenu()
         menu.autoenablesItems = false
@@ -168,7 +246,40 @@ enum StatusMenu {
                 let entry = action(title: item.title, selector: stopWaitingForOutput, key: "", target: target)
                 entry.representedObject = waiting
                 menu.addItem(entry)
+            case .pauseAuto:
+                guard let pauseChoice else { continue }
+                let entry = NSMenuItem(title: item.title, action: nil, keyEquivalent: "")
+                entry.submenu = pauseMenu(target: target, choose: pauseChoice, offeredAfterEnd: false)
+                menu.addItem(entry)
+            case .resumeAuto:
+                guard let resumeAuto else { continue }
+                menu.addItem(action(title: item.title, selector: resumeAuto, key: "", target: target))
             }
+        }
+        return menu
+    }
+
+    /// The pause choices. `offeredAfterEnd`: the menu that comes up once
+    /// the user has ended the automatic session with the hold control,
+    /// with a heading and "no pause" as well.
+    @MainActor
+    static func pauseMenu(target: AnyObject?, choose: Selector, offeredAfterEnd: Bool) -> NSMenu {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        if offeredAfterEnd {
+            let heading = NSMenuItem(title: pauseTitle, action: nil, keyEquivalent: "")
+            heading.isEnabled = false
+            menu.addItem(heading)
+        }
+        var choices = PauseChoice.menuChoices
+        if offeredAfterEnd { choices.append(.none) }
+        for choice in choices {
+            if choice == .none { menu.addItem(.separator()) }
+            let entry = NSMenuItem(title: choice.title, action: choose, keyEquivalent: "")
+            entry.target = target
+            entry.tag = choice.tag
+            entry.isEnabled = true
+            menu.addItem(entry)
         }
         return menu
     }

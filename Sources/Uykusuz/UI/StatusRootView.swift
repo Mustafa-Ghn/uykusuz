@@ -63,6 +63,31 @@ struct StatusRootView: View {
         isAutoSession ? MenuBarModel.autoSessionText : countdown()
     }
 
+    /// Automatic sessions are paused: a mark beside the closed eye, so the
+    /// pause is not forgotten. Read when the config changes; the pause's
+    /// end clears it there (`AgentAutoSession`).
+    private var showsPauseMark: Bool {
+        Self.showsPauseMark(
+            phase: model.phase,
+            isRunning: isRunning,
+            autoSessionOn: manager.config.autoSession,
+            paused: manager.autoSessionsPaused(at: Date())
+        )
+    }
+
+    static func showsPauseMark(phase: MenuBarModel.Phase, isRunning: Bool, autoSessionOn: Bool, paused: Bool) -> Bool {
+        phase == .idle && !isRunning && autoSessionOn && paused
+    }
+
+    private var pauseMark: some View {
+        Image(systemName: "pause.circle")
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(.secondary)
+            .padding(.trailing, 1)
+            .transition(Motion.countdownTransition(reduceMotion: reduceMotion))
+            .accessibilityLabel("Otomatik oturum duraklatıldı")
+    }
+
     /// What the countdown reads. A projection, when there is one, wins over
     /// the live text: an extension typed over a running session shows its
     /// new end at Enter, not when the manager confirms it. Static so the
@@ -94,6 +119,8 @@ struct StatusRootView: View {
                     HoldToEndButton(reduceMotion: reduceMotion, action: onHoldEnd)
                         .transition(Motion.ringTransition(reduceMotion: reduceMotion))
                 }
+            } else if showsPauseMark {
+                pauseMark
             }
         }
         .padding(.leading, 6)
