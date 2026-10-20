@@ -93,6 +93,19 @@ struct Config: Codable, Equatable, Sendable {
     var idleBlackout: Bool = true
     var idleBlackoutAfter: TimeInterval = 60
     var keyboardOffAfter: TimeInterval = 30
+    /// While Claude is stopped for the user (a permission prompt, a question,
+    /// a plan to approve) it counts as not at work, so the automatic session
+    /// ends once it has waited `approvalWaitGrace`; off, a wait counts as
+    /// work (`AgentAutoSession`).
+    var endWhileWaiting: Bool = true
+    var approvalWaitGrace: TimeInterval = 5 * 60
+    /// "While you were away": when the lid opens after a while, what Claude
+    /// did is told in a notification (`AwaySummary`), and read aloud if
+    /// `awaySummarySpoken`. Claude writes it with `summaryModel` when a
+    /// Claude API key is saved; otherwise it is made here from counts.
+    var awaySummary: Bool = true
+    var awaySummarySpoken: Bool = true
+    var summaryModel: String = AnthropicSummaryClient.defaultModel
     /// Automatic sessions are paused until this moment: the user chose a
     /// pause after ending one, or from the menu, and none starts before it
     /// (`AutoSessionPolicy`). nil: not paused. Saved, so a relaunch keeps it.
@@ -212,6 +225,11 @@ struct Config: Codable, Equatable, Sendable {
         idleBlackoutAfter = try c.decodeIfPresent(TimeInterval.self, forKey: .idleBlackoutAfter) ?? d.idleBlackoutAfter
         keyboardOffAfter = try c.decodeIfPresent(TimeInterval.self, forKey: .keyboardOffAfter) ?? d.keyboardOffAfter
         autoPausedUntil = try c.decodeIfPresent(Date.self, forKey: .autoPausedUntil)
+        awaySummary = try c.decodeIfPresent(Bool.self, forKey: .awaySummary) ?? d.awaySummary
+        awaySummarySpoken = try c.decodeIfPresent(Bool.self, forKey: .awaySummarySpoken) ?? d.awaySummarySpoken
+        summaryModel = try c.decodeIfPresent(String.self, forKey: .summaryModel) ?? d.summaryModel
+        endWhileWaiting = try c.decodeIfPresent(Bool.self, forKey: .endWhileWaiting) ?? d.endWhileWaiting
+        approvalWaitGrace = try c.decodeIfPresent(TimeInterval.self, forKey: .approvalWaitGrace) ?? d.approvalWaitGrace
         launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? d.launchAtLogin
         launchAtLoginInstall = try c.decodeIfPresent(String.self, forKey: .launchAtLoginInstall)
     }

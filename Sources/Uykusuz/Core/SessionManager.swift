@@ -22,6 +22,9 @@ enum EndReason: String, Sendable {
     /// A session `AgentAutoSession` started for an agent ended because the
     /// agent stopped working (fork addition).
     case agentIdle
+    /// The same, because Claude waited on the user for
+    /// `Config.approvalWaitGrace` with no answer.
+    case agentWaiting
 }
 
 /// What `end` achieved. Callers that are about to quit need to know whether
@@ -3266,6 +3269,7 @@ final class SessionManager {
         case .recoveryUnavailable: "Uykusuz, diskte bulunan oturum için kurtarma ajanını etkinleştiremediğinden oturumu bitirdi. Uyku normale döndü."
         case .startFailed: "Uykusuz uykuyu devre dışı bırakamadığından hiçbir oturum başlatılmadı. Uyku normale döndü."
         case .agentIdle: "Claude çalışmayı bıraktı; otomatik oturum bitti. Uyku normale döndü."
+        case .agentWaiting: "Claude sizden yanıt bekliyordu ve yanıt gelmedi; otomatik oturum bitti. Uyku normale döndü. Yanıt verince oturum yeniden başlar."
         }
     }
 }

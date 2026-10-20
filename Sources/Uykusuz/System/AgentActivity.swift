@@ -38,14 +38,15 @@ enum AgentActivity {
     }
 
     /// The live reading. With this app's Claude Code hooks installed
-    /// (`ClaudeHooks`), an agent is at work only while Claude runs a task
-    /// (`ClaudeActivity`); without them, while an app in
-    /// `config.autoSessionAgents` holds a sleep assertion.
-    static func isActive(config: Config, paths: Paths) -> Bool {
+    /// (`ClaudeHooks`), an agent is at work only while Claude runs a task,
+    /// and waits while Claude is stopped for the user (`ClaudeActivity`);
+    /// without them, it is at work while an app in `config.autoSessionAgents`
+    /// holds a sleep assertion.
+    static func state(config: Config, paths: Paths) -> ClaudeActivity.State {
         if ClaudeHooks.isInstalled() {
-            return ClaudeActivity.isRunningTask(paths: paths)
+            return ClaudeActivity.state(paths: paths)
         }
-        return isActive(bundleIDs: config.autoSessionAgents)
+        return isActive(bundleIDs: config.autoSessionAgents) ? .working : .idle
     }
 
     /// The system's assertions now, against `bundleIDs`.

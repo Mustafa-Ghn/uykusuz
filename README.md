@@ -63,8 +63,11 @@ Claude çalışırken bunu kendiliğinden de yapar.
   en çok 30 gün sürer.
 - **Kapak kapalıyken çalışma.** Oturum boyunca Mac, kapağı kapalıyken de uyumaz.
 - **Claude ile otomatik oturum.** Claude Code bir görev yürüttüğü sürece oturum
-  kendiliğinden açılır, uzar ve Claude durunca kapanır; istediğinizde belli bir
-  süre duraklatılır.
+  kendiliğinden açılır, uzar ve Claude durunca kapanır; Claude sizden yanıt
+  beklerken bir süre sonra kapanır ve istediğinizde belli bir süre duraklatılır.
+- **Sen yokken özeti.** Kapak açılınca Claude'un siz yokken yaptıkları bir
+  bildirimde bir iki cümleyle anlatılır ve sesli okunur; bir Claude API anahtarı
+  kaydederseniz özeti Claude yazar.
 - **Kapak eylemleri.** Kapak kapanınca ekran ve klavye ışığı söner, seçili
   uygulamalar dondurulur, ses kapanır ve Düşük Güç Modu açılır; kapağı açmak
   hepsini geri almaya çalışır.
@@ -80,8 +83,10 @@ Claude çalışırken bunu kendiliğinden de yapar.
   çalışır.
 - **Ağ yedekleme.** Wi-Fi koparsa iPhone'unuzun kişisel erişim noktasına
   geçebilir; isterseniz tmux'ta çalışan kodlama ajanınıza `continue` yazar.
-- **Gizlilik.** Uykusuz hiçbir ağ isteği yapmaz. Ayarlar ve günlükler yalnızca
-  sizin hesabınızın okuyabildiği dosyalarda tutulur.
+- **Gizlilik.** Uykusuz yalnızca siz bir Claude API anahtarı kaydettiyseniz ve
+  yalnızca "Sen yokken" özetini yazdırmak için `api.anthropic.com`'a istek
+  yapar; başka hiçbir ağ isteği yapmaz. Ayarlar ve günlükler yalnızca sizin
+  hesabınızın okuyabildiği dosyalarda, anahtar giriş Anahtar Zinciri'nde tutulur.
 
 ## Gereksinimler
 
@@ -143,7 +148,7 @@ yükseltmelerin onları nasıl değiştirdiğini açıklar.
 
 ## Güncelleme
 
-Uykusuz güncelleme denetlemez; hiçbir ağ isteği yapmaz. Güncellemek için
+Uykusuz güncelleme denetlemez. Güncellemek için
 çalışma kopyasında yeni değişiklikleri çekin ve kurulum betiğini yeniden
 çalıştırın:
 
@@ -196,7 +201,8 @@ Ayarlar penceresi göze sağ tıklayınca açılan menüden (⌘,) açılır:
 | Kapak kapanınca yapılacaklar | Ekran ve klavye ışığı, dondurma listesi, diğer tüm uygulamalar, Docker, ses, Düşük Güç Modu, sesli uyarı |
 | Ajan uygulamaları | Hiçbir zaman dondurulmayan ya da kısıtlanmayan uygulamalar, App Nap |
 | Pil ve ısı | Düşük Güç Modu ve oturum sonu eşikleri, ısı kuralları |
-| Claude, kod modu ve ekran | Claude Code hook'ları, otomatik oturum, kod modu, boşta siyah ekran süreleri |
+| Claude, kod modu ve ekran | Claude Code hook'ları, otomatik oturum, yanıt beklerken bitirme ve bekleme süresi, kod modu, boşta siyah ekran süreleri |
+| Sen yokken özeti | Kapak açılınca özet, sesli okuma, Claude API anahtarı, özeti yazan model, son 2 saati şimdi özetle |
 | Ağ yedekleme | iPhone kişisel erişim noktası, tmux dürtmesi |
 | Uygulama | Girişte aç, yapılandırma klasörü, kurulu sürüm |
 
@@ -230,6 +236,13 @@ Claude durunca 5 dk sonra biter" satırını gösterir.
   tık menüsündeki **Otomatik oturumu duraklat** alt menüsü aynı seçenekleri her
   zaman sunar (süren bir otomatik oturumu da bitirir); **Otomatik oturumu
   sürdür** duraklatmayı erken bitirir.
+- **Claude yanıt beklerken.** Claude bir komut için onay, bir soru için yanıt
+  ya da bir plan için onay beklerken çalışıyor sayılmaz. Bekleme süresi
+  (varsayılan 5 dakika) içinde yanıt gelmezse otomatik oturum biter ve Mac
+  uyur; yanıt verince oturum yeniden başlar. Kapak kapalıysa Uykusuz bunu sesle
+  söyler: "Claude sizi bekliyor. 5 dakika içinde yanıt vermezseniz oturum
+  biter ve Mac uyur." Onayı telefondan vermek istiyorsanız Ayarlar'dan süreyi uzatın
+  ya da **Claude yanıt beklerken oturumu bitir**'i kapatın.
 - **Güvenlik payı.** Mac ısınıyorsa ya da pil gücündeyken pil, bitiş eşiğinin
   (varsayılan %20) en çok 5 puan üstündeyse otomatik oturum başlamaz.
 - **Elle başlatılan oturumlar.** Kendi başlattığınız oturumlar geri sayımla
@@ -244,7 +257,11 @@ Ayarlar > Claude, kod modu ve ekran bölümündeki **Kur** düğmesi (ya da
 `~/Applications/Uykusuz.app/Contents/MacOS/Uykusuz --install-claude-hooks`)
 Claude Code hook'larını kurar. Kuruluyken Claude yalnızca bir görev yürütürken
 çalışıyor sayılır: bir istek başlayıp Claude yanıtını bitirene kadar ya da
-Claude'un başlattığı bir komut (arka planda bile) çalışırken. Hook'lar
+Claude'un başlattığı bir komut (arka planda bile) çalışırken. Hook'lar ayrıca
+Claude'un bir onay penceresi açtığını, soru sorduğunu ya da plan onayı
+beklediğini bildirir; hiçbir çıktı vermedikleri için bir izne yanıt vermez ve
+bir aracı değiştirmezler. Uykusuz açılışta, daha eski bir sürümün kurduğu
+hook'lara eksik olayları ekler. Hook'lar
 `~/.claude/settings.json` dosyasına eklenir ve dosyanın eski hâli
 `settings.json.uykusuz-yedek` olarak saklanır; aynı düğme (ya da
 `--remove-claude-hooks`) onları kaldırır. Hook'lar kurulu değilken Claude
@@ -260,6 +277,33 @@ masaüstü uygulaması açık olduğu sürece çalışıyor sayılır.
   dokununca ikisi de eski seviyesine döner. Bu sırada ekran kendiliğinden
   kilitlenmez; Mac'in başından kalkarken Ctrl+Cmd+Q ile kilitleyin. Süreler
   Ayarlar > Claude, kod modu ve ekran bölümünden değişir.
+
+### Sen yokken özeti
+
+Kapak en az 3 dakika kapalı kaldıysa, açılınca Claude Code oturumlarında o
+sırada olanlar bir bildirimde bir iki cümleyle anlatılır ve (Ayarlar'da
+açıksa) sesli okunur. Oturumun hâlâ sürmesi gerekmez; Uykusuz kapağı her zaman
+izler. Ayarlar > Sen yokken özeti bölümündeki **Son 2 saati şimdi özetle**
+düğmesi özeti hemen dener.
+
+- **Anahtarsız.** Claude API anahtarı kayıtlı değilse özet bu Mac'te sayılarla
+  yazılır (hangi oturum, kaç dosya, kaç komut, şu anki durum) ve hiçbir yere
+  gönderilmez.
+- **Anahtarla.** Anahtar kayıtlıysa özeti Claude yazar (varsayılan Claude Opus
+  5.5; Ayarlar'dan Sonnet 5.5 ya da Haiku 5.5 seçilebilir). Uykusuz
+  `api.anthropic.com`'a tek bir istek gönderir. İstekte yalnızca oturum
+  başlıkları, araçların kaç kez çalıştığı, düzenlenen dosyaların adları,
+  Claude'un komutlarına yazdığı açıklamalar ve son mesajlarının sonu bulunur;
+  dosya içerikleri, komut satırları ve komut çıktıları gönderilmez. İstek
+  başarısız olursa yerel özet kullanılır. Gönderilecek metni önceden görmek
+  için `~/Applications/Uykusuz.app/Contents/MacOS/Uykusuz --away-digest 60`
+  son 60 dakikanın dökümünü ve yerel özetini yazdırır; hiçbir şey göndermez.
+- **Anahtar.** Anahtar giriş Anahtar Zinciri'nde saklanır; config.json'a ve
+  günlüğe yazılmaz. Uygulama her kurulumda yeniden imzalandığı için yeni bir
+  kurulumdan sonra anahtarı Ayarlar'dan yeniden kaydetmek gerekir. Max ve Team
+  planları her ay Claude Console'da kullanılabilen bir API kredisi içerir
+  (claude.ai > Ayarlar > Faturalandırma > API credits); anahtarı harcama sınırı
+  olan ayrı bir çalışma alanında oluşturun.
 
 ## Kapak kapanınca neler olur
 
@@ -372,8 +416,10 @@ ve içlerindeki dosyaları yalnızca sahibinin erişebileceği izinlere ayarlar.
 Sembolik bağlantılara ve erişim denetim listelerine (ACL'ler, hesap başına ek
 izin girdileri) dokunmaz; bu yüzden başka bir hesap bunlardan biri aracılığıyla
 yine de erişebilir. Günlükler Wi-Fi adları, süreç ayrıntıları ve tmux hedefleri
-içerebilir; bu yüzden bir günlüğü paylaşmadan önce gözden geçirin. Uykusuz
-hiçbir ağ isteği yapmaz.
+içerebilir; bu yüzden bir günlüğü paylaşmadan önce gözden geçirin. Uykusuz'un
+tek ağ isteği isteğe bağlı "Sen yokken" özetidir: yalnızca bir Claude API
+anahtarı kaydettiyseniz `api.anthropic.com`'a gider (bkz.
+[Sen yokken özeti](#sen-yokken-özeti)).
 [docs/extras.md](docs/extras.md#yapılandırma-ve-gizlilik) ayrıntıları içerir.
 
 </details>

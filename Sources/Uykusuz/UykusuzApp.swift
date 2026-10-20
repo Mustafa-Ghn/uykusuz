@@ -26,6 +26,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Starts, extends and ends sessions while an agent is at work (fork
     /// addition).
     let autoSession: AgentAutoSession
+    /// "While you were away" when the lid opens (fork addition).
+    let awaySummary: AwaySummary
     private var statusItem: StatusItemController?
     private var settingsWindow: SettingsWindow?
     private var terminating = false
@@ -34,6 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let manager = SessionManager.live()
         self.manager = manager
         autoSession = AgentAutoSession(manager: manager)
+        awaySummary = AwaySummary(config: { [manager] in manager.config }, notifier: manager.services?.notifier ?? Notifier())
         secrets = KeychainHotspotSecretStore(keychain: KeychainStore()) {
             manager.config.hotspotSSID
         }
@@ -74,13 +77,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 Log.error("could not save config after the launch at login check: \(error.localizedDescription)")
             }
         }
-        let settings = SettingsWindow { [manager, secrets, locationPermission, loginItem] in
+        let settings = SettingsWindow { [manager, secrets, locationPermission, loginItem, awaySummary] in
             AnyView(
                 SettingsView(
                     manager: manager,
                     secrets: secrets,
                     locationPermission: locationPermission,
-                    loginItem: loginItem
+                    loginItem: loginItem,
+                    awaySummary: awaySummary
                 )
             )
         }
@@ -90,6 +94,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         autoSession.onAgentActivityChange = { [weak services = manager.services] active in
             services?.setAgentActive(active)
+        }
+        autoSession.onAgentWaiting = { [weak services = manager.services, manager] in
+            let c = manager.config
+            services?.announceAgentWaiting(endsAfter: c.autoSession && c.endWhileWaiting ? c.approvalWaitGrace : nil)
+        }
+        awaySummary.start()
+        // Hooks an earlier build installed lack the events added since.
+        do {
+            let added = try ClaudeHooks.upgradeIfInstalled()
+            if !added.isEmpty { Log.info("claude hooks: added \(added.joined(separator: ", "))") }
+        } catch {
+            Log.error("claude hooks: could not add the newer events: \(error.localizedDescription)")
         }
         // After the launch reconcile, so a session left on disk is settled
         // before an automatic one can start.

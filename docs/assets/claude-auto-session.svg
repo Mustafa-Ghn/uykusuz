@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="560" viewBox="0 0 1100 560" role="img" aria-labelledby="ca-title ca-desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="596" viewBox="0 0 1100 596" role="img" aria-labelledby="ca-title ca-desc">
   <title id="ca-title">Claude çalışırken otomatik oturum</title>
-  <desc id="ca-desc">Soldan sağa dört adım. 1, Claude başlar: Claude Code hook'ları görevi Uykusuz'a bildirir. 2, Oturum açılır: menü çubuğunda geri sayım yerine Claude yazar; çizimde açık göz, Claude yazısı ve basılı tutarak bitirme düğmesi var. 3, Oturum sürer: Claude çalıştıkça arka planda 2 saatlik dilimlerle uzar. 4, Oturum biter: Claude 5 dakika çalışmayınca biter ve Mac normal uykusuna döner. Altta Kontrol sizde başlıklı bir panel: Claude yazısına tıklayıp süre girerseniz oturum sizin olur, geri sayım başlar ve Claude artık uzatmaz; basılı tutup bitirince ya da sağ tık menüsünden otomatik oturumu 15 dakika, 1 saat, 3 saat ya da seçtiğiniz saate kadar duraklatabilirsiniz; pil bitiş eşiğine (yüzde 20) ya da ısınma sınırına yakınken otomatik oturum başlamaz; elle başlattığınız oturumlar hep geri sayımla görünür ve Claude onlara dokunmaz.</desc>
+  <desc id="ca-desc">Soldan sağa dört adım. 1, Claude başlar: Claude Code hook'ları görevi Uykusuz'a bildirir. 2, Oturum açılır: menü çubuğunda geri sayım yerine Claude yazar; çizimde açık göz, Claude yazısı ve basılı tutarak bitirme düğmesi var. 3, Oturum sürer: Claude çalıştıkça arka planda 2 saatlik dilimlerle uzar. 4, Oturum biter: Claude 5 dakika çalışmayınca biter ve Mac normal uykusuna döner. Altta Kontrol sizde başlıklı bir panel: Claude yazısına tıklayıp süre girerseniz oturum sizin olur, geri sayım başlar ve Claude artık uzatmaz; basılı tutup bitirince ya da sağ tık menüsünden otomatik oturumu 15 dakika, 1 saat, 3 saat ya da seçtiğiniz saate kadar duraklatabilirsiniz; pil bitiş eşiğine (yüzde 20) ya da ısınma sınırına yakınken otomatik oturum başlamaz; elle başlattığınız oturumlar hep geri sayımla görünür ve Claude onlara dokunmaz; Claude sizden onay ya da yanıt beklerken 5 dakika içinde yanıt gelmezse oturum biter ve kapak kapalıysa Uykusuz sesle uyarır.</desc>
   <style>
     svg { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif; }
     .bg { fill: #F3F2EF; }
@@ -54,7 +54,7 @@
     </marker>
   </defs>
 
-  <rect class="bg" x="0" y="0" width="1100" height="560" rx="24"/>
+  <rect class="bg" x="0" y="0" width="1100" height="596" rx="24"/>
 
   <!-- Header -->
   <g transform="translate(32 20) scale(1.6667)">
@@ -116,7 +116,7 @@
 
   <!-- What stays in your hands -->
   <g>
-    <rect class="panel" x="32" y="316" width="1036" height="212" rx="16"/>
+    <rect class="panel" x="32" y="316" width="1036" height="248" rx="16"/>
     <text class="t" x="52" y="352" font-size="20" font-weight="700">Kontrol sizde</text>
 
     <!-- Pointer: take the session over -->
@@ -146,5 +146,12 @@
       <path d="M12 6.5 V12 H16"/>
     </g>
     <text class="t" x="88" y="502" font-size="18">Elle başlattığınız oturumlar hep geri sayımla görünür; Claude onlara dokunmaz.</text>
+
+    <!-- Hourglass: Claude waiting on you ends the session after the wait -->
+    <g class="ic" transform="translate(52 518)">
+      <path d="M6 3 H18 M6 21 H18"/>
+      <path d="M7 3 C7 8.5 12 9.5 12 12 C12 14.5 7 15.5 7 21 M17 3 C17 8.5 12 9.5 12 12 C12 14.5 17 15.5 17 21"/>
+    </g>
+    <text class="t" x="88" y="538" font-size="18">Claude sizden onay ya da yanıt beklerken 5 dakika içinde yanıt gelmezse oturum biter; kapak kapalıysa sesle uyarır.</text>
   </g>
 </svg>

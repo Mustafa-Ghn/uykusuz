@@ -21,9 +21,16 @@ bakımcının bir kanal ayarlamasını bekleyin.
 değildir: aynı kullanıcıyla çalışan diğer süreçler de bu komutları
 çalıştırabilir. Bu dört komut dışında root olarak çalışan bir şey yoktur.
 
-**Ağ.** Uykusuz hiçbir ağ isteği yapmaz: güncelleme denetlemez, kullanım
-verisi ya da çökme raporu göndermez. `NWPathMonitor` yalnızca Wi-Fi
-bağlantısının durumunu izler.
+**Ağ.** Uykusuz güncelleme denetlemez, kullanım verisi ya da çökme raporu
+göndermez. Tek ağ isteği isteğe bağlı "Sen yokken" özetidir: yalnızca
+kullanıcı Ayarlar'da bir Claude API anahtarı kaydettiyse, kapak açıldığında ya
+da Ayarlar'daki düğmeyle `https://api.anthropic.com/v1/messages` adresine tek
+bir HTTPS isteği gönderilir. İstekte oturum başlıkları, araç sayıları,
+düzenlenen dosyaların adları, Claude'un komut açıklamaları ve son mesajlarının
+sonu bulunur; dosya içerikleri, komut satırları ve komut çıktıları bulunmaz.
+Anahtar giriş Anahtar Zinciri'nde tutulur; config.json'a ve günlüğe yazılmaz.
+Anahtar kayıtlı değilse özet yerelde yazılır ve hiçbir istek yapılmaz.
+`NWPathMonitor` yalnızca Wi-Fi bağlantısının durumunu izler.
 
 **Yerel veriler.** Uygulama korumalı alanda (sandbox) çalışmaz; yerel
 günlükler Wi-Fi adlarını, süreç bilgilerini ve tmux hedef adlarını
@@ -57,9 +64,13 @@ yalnızca okur (`IOPMCopyAssertionsByProcess`). Claude Code hook'ları
 isteğe bağlıdır ve Ayarlar'dan kurulur: `~/.claude/settings.json` dosyasına
 hiçbir çıktı vermeyen ve hep başarılı dönen bir komut ekler, dosyanın eski
 hâlini yedekler. Komut, uygulama destek klasörüne oturum başına 0600 izinli
-bir işaret dosyası yazar ya da onu siler. Claude'un başlattığı komutları
-algılamak için yalnızca kullanıcının kendi süreçlerinin adları ve
-argümanları okunur.
+bir işaret dosyası yazar ya da onu siler; Claude bir onay ya da yanıt
+beklerken dosyaya bekleme zamanını yazar. Komut hiçbir çıktı vermediği için
+bir izin isteğine yanıt vermez ve bir aracı değiştirmez. Claude'un başlattığı
+komutları algılamak için yalnızca kullanıcının kendi süreçlerinin adları ve
+argümanları okunur. "Sen yokken" özeti `~/.claude/projects` altındaki Claude
+Code kayıtlarını yalnızca okur ve bunlardan yalnızca yukarıda sayılan alanları
+alır.
 
 **Ekran ve girdi.** Boşta siyah ekran yalnızca son girdiden geçen süreyi
 okur (`CGEventSource.secondsSinceLastEventType`); bunun için tuş vuruşlarını

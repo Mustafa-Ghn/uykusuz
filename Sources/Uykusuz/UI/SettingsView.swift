@@ -9,6 +9,8 @@ struct SettingsView: View {
     let locationPermission: LocationPermission
     /// Launch at login as macOS reports it, not as config.json remembers it.
     let loginItem: LoginItem
+    /// "While you were away" (fork addition); nil leaves its section out.
+    var awaySummary: AwaySummary? = nil
 
     @State private var newPreset = ""
     @State private var presetError: String?
@@ -23,6 +25,10 @@ struct SettingsView: View {
     @State private var wouldFreeze: [String] = []
     /// Whether ~/.claude/settings.json runs this app's hook, and the last
     /// install or removal error.
+    @State private var apiKeyDraft = ""
+    @State private var apiKeyStatus = "\u{2026}"
+    @State private var apiKeySaved = false
+    @State private var apiKeyBusy = false
     @State private var claudeHooksInstalled = ClaudeHooks.isInstalled()
     @State private var claudeHooksError: String?
 
@@ -33,6 +39,9 @@ struct SettingsView: View {
             agentSection
             powerSection
             agentModeSection
+            if awaySummary != nil {
+                awaySummarySection
+            }
             networkSection
             appSection
         }
@@ -283,7 +292,15 @@ struct SettingsView: View {
                     .foregroundStyle(.red)
             }
             Toggle("Claude çalışırken otomatik oturum", isOn: bind(\.autoSession))
-            Text("Claude bir görev yürüttüğü sürece oturum kendiliğinden başlar ve uzar; Claude 5 dakika çalışmayınca biter. Bu oturumda menü çubuğunda geri sayım yerine \"Claude\" yazar. Kapak kapansa da Mac uyanık kalır, bu yüzden Mac'i kapalı bir çantaya koymayın. \"Claude\" yazısına tıklayıp bir süre girerseniz oturum sizin olur ve o andan itibaren girdiğiniz süre kadar sürer. Oturumu siz bitirirseniz Claude bir kez durana kadar yenisi başlamaz.")
+            Text("Claude bir görev yürüttüğü sürece oturum kendiliğinden başlar ve uzar; Claude 5 dakika çalışmayınca biter. Bu oturumda menü çubuğunda geri sayım yerine \"Claude\" yazar. Kapak kapansa da Mac uyanık kalır, bu yüzden Mac'i kapalı bir çantaya koymayın. \"Claude\" yazısına tıklayıp bir süre girerseniz oturum sizin olur ve o andan itibaren girdiğiniz süre kadar sürer. Oturumu basılı tutarak bitirirseniz otomatik oturumu duraklatmak için süre seçebilirsiniz; duraklatma sağ tık menüsünden de açılıp kapatılır.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Toggle("Claude yanıt beklerken oturumu bitir", isOn: bind(\.endWhileWaiting))
+            Stepper(value: bind(\.approvalWaitGrace), in: 60...3600, step: 60) {
+                LabeledContent("Bekleme süresi", value: "\(Int(manager.config.approvalWaitGrace / 60)) dk")
+            }
+            .disabled(!manager.config.endWhileWaiting)
+            Text("Claude bir komut için onay, bir soru için yanıt ya da bir plan için onay beklerken bu süre içinde yanıt gelmezse otomatik oturum biter ve Mac uyur; yanıt verince yeniden başlar. Kapak kapalıyken Uykusuz bunu sesle söyler. Onayı telefondan vermek istiyorsanız süreyi uzatın ya da bunu kapatın.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Toggle("Kod modu: Claude çalışırken Düşük Güç Modu (kapak açıkken)", isOn: bind(\.codeMode))
@@ -299,6 +316,88 @@ struct SettingsView: View {
             Text("Oturum sürerken kapak açıkken ekran koruyucu ve ekran uykusu çalışmaz. Bu süre boyunca girdi olmazsa ekran parlaklığı 0'a iner ve ekran hiç ışık vermez; klavye ışığı da söner. Bir tuşa ya da fareye dokununca ikisi de geri gelir. Bu sırada ekran kendiliğinden kilitlenmez; Mac'in başından kalkarken Ctrl+Cmd+Q ile kilitleyin.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    private var awaySummarySection: some View {
+        Section("Sen yokken özeti") {
+            Toggle("Kapak açılınca Claude'un yaptıklarını özetle", isOn: bind(\.awaySummary))
+            Toggle("Özeti sesli oku", isOn: bind(\.awaySummarySpoken))
+                .disabled(!manager.config.awaySummary)
+            LabeledContent("Claude API anahtarı") {
+                HStack {
+                    Text(apiKeyStatus)
+                        .foregroundStyle(.secondary)
+                    if apiKeySaved {
+                        Button("Sil") { changeAPIKey(saving: nil) }
+                            .disabled(apiKeyBusy)
+                    }
+                }
+            }
+            HStack {
+                SecureField("sk-ant-\u{2026}", text: $apiKeyDraft)
+                Button("Kaydet") { changeAPIKey(saving: apiKeyDraft) }
+                    .disabled(apiKeyBusy || apiKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            Picker("Özeti yazan model", selection: bind(\.summaryModel)) {
+                ForEach(AnthropicSummaryClient.models, id: \.id) { model in
+                    Text(model.name).tag(model.id)
+                }
+            }
+            if let awaySummary {
+                Button("Son 2 saati şimdi özetle") {
+                    let now = Date()
+                    Task { await awaySummary.summarize(from: now.addingTimeInterval(-2 * 3600), to: now, sayIfNothing: true) }
+                }
+                .disabled(awaySummary.isSummarizing)
+                if let result = awaySummary.lastResult {
+                    Text("Son özet \(result)")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Text("Kapak en az 3 dakika kapalı kaldıysa, açılınca Claude Code oturumlarında olanlar bir bildirimde bir iki cümleyle anlatılır. Anahtar kayıtlı değilse özet bu Mac'te sayılarla yazılır ve hiçbir yere gönderilmez. Anahtar kayıtlıysa özeti Claude yazar. İstek yalnızca api.anthropic.com'a gider ve yalnızca oturum başlıklarını, düzenlenen dosyaların adlarını, Claude'un komutlarına yazdığı açıklamaları ve son mesajlarının sonunu içerir; dosya içerikleri, komut satırları ve komut çıktıları gönderilmez. Anahtar giriş Anahtar Zinciri'nde saklanır, config.json'a ve günlüğe yazılmaz. Max ve Team planlarının aylık API kredisini Claude Console'a bağlayın ve anahtarı harcama sınırı olan ayrı bir çalışma alanında oluşturun.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .task { await refreshAPIKeyStatus() }
+    }
+
+    private func refreshAPIKeyStatus() async {
+        guard let awaySummary else { return }
+        switch await awaySummary.keyStore.read() {
+        case let .key(key):
+            apiKeyStatus = "Kayıtlı (\(KeychainAnthropicKeyStore.masked(key)))"
+            apiKeySaved = true
+        case .none:
+            apiKeyStatus = "Kayıtlı değil"
+            apiKeySaved = false
+        case .unreadable:
+            apiKeyStatus = "Bu sürüm okuyamıyor; yeniden kaydedin"
+            apiKeySaved = true
+        case let .error(message):
+            apiKeyStatus = "Okunamadı: \(message)"
+            apiKeySaved = false
+        }
+    }
+
+    /// Saves `saving`, or deletes the key for nil.
+    private func changeAPIKey(saving key: String?) {
+        guard let awaySummary, !apiKeyBusy else { return }
+        apiKeyBusy = true
+        Task {
+            defer { apiKeyBusy = false }
+            do {
+                if let key {
+                    try await awaySummary.keyStore.save(key)
+                    apiKeyDraft = ""
+                } else {
+                    try await awaySummary.keyStore.delete()
+                }
+                await refreshAPIKeyStatus()
+            } catch {
+                apiKeyStatus = (key == nil ? "Silinemedi: " : "Kaydedilemedi: ") + error.localizedDescription
+            }
         }
     }
 

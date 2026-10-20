@@ -385,6 +385,14 @@ final class AppServices {
         powerChanged()
     }
 
+    /// Claude stopped for the user (fork addition): said aloud if the lid is
+    /// closed and alerts are on (`VoiceAnnouncer.announce`).
+    func announceAgentWaiting(endsAfter grace: TimeInterval?) {
+        guard let announcer else { return }
+        let text = VoiceAnnouncer.waitingSentence(endsAfter: grace)
+        Task { await announcer.announce(text) }
+    }
+
     /// The idle black screen is on while a session runs with the lid open,
     /// if Settings has it on.
     func updateBlackout() {

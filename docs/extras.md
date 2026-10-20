@@ -98,7 +98,12 @@ garantisi değildir.
 Yapılandırma `~/Library/Application Support/Uykusuz/config.json` dosyasında
 tutulur. Uygulamanın denetimleri için Ayarlar'ı kullanın; tam yapılandırmayı
 ve varsayılanları [Config.swift](../Sources/Uykusuz/Model/Config.swift)
-tanımlar. Yerel günlükler SSID'leri, süreç meta verilerini ve tmux hedeflerini
+tanımlar. Uygulamanın tek ağ isteği isteğe bağlı "Sen yokken" özetidir:
+yalnızca Ayarlar'da bir Claude API anahtarı kaydettiyseniz `api.anthropic.com`'a
+gider ve yalnızca oturum başlıklarını, araç sayılarını, düzenlenen dosyaların
+adlarını, Claude'un komut açıklamalarını ve son mesajlarının sonunu içerir.
+Anahtar giriş Anahtar Zinciri'nde tutulur; config.json'a ve günlüğe yazılmaz
+(ayrıntılar: [Sen yokken özeti](../README.md#sen-yokken-özeti)). Yerel günlükler SSID'leri, süreç meta verilerini ve tmux hedeflerini
 içerebilir. Herkese açık olarak paylaşmadan önce onları gözden geçirin.
 Uygulamanın `uykusuz.log` dosyasına yazdığı satırlar, gövdeleri özel
 (private) olarak işaretlenmiş biçimde birleşik günlüğe (unified log) de

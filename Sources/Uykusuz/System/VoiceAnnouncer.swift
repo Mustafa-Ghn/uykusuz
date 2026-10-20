@@ -109,6 +109,15 @@ final class VoiceAnnouncer {
         Log.info("voice alert spoken")
     }
 
+    /// What is said when Claude stops for the user with the lid closed: a
+    /// prompt on the screen is never seen there. `endsAfter`: the wait after
+    /// which the automatic session ends, nil when it does not.
+    static func waitingSentence(endsAfter grace: TimeInterval?) -> String {
+        guard let grace else { return "Claude sizi bekliyor. Onay ya da yanıt istiyor." }
+        let minutes = max(Int((grace / 60).rounded()), 1)
+        return "Claude sizi bekliyor. \(minutes) dakika içinde yanıt vermezseniz oturum biter ve Mac uyur."
+    }
+
     /// What is said before a session ends with the lid closed, or nil for
     /// an end the user asked for.
     static func endSentence(_ reason: EndReason, batteryPercent: Int?) -> String? {
@@ -118,6 +127,7 @@ final class VoiceAnnouncer {
         case .batteryUnreadable: "Pil düzeyi okunamıyor. Oturum bitiyor, Mac uyuyacak."
         case .thermalCritical: "Mac aşırı ısındı. Oturum bitiyor, Mac uyuyacak."
         case .agentIdle: "Claude çalışmayı bıraktı. Oturum bitiyor, Mac uyuyacak."
+        case .agentWaiting: "Claude hâlâ yanıtınızı bekliyor. Oturum bitiyor, Mac uyuyacak."
         case .user, .quit, .backstop, .recoveryUnavailable, .startFailed: nil
         }
     }

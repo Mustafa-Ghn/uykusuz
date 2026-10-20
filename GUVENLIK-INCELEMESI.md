@@ -42,12 +42,15 @@ Claude Code çalışırken oturumu kendiliğinden açıp kapatıyor.
 
 ### Ağ
 
-- **Uykusuz hiçbir ağ isteği yapmaz.** İncelenen sürümdeki tek dış istek,
-  Ayarlar'daki "Güncellemeleri Denetle" düğmesine basıldığında `api.github.com`
-  üzerinden sürüm listesini okuyan iki GET isteğiydi; bu düğme ve istekler
-  kaldırıldı. 2026-10-20 itibarıyla kaynakta `URLSession`, `URLRequest` ya da
-  `NWConnection` kullanımı yoktur ve kurulu derlemede gömülü bir http(s)
-  adresi bulunmaz.
+- **Kendiliğinden hiçbir ağ isteği yapılmaz.** İncelenen sürümdeki tek dış
+  istek, Ayarlar'daki "Güncellemeleri Denetle" düğmesine basıldığında
+  `api.github.com` üzerinden sürüm listesini okuyan iki GET isteğiydi; bu düğme
+  ve istekler kaldırıldı. 0.3.0 ile eklenen tek istek isteğe bağlı "Sen yokken"
+  özetidir ve yalnızca kullanıcı bir Claude API anahtarı kaydettiyse yapılır
+  ([Sonraki değişiklikler](#sonraki-değişiklikler)). Kaynakta `URLSession` ve
+  `URLRequest` yalnızca `ClaudeSummaryClient.swift` içinde kullanılır; tek
+  adres `https://api.anthropic.com/v1/messages`'tır. `NWConnection` kullanımı
+  yoktur.
 - `NWPathMonitor` yalnızca Wi-Fi bağlantısının durumunu izler, ağ trafiği
   oluşturmaz.
 - Betiklerde `curl`, `wget`, `nc`, `ssh` ya da indirilen bir içeriği çalıştırma
@@ -154,8 +157,9 @@ farklı olur.
 
 ## Sonraki değişiklikler
 
-İncelenen commit'ten sonra eklenen her özellik yereldir ve ağ isteği yapmaz.
-Yeni bir yetki, `sudo` komutu ya da kalıcı bileşen eklenmedi.
+İncelenen commit'ten sonra eklenen özellikler, aşağıdaki isteğe bağlı "Sen
+yokken" özeti dışında yereldir ve ağ isteği yapmaz. Yeni bir yetki, `sudo`
+komutu ya da kalıcı bileşen eklenmedi.
 
 - **Otomatik oturum:** Güç kilitlerini IOKit üzerinden yalnızca okur
   (`IOPMCopyAssertionsByProcess`).
@@ -177,7 +181,21 @@ Yeni bir yetki, `sudo` komutu ya da kalıcı bileşen eklenmedi.
   çalıştırır. Fark, doğrulamadan önce paketin içindeki kodun çalışmasıdır;
   paketi yeniden imzalayabilen biri ajan dosyasını da değiştirebildiği için
   pratik bir koruma kaybı yoktur.
-- **Güncelleme denetimi:** Kaldırıldı; uygulamanın tek ağ isteği buydu.
+- **Claude yanıt beklerken (0.3.0):** Hook'lara onay penceresi, soru, plan
+  onayı, reddedilen izin, hata veren araç ve API hatasıyla biten tur olayları
+  eklendi. Komut yine hiçbir çıktı vermez ve hep başarılı döner; bu yüzden bir
+  izne yanıt vermez. İşaret dosyasına yalnızca bekleme zamanı eklenir. Uygulama
+  açılışta, kullanıcının daha önce kurduğu hook'lara eksik olayları ekler; hiç
+  kurulmamışsa dokunmaz.
+- **Sen yokken özeti (0.3.0):** Kapak açılınca `~/.claude/projects` altındaki
+  Claude Code kayıtlarını yalnızca okur; oturum başlığı, araç sayıları,
+  düzenlenen dosyaların adları, komut açıklamaları ve Claude'un son
+  mesajlarının sonu dışında hiçbir şey alınmaz. Anahtar kayıtlı değilse özet
+  yerelde yazılır. Anahtar kayıtlıysa bu metin, `URLSession` ile önbelleksiz ve
+  çerezsiz tek bir HTTPS isteğiyle `api.anthropic.com`'a gönderilir. Anahtar
+  giriş Anahtar Zinciri'nde, okunması istem açmayan bir kayıtta tutulur;
+  config.json'a ve günlüğe yazılmaz.
+- **Güncelleme denetimi:** Kaldırıldı; incelenen sürümün tek ağ isteği buydu.
 
 ## Kötü amaçlı olmayan zayıf noktalar
 
@@ -193,7 +211,12 @@ Yeni bir yetki, `sudo` komutu ya da kalıcı bileşen eklenmedi.
   sonra çökerse o süreç donmuş kalabilir. Menü bunu bildirir; elle
   `kill -CONT <pid>` ile çözülür.
 - **Ad-hoc imza:** Her yeniden derlemede cdhash değişir. Bu yüzden hotspot
-  parolasını yeniden kurulumdan sonra tekrar girmek gerekir.
+  parolasını ve Claude API anahtarını yeniden kurulumdan sonra tekrar girmek
+  gerekir.
+- **Claude API anahtarı:** Anahtarı ele geçiren biri o hesabın API kredisini
+  harcayabilir. Anahtarı harcama sınırı olan ayrı bir çalışma alanında
+  oluşturun; Console kuruluşunda ödeme yöntemi yoksa en çok o ayın kredisi
+  harcanır.
 - **Boşta siyah ekranda kilit:** Ekran karardığında kendiliğinden
   kilitlenmez; Mac'in başından kalkarken Ctrl+Cmd+Q ile kilitleyin.
 

@@ -4,6 +4,22 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.3.0 — 2026-10-21
+
+### Eklenenler
+
+- **Claude yanıt beklerken.** Claude bir komut için onay, bir soru için yanıt ya da bir plan için onay beklerken çalışıyor sayılmaz; bekleme süresi (varsayılan 5 dakika) içinde yanıt gelmezse otomatik oturum biter ve Mac uyur, yanıt verince yeniden başlar. Kapak kapalıysa Uykusuz bunu sesle söyler. Ayarlar > Claude, kod modu ve ekran bölümünden kapatılır ya da süresi değiştirilir.
+- **Sen yokken özeti.** Kapak en az 3 dakika kapalı kaldıysa, açılınca Claude'un o sırada yaptıkları bir bildirimde bir iki cümleyle anlatılır ve sesli okunur. Anahtar kayıtlı değilse özet bu Mac'te sayılarla yazılır ve hiçbir yere gönderilmez. Ayarlar > Sen yokken özeti bölümündeki düğme son 2 saati hemen özetler.
+- **Claude API anahtarıyla özet.** Ayarlar'da bir Claude API anahtarı kaydederseniz özeti Claude yazar (varsayılan Claude Opus 5.5). Uygulamanın tek ağ isteği budur: yalnızca api.anthropic.com'a gider ve yalnızca oturum başlıklarını, araç sayılarını, düzenlenen dosyaların adlarını, komut açıklamalarını ve Claude'un son mesajlarının sonunu içerir; dosya içerikleri, komut satırları ve çıktıları gönderilmez. Anahtar giriş Anahtar Zinciri'nde saklanır.
+
+### Değişenler
+
+- **Daha fazla Claude Code hook'u.** Hook'lar artık onay penceresini, soruyu, plan onayını, reddedilen izni, onaydan sonra hata veren aracı ve API hatasıyla biten turu da bildirir. Uykusuz açılışta, daha eski bir sürümün kurduğu hook'lara eksik olayları kendiliğinden ekler.
+
+### Düzeltilenler
+
+- **Tek kopya.** Uykusuz zaten çalışırken ikinci bir kopyası açılmaz; bu sürümün tanımadığı bir seçenekle (örneğin --away-digest yazım hatasıyla) yapılan çalıştırma da uygulamayı açmaz. Programı doğrudan çalıştırmak ikinci bir kopya açabiliyordu ve iki kopya aynı oturum dosyalarını paylaşıp birbirinin işine karışıyordu.
+
 ## 0.2.0 — 2026-10-21
 
 Sürüm notlarının başladığı sürüm. Öne çıkanlar:

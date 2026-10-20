@@ -1118,8 +1118,12 @@ older build is tightened when the app reads it:
   `CFBundleShortVersionString` and `CFBundleVersion` from the running
   bundle's Info.plist, and the launch log line carries the same, so a bug
   report can name the build. A binary from `swift run` has no Info.plist
-  and says so. There is no update check: Uykusuz makes no network
-  requests. An upgrade is the installer run again from an updated working
+  and says so. There is no update check. The only network request is the
+  optional away summary (Settings > Sen yokken özeti): one HTTPS request to
+  `api.anthropic.com/v1/messages`, made only when the user saved a Claude
+  API key, carrying session titles, tool counts, edited file names, command
+  descriptions and the end of Claude's last messages; the key lives in the
+  login keychain. An upgrade is the installer run again from an updated working
   copy (docs/install.md, Yükseltmeler), because the recovery agent pins
   the installed build's code requirement and the installer needs the
   administrator password.

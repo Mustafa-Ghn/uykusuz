@@ -16,7 +16,9 @@ final class AutoSessionPolicyTests: XCTestCase {
         charging: Bool = false,
         thermal: ProcessInfo.ThermalState = .nominal,
         endFloor: Int = 20,
-        pausedUntil: Date? = nil
+        pausedUntil: Date? = nil,
+        waiting: Bool = false,
+        waitGrace: TimeInterval = AutoSessionPolicy.idleGrace
     ) -> AutoSessionPolicy.Inputs {
         .init(
             now: t0.addingTimeInterval(offset),
@@ -27,7 +29,9 @@ final class AutoSessionPolicyTests: XCTestCase {
             isCharging: charging,
             thermal: thermal,
             endFloor: endFloor,
-            pausedUntil: pausedUntil
+            pausedUntil: pausedUntil,
+            agentWaiting: waiting,
+            waitGrace: waitGrace
         )
     }
 
@@ -126,6 +130,19 @@ final class AutoSessionPolicyTests: XCTestCase {
         XCTAssertNil(p.step(inputs(45, active: true)))
         XCTAssertNil(p.step(inputs(60, active: false)))
         XCTAssertEqual(p.step(inputs(75, active: true)), .start(AutoSessionPolicy.chunk))
+    }
+
+    func testAWaitOnTheUserEndsOursAfterTheWaitGraceInstead() {
+        var p = AutoSessionPolicy()
+        XCTAssertEqual(p.step(inputs(0, active: true)), .start(AutoSessionPolicy.chunk))
+        p.started(at: t0)
+        let endsAt = t0.addingTimeInterval(AutoSessionPolicy.chunk)
+        func waiting(_ offset: TimeInterval) -> AutoSessionPolicy.Action? {
+            p.step(inputs(offset, active: false, started: t0, endsAt: endsAt, waiting: true, waitGrace: 600))
+        }
+        XCTAssertNil(waiting(60))
+        XCTAssertNil(waiting(AutoSessionPolicy.idleGrace + 30), "past the idle grace, but a wait has its own")
+        XCTAssertEqual(waiting(600), .end)
     }
 
     func testNothingStartsWhilePausedAndOursEndsWhenAPauseBegins() {
@@ -380,6 +397,48 @@ final class AutoSessionDisplayTests: XCTestCase {
         XCTAssertNil(auto.policy.ownSession)
     }
 
+    func testAWaitOnTheUserIsAnnouncedOnceAndEndsTheSessionAfterItsGrace() async throws {
+        let m = h.makeManager()
+        m.config.autoSession = true
+        m.config.approvalWaitGrace = 600
+        var reading: ClaudeActivity.State = .working
+        var announced = 0
+        let clock = h.clock
+        let auto = AgentAutoSession(manager: m, agentState: { _ in reading }, readPower: { (80, false) }, thermal: { .nominal }, clock: { clock.now })
+        auto.onAgentWaiting = { announced += 1 }
+        await auto.tick()
+        XCTAssertTrue(m.isAutoSession)
+
+        reading = .waiting(since: clock.now)
+        clock.advance(15)
+        await auto.tick()
+        clock.advance(AutoSessionPolicy.idleGrace + 15)
+        await auto.tick()
+        XCTAssertEqual(announced, 1, "said once for the wait")
+        XCTAssertNotNil(m.session, "past the idle grace, inside the wait grace")
+        clock.advance(600)
+        await auto.tick()
+        XCTAssertNil(m.session)
+        XCTAssertTrue(h.notifier.posts.contains { $0.body.contains("yanıt bekliyordu") }, "\(h.notifier.posts)")
+
+        reading = .working
+        await auto.tick()
+        XCTAssertTrue(m.isAutoSession, "answered: the automatic session is back")
+    }
+
+    func testWithTheSettingOffAWaitCountsAsWork() async throws {
+        let m = h.makeManager()
+        m.config.autoSession = true
+        m.config.endWhileWaiting = false
+        let clock = h.clock
+        let auto = AgentAutoSession(manager: m, agentState: { _ in .waiting(since: clock.now) }, readPower: { (80, false) }, thermal: { .nominal }, clock: { clock.now })
+        await auto.tick()
+        XCTAssertTrue(m.isAutoSession, "a wait counts as work, so a session starts for it")
+        clock.advance(3600)
+        await auto.tick()
+        XCTAssertNotNil(m.session)
+    }
+
     func testTheStatusItemReadsClaudeAndNeverTheCountdown() {
         XCTAssertEqual(StatusRootView.liveText(isAutoSession: true, countdown: {
             XCTFail("the countdown is not read for the automatic session")
@@ -563,6 +622,13 @@ final class VoiceAnnouncerTests: XCTestCase {
         XCTAssertNotNil(VoiceAnnouncer.endSentence(.timer, batteryPercent: nil))
         XCTAssertNil(VoiceAnnouncer.endSentence(.user, batteryPercent: nil), "an end the user asked for is not announced")
         XCTAssertNil(VoiceAnnouncer.endSentence(.quit, batteryPercent: nil))
+        XCTAssertEqual(VoiceAnnouncer.endSentence(.agentWaiting, batteryPercent: nil), "Claude hâlâ yanıtınızı bekliyor. Oturum bitiyor, Mac uyuyacak.")
+    }
+
+    func testWaitingSentences() {
+        XCTAssertEqual(VoiceAnnouncer.waitingSentence(endsAfter: 300),
+                       "Claude sizi bekliyor. 5 dakika içinde yanıt vermezseniz oturum biter ve Mac uyur.")
+        XCTAssertEqual(VoiceAnnouncer.waitingSentence(endsAfter: nil), "Claude sizi bekliyor. Onay ya da yanıt istiyor.")
     }
 }
 
@@ -643,6 +709,9 @@ final class ForkConfigTests: XCTestCase {
         c.idleBlackout = false
         c.idleBlackoutAfter = 120
         c.keyboardOffAfter = 45
+        c.endWhileWaiting = false
+        c.approvalWaitGrace = 900
+        c.autoPausedUntil = Date(timeIntervalSince1970: 2_000_000_000)
         let back = try JSONDecoder().decode(Config.self, from: JSONEncoder().encode(c))
         XCTAssertEqual(back, c)
     }
@@ -700,6 +769,29 @@ final class ClaudeHooksSettingsTests: XCTestCase {
                        "the backup is the file before the first change, never overwritten")
     }
 
+    func testTheNewerEventsAreInstalledWithTheirMatchersAndAddedToAnEarlierInstall() throws {
+        let settings = dir.appendingPathComponent("settings.json")
+        let command = ClaudeHooks.command
+        let earlier: [String: Any] = ["hooks": Dictionary(uniqueKeysWithValues: ["UserPromptSubmit", "PostToolUse", "Stop", "SessionEnd"].map { event in
+            (event, [["hooks": [["type": "command", "command": command]]]])
+        })]
+        try JSONSerialization.data(withJSONObject: earlier).write(to: settings)
+        XCTAssertEqual(ClaudeHooks.missingEvents(settingsURL: settings), ["StopFailure", "PermissionRequest", "PermissionDenied", "Notification", "PreToolUse", "PostToolUseFailure"])
+
+        XCTAssertEqual(try ClaudeHooks.upgradeIfInstalled(settingsURL: settings), ["StopFailure", "PermissionRequest", "PermissionDenied", "Notification", "PreToolUse", "PostToolUseFailure"])
+        XCTAssertEqual(ClaudeHooks.missingEvents(settingsURL: settings), [])
+        let hooks = try XCTUnwrap(try json(settings)["hooks"] as? [String: Any])
+        let pre = try XCTUnwrap((hooks["PreToolUse"] as? [[String: Any]])?.first)
+        XCTAssertEqual(pre["matcher"] as? String, "AskUserQuestion|ExitPlanMode")
+        XCTAssertNil((hooks["PermissionRequest"] as? [[String: Any]])?.first?["matcher"], "every permission dialog")
+        XCTAssertEqual(try ClaudeHooks.upgradeIfInstalled(settingsURL: settings), [], "nothing more to add")
+
+        let none = dir.appendingPathComponent("none.json")
+        try Data("{}".utf8).write(to: none)
+        XCTAssertEqual(try ClaudeHooks.upgradeIfInstalled(settingsURL: none), [], "never installs hooks the user did not ask for")
+        XCTAssertEqual(try Data(contentsOf: none), Data("{}".utf8))
+    }
+
     func testInstallCreatesAMissingFileAndRefusesOneThatIsNotAnObject() throws {
         let fresh = dir.appendingPathComponent("new/settings.json")
         XCTAssertEqual(try ClaudeHooks.install(settingsURL: fresh), .installed)
@@ -734,8 +826,8 @@ final class ClaudeHookCommandTests: XCTestCase {
     }
 
     @discardableResult
-    private func hook(_ event: String, session: String = "abc-123", at offset: TimeInterval = 0) -> Int32? {
-        let input = Data(#"{"session_id":"\#(session)","hook_event_name":"\#(event)"}"#.utf8)
+    private func hook(_ event: String, session: String = "abc-123", at offset: TimeInterval = 0, extra: String = "") -> Int32? {
+        let input = Data(#"{"session_id":"\#(session)","hook_event_name":"\#(event)"\#(extra)}"#.utf8)
         return ClaudeHookCommand.run(["--claude-hook"], readInput: { input }, paths: paths, now: t0.addingTimeInterval(offset)) { (4242, self.identity) }
     }
 
@@ -758,6 +850,46 @@ final class ClaudeHookCommandTests: XCTestCase {
         hook("UserPromptSubmit", at: 200)
         hook("SessionEnd", at: 300)
         XCTAssertNil(try marker(), "the session ending removes it too")
+    }
+
+    func testAWaitOnTheUserIsMarkedFromItsFirstSignUntilWorkGoesOn() throws {
+        hook("UserPromptSubmit")
+        hook("PermissionRequest", at: 30, extra: #","tool_name":"Bash""#)
+        XCTAssertEqual(try marker()?.waitingSince, t0.addingTimeInterval(30))
+        hook("Notification", at: 36, extra: #","notification_type":"permission_prompt","message":"Claude needs your permission""#)
+        XCTAssertEqual(try marker()?.waitingSince, t0.addingTimeInterval(30), "the same wait, still from its first sign")
+        XCTAssertEqual(try marker()?.updatedAt, t0.addingTimeInterval(36))
+        hook("PostToolUseFailure", at: 90)
+        XCTAssertNil(try marker()?.waitingSince, "approved: the tool ran, and failed")
+
+        hook("PreToolUse", at: 100, extra: #","tool_name":"AskUserQuestion""#)
+        XCTAssertEqual(try marker()?.waitingSince, t0.addingTimeInterval(100), "a question")
+        hook("PermissionDenied", at: 110, extra: #","tool_name":"Bash""#)
+        XCTAssertNil(try marker()?.waitingSince, "a refusal: Claude carries on")
+
+        hook("PreToolUse", at: 120, extra: #","tool_name":"Bash""#)
+        hook("Notification", at: 121, extra: #","notification_type":"idle_prompt""#)
+        XCTAssertNil(try marker()?.waitingSince, "a tool that does not wait, a notification that is not a wait")
+        XCTAssertEqual(try marker()?.updatedAt, t0.addingTimeInterval(110), "and the marker is left as it was")
+
+        hook("StopFailure", at: 130)
+        XCTAssertNil(try marker(), "a turn an API error ended is over too")
+    }
+
+    func testTheStateIsWorkingWaitingOrIdle() throws {
+        let alive: (Int32) -> ProcessLookup = { _ in .present(ProcessSignalState(ppid: 1, stopped: false, identity: self.identity)) }
+        func state(bash: Bool = false) -> ClaudeActivity.State {
+            ClaudeActivity.state(paths: paths, now: t0.addingTimeInterval(200), lookup: alive) { bash }
+        }
+        XCTAssertEqual(state(), .idle)
+        hook("UserPromptSubmit", session: "a")
+        hook("PermissionRequest", session: "a", at: 50)
+        XCTAssertEqual(state(), .waiting(since: t0.addingTimeInterval(50)))
+        XCTAssertEqual(state(bash: true), .working, "a command Claude started is still running")
+        hook("UserPromptSubmit", session: "b", at: 60)
+        XCTAssertEqual(state(), .working, "another session is at work")
+        hook("Stop", session: "b", at: 70)
+        XCTAssertEqual(state(), .waiting(since: t0.addingTimeInterval(50)))
     }
 
     func testOtherArgumentsAreNotThisModeAndBadInputChangesNothing() throws {

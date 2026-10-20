@@ -503,25 +503,30 @@ struct KeychainStore: KeychainStoring, @unchecked Sendable {
     /// nil is Security's process-wide switch. Tests against a throwaway
     /// keychain pass one that refuses to allow prompts.
     private let prompts: LegacyKeychain.PromptSwitch?
+    /// What the keychain prompt names an item this store adds by.
+    private let descriptor: String
 
     init(
         keychain: SecKeychain? = nil,
         calls: any KeychainItemCalls = SecurityItemCalls(),
-        prompts: LegacyKeychain.PromptSwitch? = nil
+        prompts: LegacyKeychain.PromptSwitch? = nil,
+        descriptor: String = KeychainStore.accessDescriptor
     ) {
-        self.init(searchList: keychain.map { [$0] }, newItems: keychain, calls: calls, prompts: prompts)
+        self.init(searchList: keychain.map { [$0] }, newItems: keychain, calls: calls, prompts: prompts, descriptor: descriptor)
     }
 
     init(
         searchList: [SecKeychain]?,
         newItems: SecKeychain?,
         calls: any KeychainItemCalls = SecurityItemCalls(),
-        prompts: LegacyKeychain.PromptSwitch? = nil
+        prompts: LegacyKeychain.PromptSwitch? = nil,
+        descriptor: String = KeychainStore.accessDescriptor
     ) {
         self.searchList = searchList
         self.newItems = newItems
         self.calls = calls
         self.prompts = prompts
+        self.descriptor = descriptor
     }
 
     /// The item itself only. A replacement is never read: which save left
@@ -668,7 +673,7 @@ struct KeychainStore: KeychainStoring, @unchecked Sendable {
             kSecAttrLabel as String: label,
             kSecValueData as String: data,
             kSecAttrAccess as String: try LegacyKeychain.access(
-                descriptor: Self.accessDescriptor,
+                descriptor: descriptor,
                 trusting: [try LegacyKeychain.thisApplication()]
             ),
         ]

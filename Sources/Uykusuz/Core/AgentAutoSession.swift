@@ -11,7 +11,8 @@ import Foundation
 ///   battery the charge is more than `startMargin` above the end floor.
 /// - Extend: our session has less than `extendBelow` left while the agent
 ///   is still at work, by `chunk`.
-/// - End: the agent has not been at work for `idleGrace`.
+/// - End: the agent has not been at work for `idleGrace`, or for
+///   `Inputs.waitGrace` while it waits on the user.
 /// - Paused (`Inputs.pausedUntil`, the user's choice): no start before
 ///   then, and our session, if one still runs, ends.
 /// - Hands off after an end it did not ask for (the user held the end
@@ -38,6 +39,10 @@ struct AutoSessionPolicy: Equatable, Sendable {
         var endFloor: Int
         /// `Config.autoPausedUntil`.
         var pausedUntil: Date? = nil
+        /// Not at work because Claude waits on the user; ends after
+        /// `waitGrace` rather than `idleGrace`.
+        var agentWaiting = false
+        var waitGrace: TimeInterval = AutoSessionPolicy.idleGrace
 
         var paused: Bool { pausedUntil.map { now < $0 } ?? false }
     }
@@ -104,7 +109,8 @@ struct AutoSessionPolicy: Equatable, Sendable {
                 }
                 return nil
             }
-            if let last = lastActive, i.now.timeIntervalSince(last) < Self.idleGrace { return nil }
+            let grace = i.agentWaiting ? i.waitGrace : Self.idleGrace
+            if let last = lastActive, i.now.timeIntervalSince(last) < grace { return nil }
             // Kept until the session is gone: an end refused by a busy
             // lock is asked for again on the next step.
             ending = true
@@ -143,13 +149,14 @@ struct AutoSessionPolicy: Equatable, Sendable {
 
 /// Runs `AutoSessionPolicy` every `interval` seconds for the life of the
 /// app (fork addition), and reports whether an agent is at work so code
-/// mode can follow it (`onAgentActivityChange`).
+/// mode can follow it (`onAgentActivityChange`), and when Claude starts to
+/// wait on the user (`onAgentWaiting`).
 @MainActor
 final class AgentAutoSession {
     static let interval: TimeInterval = 15
 
     private let manager: SessionManager
-    private let isAgentActive: @MainActor (Config) -> Bool
+    private let agentState: @MainActor (Config) -> ClaudeActivity.State
     private let readPower: @MainActor () -> (percent: Int?, isCharging: Bool)
     private let thermal: @MainActor () -> ProcessInfo.ThermalState
     private let clock: @MainActor () -> Date
@@ -157,20 +164,34 @@ final class AgentAutoSession {
     private var timer: (any DispatchSourceTimer)?
     private var ticking = false
     private(set) var agentActive = false
+    /// Since when Claude has waited on the user, while it does.
+    private(set) var waitingSince: Date?
     var onAgentActivityChange: (@MainActor (Bool) -> Void)?
+    var onAgentWaiting: (@MainActor () -> Void)?
 
     init(
         manager: SessionManager,
-        isAgentActive: @escaping @MainActor (Config) -> Bool = { AgentActivity.isActive(config: $0, paths: .fromEnvironment()) },
+        agentState: @escaping @MainActor (Config) -> ClaudeActivity.State = { AgentActivity.state(config: $0, paths: .fromEnvironment()) },
         readPower: @escaping @MainActor () -> (percent: Int?, isCharging: Bool) = AgentAutoSession.livePower,
         thermal: @escaping @MainActor () -> ProcessInfo.ThermalState = { ProcessInfo.processInfo.thermalState },
         clock: @escaping @MainActor () -> Date = { Date() }
     ) {
         self.manager = manager
-        self.isAgentActive = isAgentActive
+        self.agentState = agentState
         self.readPower = readPower
         self.thermal = thermal
         self.clock = clock
+    }
+
+    /// An agent that is either at work or not, never waiting.
+    convenience init(
+        manager: SessionManager,
+        isAgentActive: @escaping @MainActor (Config) -> Bool,
+        readPower: @escaping @MainActor () -> (percent: Int?, isCharging: Bool) = AgentAutoSession.livePower,
+        thermal: @escaping @MainActor () -> ProcessInfo.ThermalState = { ProcessInfo.processInfo.thermalState },
+        clock: @escaping @MainActor () -> Date = { Date() }
+    ) {
+        self.init(manager: manager, agentState: { isAgentActive($0) ? .working : .idle }, readPower: readPower, thermal: thermal, clock: clock)
     }
 
     func start() {
@@ -195,12 +216,21 @@ final class AgentAutoSession {
         ticking = true
         defer { ticking = false }
         let config = manager.config
-        let active = isAgentActive(config)
+        let reading = agentState(config)
+        let waiting = reading.waitingSince
+        // Off, a wait counts as work, as it did before this setting.
+        let endsWhileWaiting = config.endWhileWaiting
+        let active = reading == .working || (waiting != nil && !endsWhileWaiting)
         if active != agentActive {
             agentActive = active
-            Log.info("agent \(active ? "at work" : "idle")")
+            Log.info("agent \(active ? "at work" : (waiting != nil ? "waiting on the user" : "idle"))")
             onAgentActivityChange?(active)
         }
+        if let waiting, waitingSince == nil {
+            Log.info("agent waiting on the user since \(waiting)")
+            onAgentWaiting?()
+        }
+        waitingSince = waiting
         guard config.autoSession else {
             // Turned off: a session of ours runs out its time as the user's.
             if policy.ownSession != nil { policy.handOver() }
@@ -225,7 +255,9 @@ final class AgentAutoSession {
             isCharging: power.isCharging,
             thermal: thermal(),
             endFloor: config.endFloor,
-            pausedUntil: manager.config.autoPausedUntil
+            pausedUntil: manager.config.autoPausedUntil,
+            agentWaiting: waiting != nil && endsWhileWaiting,
+            waitGrace: config.approvalWaitGrace
         ))
         switch action {
         case let .start(duration)?:
@@ -243,6 +275,9 @@ final class AgentAutoSession {
         case .end? where manager.autoSessionsPaused(at: now):
             Log.info("auto session: ending, automatic sessions are paused")
             _ = await manager.end(reason: .user)
+        case .end? where waiting != nil && endsWhileWaiting:
+            Log.info("auto session: ending, Claude has waited on the user for \(Int(config.approvalWaitGrace / 60)) min")
+            _ = await manager.end(reason: .agentWaiting)
         case .end?:
             Log.info("auto session: ending, the agent has been idle for \(Int(AutoSessionPolicy.idleGrace / 60)) min")
             _ = await manager.end(reason: .agentIdle)
