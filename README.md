@@ -63,7 +63,8 @@ Claude çalışırken bunu kendiliğinden de yapar.
   en çok 30 gün sürer.
 - **Kapak kapalıyken çalışma.** Oturum boyunca Mac, kapağı kapalıyken de uyumaz.
 - **Claude ile otomatik oturum.** Claude Code bir görev yürüttüğü sürece oturum
-  kendiliğinden açılır, uzar ve Claude durunca kapanır.
+  kendiliğinden açılır, uzar ve Claude durunca kapanır; istediğinizde belli bir
+  süre duraklatılır.
 - **Kapak eylemleri.** Kapak kapanınca ekran ve klavye ışığı söner, seçili
   uygulamalar dondurulur, ses kapanır ve Düşük Güç Modu açılır; kapağı açmak
   hepsini geri almaya çalışır.
@@ -155,7 +156,8 @@ git pull
 Kurulum betiği çalışan uygulamadan kapanmasını ister. Geri alınmayı bekleyen
 bir değişiklik varken uygulama kapanmayı reddeder; betik o zaman durur ve
 uygulamaya da kurtarma ajanına da dokunmaz. Parolanız her çalıştırmada bir kez
-istenir. Kurulu sürümü Ayarlar > Uygulama gösterir. Ayrıntılar:
+istenir. Kurulu sürümü Ayarlar > Uygulama gösterir; her sürümde nelerin
+değiştiği [CHANGELOG.md](CHANGELOG.md) dosyasındadır. Ayrıntılar:
 [docs/install.md](docs/install.md#yükseltmeler).
 
 ## Kullanım
@@ -201,7 +203,7 @@ Ayarlar penceresi göze sağ tıklayınca açılan menüden (⌘,) açılır:
 ## Claude ile otomatik oturum
 
 <p align="center">
-  <img src="docs/assets/claude-auto-session.svg" alt="Dört adımlık akış: Claude Code hook'ları görevi Uykusuz'a bildirir; oturum kendiliğinden açılır ve menü çubuğunda geri sayım yerine Claude yazar; oturum Claude çalıştıkça 2 saatlik dilimlerle uzar; Claude 5 dakika çalışmayınca oturum biter. Altta: Claude yazısına tıklayıp süre girerseniz oturum sizin olur; basılı tutup bitirirseniz Claude yeniden başlayana kadar otomatik oturum açılmaz; pil eşiğe ya da Mac ısınma sınırına yakınken başlamaz; elle başlatılan oturumlar geri sayımla görünür." width="880">
+  <img src="docs/assets/claude-auto-session.svg" alt="Dört adımlık akış: Claude Code hook'ları görevi Uykusuz'a bildirir; oturum kendiliğinden açılır ve menü çubuğunda geri sayım yerine Claude yazar; oturum Claude çalıştıkça 2 saatlik dilimlerle uzar; Claude 5 dakika çalışmayınca oturum biter. Altta: Claude yazısına tıklayıp süre girerseniz oturum sizin olur; basılı tutup bitirince ya da sağ tık menüsünden otomatik oturumu 15 dakika, 1 saat, 3 saat ya da seçtiğiniz saate kadar duraklatabilirsiniz; pil eşiğe ya da Mac ısınma sınırına yakınken başlamaz; elle başlatılan oturumlar geri sayımla görünür." width="880">
 </p>
 
 Claude Code bir görev yürüttüğü sürece Uykusuz kendiliğinden bir oturum açar;
@@ -214,8 +216,20 @@ Claude durunca 5 dk sonra biter" satırını gösterir.
   sizin olur: girdiğiniz süre o andan itibaren sayılır ve geri sayım görünür.
   Claude bu oturumu artık uzatmaz ve bitirmez. Süreniz dolduğunda Claude hâlâ
   çalışıyorsa otomatik oturum yeniden başlar.
-- **Erken bitirme.** Oturumu basılı tutarak bitirirseniz Claude bir kez durup
-  yeniden başlayana kadar otomatik oturum açılmaz.
+- **Erken bitirme ve duraklatma.** Otomatik oturumu basılı tutarak bitirince
+  menü çubuğunda bir menü açılır: otomatik oturumu **15 dakika**, **1 saat**,
+  **3 saat** ya da **Saat seç…** ile seçtiğiniz saate kadar duraklatabilirsiniz
+  (geçmiş bir saat seçerseniz yarının o saati kullanılır). **Duraklatma**'yı
+  seçer ya da menüyü kapatırsanız Claude bir kez durup yeniden başlayana kadar
+  otomatik oturum açılmaz.
+- **Duraklatılmışken.** Claude çalışsa da otomatik oturum açılmaz. Menü
+  çubuğunda kapalı gözün yanında küçük bir duraklatma işareti durur ve sağ tık
+  menüsü "Otomatik oturum duraklatıldı; saat 23:20 itibarıyla yeniden açılır"
+  gibi bir satır gösterir. Duraklatma uygulama yeniden açılsa da sürer; süre
+  dolduğunda Claude hâlâ çalışıyorsa otomatik oturum hemen yeniden açılır. Sağ
+  tık menüsündeki **Otomatik oturumu duraklat** alt menüsü aynı seçenekleri her
+  zaman sunar (süren bir otomatik oturumu da bitirir); **Otomatik oturumu
+  sürdür** duraklatmayı erken bitirir.
 - **Güvenlik payı.** Mac ısınıyorsa ya da pil gücündeyken pil, bitiş eşiğinin
   (varsayılan %20) en çok 5 puan üstündeyse otomatik oturum başlamaz.
 - **Elle başlatılan oturumlar.** Kendi başlattığınız oturumlar geri sayımla

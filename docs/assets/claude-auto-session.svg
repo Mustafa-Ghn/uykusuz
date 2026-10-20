@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1100" height="560" viewBox="0 0 1100 560" role="img" aria-labelledby="ca-title ca-desc">
   <title id="ca-title">Claude çalışırken otomatik oturum</title>
-  <desc id="ca-desc">Soldan sağa dört adım. 1, Claude başlar: Claude Code hook'ları görevi Uykusuz'a bildirir. 2, Oturum açılır: menü çubuğunda geri sayım yerine Claude yazar; çizimde açık göz, Claude yazısı ve basılı tutarak bitirme düğmesi var. 3, Oturum sürer: Claude çalıştıkça arka planda 2 saatlik dilimlerle uzar. 4, Oturum biter: Claude 5 dakika çalışmayınca biter ve Mac normal uykusuna döner. Altta Kontrol sizde başlıklı bir panel: Claude yazısına tıklayıp süre girerseniz oturum sizin olur, geri sayım başlar ve Claude artık uzatmaz; basılı tutup bitirirseniz Claude durup yeniden başlayana kadar otomatik oturum açılmaz; pil bitiş eşiğine (yüzde 20) ya da ısınma sınırına yakınken otomatik oturum başlamaz; elle başlattığınız oturumlar hep geri sayımla görünür ve Claude onlara dokunmaz.</desc>
+  <desc id="ca-desc">Soldan sağa dört adım. 1, Claude başlar: Claude Code hook'ları görevi Uykusuz'a bildirir. 2, Oturum açılır: menü çubuğunda geri sayım yerine Claude yazar; çizimde açık göz, Claude yazısı ve basılı tutarak bitirme düğmesi var. 3, Oturum sürer: Claude çalıştıkça arka planda 2 saatlik dilimlerle uzar. 4, Oturum biter: Claude 5 dakika çalışmayınca biter ve Mac normal uykusuna döner. Altta Kontrol sizde başlıklı bir panel: Claude yazısına tıklayıp süre girerseniz oturum sizin olur, geri sayım başlar ve Claude artık uzatmaz; basılı tutup bitirince ya da sağ tık menüsünden otomatik oturumu 15 dakika, 1 saat, 3 saat ya da seçtiğiniz saate kadar duraklatabilirsiniz; pil bitiş eşiğine (yüzde 20) ya da ısınma sınırına yakınken otomatik oturum başlamaz; elle başlattığınız oturumlar hep geri sayımla görünür ve Claude onlara dokunmaz.</desc>
   <style>
     svg { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif; }
     .bg { fill: #F3F2EF; }
@@ -125,12 +125,12 @@
     </g>
     <text class="t" x="88" y="394" font-size="18">“Claude” yazısına tıklayıp süre girin: oturum sizin olur, geri sayım başlar, Claude artık uzatmaz.</text>
 
-    <!-- Hold-to-end ring -->
+    <!-- Pause: hold to end, or the right-click submenu, offers 15 min, 1 h, 3 h or a chosen time -->
     <g class="ic" transform="translate(52 410)">
       <circle cx="12" cy="12" r="10"/>
-      <path d="M8.5 8.5 L15.5 15.5 M15.5 8.5 L8.5 15.5"/>
+      <path d="M9.5 8 V16 M14.5 8 V16"/>
     </g>
-    <text class="t" x="88" y="430" font-size="18">Basılı tutup bitirirseniz Claude durup yeniden başlayana kadar otomatik oturum açılmaz.</text>
+    <text class="t" x="88" y="430" font-size="18">Basılı tutup bitirince ya da sağ tık menüsünden otomatik oturumu 15 dk, 1 sa, 3 sa ya da seçtiğiniz saate kadar duraklatın.</text>
 
     <!-- Low battery -->
     <g class="ic" transform="translate(52 446)">
