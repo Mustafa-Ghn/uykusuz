@@ -885,6 +885,7 @@ struct Harness {
         c.freezeList = ["com.tinyspeck.slackmacgap", "net.whatsapp.WhatsApp", "com.hnc.Discord"]
         c.voiceAlerts = false
         c.codeMode = false
+        c.idleBlackout = false
         c.autoSession = false
     }
 }

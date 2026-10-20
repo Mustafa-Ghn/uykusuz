@@ -84,15 +84,15 @@ struct Config: Codable, Equatable, Sendable {
     /// Bundle ids whose sleep assertion means an agent is at work.
     var autoSessionAgents: [String] = Config.defaultAutoSessionAgents
     /// Code mode: with the lid open during a session and an agent at work,
-    /// Low Power Mode is on (`FloorRules.LowPowerCause.codeMode`), the display
-    /// dims after `codeModeDimAfter` seconds without input and the keyboard
-    /// backlight goes off after `codeModeKeyboardOffAfter` (`CodeModeDimmer`).
+    /// Low Power Mode is on (`FloorRules.LowPowerCause.codeMode`).
     var codeMode: Bool = true
-    var codeModeDimAfter: TimeInterval = 60
-    /// The display level code mode dims to, 0...1. A panel already at or
-    /// below it is left alone.
-    var codeModeDimLevel: Float = 0.15
-    var codeModeKeyboardOffAfter: TimeInterval = 30
+    /// The idle black screen: during a session with the lid open, no screen
+    /// saver and no display sleep; after `idleBlackoutAfter` seconds without
+    /// input the display goes to brightness 0 (no light), and the keyboard
+    /// backlight goes off after `keyboardOffAfter` (`IdleBlackout`).
+    var idleBlackout: Bool = true
+    var idleBlackoutAfter: TimeInterval = 60
+    var keyboardOffAfter: TimeInterval = 30
 
     // App
     var launchAtLogin: Bool = false
@@ -204,9 +204,9 @@ struct Config: Codable, Equatable, Sendable {
         autoSession = try c.decodeIfPresent(Bool.self, forKey: .autoSession) ?? d.autoSession
         autoSessionAgents = try c.decodeIfPresent([String].self, forKey: .autoSessionAgents) ?? d.autoSessionAgents
         codeMode = try c.decodeIfPresent(Bool.self, forKey: .codeMode) ?? d.codeMode
-        codeModeDimAfter = try c.decodeIfPresent(TimeInterval.self, forKey: .codeModeDimAfter) ?? d.codeModeDimAfter
-        codeModeDimLevel = try c.decodeIfPresent(Float.self, forKey: .codeModeDimLevel) ?? d.codeModeDimLevel
-        codeModeKeyboardOffAfter = try c.decodeIfPresent(TimeInterval.self, forKey: .codeModeKeyboardOffAfter) ?? d.codeModeKeyboardOffAfter
+        idleBlackout = try c.decodeIfPresent(Bool.self, forKey: .idleBlackout) ?? d.idleBlackout
+        idleBlackoutAfter = try c.decodeIfPresent(TimeInterval.self, forKey: .idleBlackoutAfter) ?? d.idleBlackoutAfter
+        keyboardOffAfter = try c.decodeIfPresent(TimeInterval.self, forKey: .keyboardOffAfter) ?? d.keyboardOffAfter
         launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? d.launchAtLogin
         launchAtLoginInstall = try c.decodeIfPresent(String.self, forKey: .launchAtLoginInstall)
     }

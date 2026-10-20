@@ -77,13 +77,15 @@ final class AppServices {
     /// Whether an agent is at work, as `AgentAutoSession` last read it.
     /// Kept between sessions so the next one starts with it.
     private(set) var agentActive = false
-    /// Code mode's idle dimming (fork addition).
-    private(set) lazy var codeMode = CodeModeDimmer(
+    /// The idle black screen (fork addition).
+    private(set) lazy var blackout = IdleBlackout(
         display: display,
         keyboard: keyboard,
         idleSeconds: idleSeconds,
-        config: { [weak self] in self?.manager?.config ?? Config() }
+        config: { [weak self] in self?.manager?.config ?? Config() },
+        awake: displayAwake
     )
+    private let displayAwake: any DisplayAwakeHolding
     /// Spoken alerts while the lid is closed (fork addition); nil outside a
     /// session.
     private(set) var announcer: VoiceAnnouncer?
@@ -126,10 +128,12 @@ final class AppServices {
         idleSeconds: @escaping @Sendable () -> Double = { UserInput.secondsSinceLastInput() },
         lidSimulation: (any LidSimulating)? = LidSimulationBuild.makeWatcher(),
         lidSimulationEnabled: Bool = LidSimulationBuild.isCompiledIn,
-        speech: any SpeechSynthesizing = NoSpeech()
+        speech: any SpeechSynthesizing = NoSpeech(),
+        displayAwake: any DisplayAwakeHolding = NoDisplayAwake()
     ) {
         self.idleSeconds = idleSeconds
         self.speech = speech
+        self.displayAwake = displayAwake
         self.paths = paths
         self.notifier = notifier
         self.audio = audio
@@ -182,11 +186,11 @@ final class AppServices {
         // until it exits; the manager calls back then.
         manager.resyncAfterCommand = { [weak self] replayLid in self?.resyncAfterCommand(replayLid: replayLid) }
         sampler.follow(manager)
-        // A level code mode dimmed is not the user's: hold the sampler.
+        // A level the idle black screen set is not the user's: hold the sampler.
         let displayHeld = sampler.displayHeld
         let keyboardHeld = sampler.keyboardHeld
-        sampler.displayHeld = { [weak self] in displayHeld() || (self?.codeMode.isHoldingDisplay ?? false) }
-        sampler.keyboardHeld = { [weak self] in keyboardHeld() || (self?.codeMode.isHoldingKeyboard ?? false) }
+        sampler.displayHeld = { [weak self] in displayHeld() || (self?.blackout.isHoldingDisplay ?? false) }
+        sampler.keyboardHeld = { [weak self] in keyboardHeld() || (self?.blackout.isHoldingKeyboard ?? false) }
 
         lid.onChange = { [weak self] closed in self?.lidChanged(closed) }
         lid.start()
@@ -223,13 +227,13 @@ final class AppServices {
 
         browserTasks.append(Task { await self.refreshBrowsers() })
         syncState()
-        updateCodeMode()
+        updateBlackout()
     }
 
     func stop() {
         guard running else { return }
         running = false
-        codeMode.setActive(false)
+        blackout.setActive(false)
         manager?.willEnd = nil
         announcer = nil
         lid.stop()
@@ -367,25 +371,25 @@ final class AppServices {
     /// not at the next battery, thermal or lid event. Queued on the floor
     /// chain like a power event; a no-op outside a session.
     func reevaluateFloors() {
-        updateCodeMode()
+        updateBlackout()
         powerChanged()
     }
 
     // MARK: Fork additions: agent activity, code mode, spoken alerts
 
-    /// `AgentAutoSession` read a change. Code mode and the floors follow.
+    /// `AgentAutoSession` read a change. Code mode's Low Power Mode follows
+    /// through the floors.
     func setAgentActive(_ active: Bool) {
         guard active != agentActive else { return }
         agentActive = active
-        updateCodeMode()
         powerChanged()
     }
 
-    /// Code mode is on while a session runs with the lid open and an agent
-    /// at work, if Settings has it on.
-    func updateCodeMode() {
-        let on = running && !status.lidClosed && agentActive && (manager?.config.codeMode ?? false)
-        codeMode.setActive(on)
+    /// The idle black screen is on while a session runs with the lid open,
+    /// if Settings has it on.
+    func updateBlackout() {
+        let on = running && !status.lidClosed && (manager?.config.idleBlackout ?? false)
+        blackout.setActive(on)
     }
 
     /// Before a session ends with the lid closed: say why, while sleep is
@@ -444,8 +448,9 @@ final class AppServices {
     private func lidChanged(_ closed: Bool) {
         lastLidEvent = closed
         status.lidClosed = closed
-        // Put dimmed levels back before the close journals them.
-        if closed { codeMode.setActive(false) }
+        // Levels back before the close journals them, and the display
+        // assertion gone so the close's display sleep request is honoured.
+        if closed { blackout.setActive(false) }
         guard let actions = lidActions else { return }
         // Numbered now, not when its turn comes: an open makes a close that
         // is still queued or waiting on a Docker probe stale at once.
@@ -463,7 +468,7 @@ final class AppServices {
             self.powerChanged()
             if !closed {
                 self.scheduleSampleAfterOpen()
-                self.updateCodeMode()
+                self.updateBlackout()
             }
         }
         lidTasks.append(task)

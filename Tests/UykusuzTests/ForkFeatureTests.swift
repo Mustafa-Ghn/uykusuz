@@ -102,74 +102,93 @@ final class AutoSessionPolicyTests: XCTestCase {
 }
 
 @MainActor
-final class CodeModeDimmerTests: XCTestCase {
+final class IdleBlackoutTests: XCTestCase {
     final class Idle: @unchecked Sendable { var seconds: Double = 0 }
+    final class Awake: DisplayAwakeHolding {
+        private(set) var holds = 0
+        private(set) var releases = 0
+        var held: Bool { holds > releases }
+        func hold() { holds += 1 }
+        func release() { releases += 1 }
+    }
 
-    private func make(display: Float = 0.7, keyboard: Float? = 0.5) -> (CodeModeDimmer, FakeDisplayDimmer, FakeKeyboardBacklight, Idle) {
+    private func make(display: Float = 0.7, keyboard: Float? = 0.5) -> (IdleBlackout, FakeDisplayDimmer, FakeKeyboardBacklight, Idle, Awake) {
         let d = FakeDisplayDimmer(brightness: display)
         let k = FakeKeyboardBacklight(brightness: keyboard)
         let idle = Idle()
+        let awake = Awake()
         let config = Config()
-        let dimmer = CodeModeDimmer(display: d, keyboard: k, idleSeconds: { idle.seconds }, config: { config })
-        dimmer.setActive(true, startTimer: false)
-        return (dimmer, d, k, idle)
+        let blackout = IdleBlackout(display: d, keyboard: k, idleSeconds: { idle.seconds }, config: { config }, awake: awake)
+        blackout.setActive(true, startTimer: false)
+        return (blackout, d, k, idle, awake)
     }
 
-    func testKeyboardGoesOffThenTheDisplayDims() {
-        let (dimmer, d, k, idle) = make()
-        let level = Config().codeModeDimLevel
+    func testHoldsOffTheScreenSaverThenTurnsTheKeyboardAndTheDisplayOff() {
+        let (blackout, d, k, idle, awake) = make()
+        XCTAssertTrue(awake.held, "no screen saver or display sleep while on")
         idle.seconds = 10
-        dimmer.tick()
+        blackout.tick()
         XCTAssertEqual(d.brightness, 0.7)
         XCTAssertEqual(k.brightness, 0.5)
         idle.seconds = 30
-        dimmer.tick()
+        blackout.tick()
         XCTAssertEqual(k.brightness, 0)
         XCTAssertEqual(d.brightness, 0.7)
-        XCTAssertTrue(dimmer.isHoldingKeyboard)
-        XCTAssertFalse(dimmer.isHoldingDisplay)
         idle.seconds = 60
-        dimmer.tick()
-        XCTAssertEqual(d.brightness, level)
-        XCTAssertTrue(dimmer.isHoldingDisplay)
+        blackout.tick()
+        XCTAssertEqual(d.brightness, 0, "black: no backlight")
+        XCTAssertTrue(blackout.isHoldingDisplay)
+        XCTAssertTrue(blackout.isHoldingKeyboard)
         idle.seconds = 120
-        dimmer.tick()
-        XCTAssertEqual(d.sets, [level], "a dim panel is not dimmed again")
-        XCTAssertEqual(k.sets, [0])
+        blackout.tick()
+        XCTAssertEqual(d.sets, [0], "a black panel is not set again")
+    }
+
+    func testAPanelLitAgainWhileIdleIsDarkenedAgainAndTheUsersLevelKept() {
+        let (blackout, d, _, idle, _) = make()
+        idle.seconds = 90
+        blackout.tick()
+        d.brightness = 0.3 // auto-brightness under a change of light
+        blackout.tick()
+        XCTAssertEqual(d.brightness, 0)
+        idle.seconds = 0.2
+        blackout.tick()
+        XCTAssertEqual(d.brightness, 0.7, "the level from before the black, not the one auto-brightness set")
     }
 
     func testInputBringsBothBack() {
-        let (dimmer, d, k, idle) = make()
+        let (blackout, d, k, idle, _) = make()
         idle.seconds = 90
-        dimmer.tick()
+        blackout.tick()
         idle.seconds = 0.2
-        dimmer.tick()
+        blackout.tick()
         XCTAssertEqual(d.brightness, 0.7)
         XCTAssertEqual(k.brightness, 0.5)
-        XCTAssertFalse(dimmer.isHoldingDisplay)
-        XCTAssertFalse(dimmer.isHoldingKeyboard)
+        XCTAssertFalse(blackout.isHoldingDisplay)
+        XCTAssertFalse(blackout.isHoldingKeyboard)
     }
 
-    func testTurningOffRestoresAndStopsDimming() {
-        let (dimmer, d, k, idle) = make()
+    func testTurningOffRestoresAndLetsTheDisplayIdleAgain() {
+        let (blackout, d, k, idle, awake) = make()
         idle.seconds = 90
-        dimmer.tick()
-        dimmer.setActive(false)
+        blackout.tick()
+        blackout.setActive(false)
         XCTAssertEqual(d.brightness, 0.7)
         XCTAssertEqual(k.brightness, 0.5)
+        XCTAssertFalse(awake.held, "the assertion goes, so a lid close can sleep the display")
         idle.seconds = 300
-        dimmer.tick()
-        XCTAssertEqual(d.brightness, 0.7, "an inactive dimmer changes nothing")
+        blackout.tick()
+        XCTAssertEqual(d.brightness, 0.7, "an inactive blackout changes nothing")
     }
 
-    func testADimPanelAndADarkKeyboardAreLeftAlone() {
-        let (dimmer, d, k, idle) = make(display: 0.1, keyboard: 0)
+    func testABlackPanelAndADarkKeyboardAreLeftAlone() {
+        let (blackout, d, k, idle, _) = make(display: 0, keyboard: 0)
         idle.seconds = 300
-        dimmer.tick()
+        blackout.tick()
         XCTAssertEqual(d.sets, [])
         XCTAssertEqual(k.sets, [])
-        XCTAssertFalse(dimmer.isHoldingDisplay)
-        XCTAssertFalse(dimmer.isHoldingKeyboard)
+        XCTAssertFalse(blackout.isHoldingDisplay)
+        XCTAssertFalse(blackout.isHoldingKeyboard)
     }
 }
 
@@ -298,9 +317,9 @@ final class ForkConfigTests: XCTestCase {
         XCTAssertTrue(c.autoSession)
         XCTAssertEqual(c.autoSessionAgents, ["com.anthropic.claudefordesktop"])
         XCTAssertTrue(c.codeMode)
-        XCTAssertEqual(c.codeModeDimAfter, 60)
-        XCTAssertEqual(c.codeModeKeyboardOffAfter, 30)
-        XCTAssertEqual(c.codeModeDimLevel, 0.15)
+        XCTAssertTrue(c.idleBlackout)
+        XCTAssertEqual(c.idleBlackoutAfter, 60)
+        XCTAssertEqual(c.keyboardOffAfter, 30)
         XCTAssertTrue(FreezePlanner.builtInProtected.contains("ch.protonvpn.mac"))
         XCTAssertTrue(FreezePlanner.builtInProtected.contains("com.philandro.anydesk"))
     }
@@ -310,7 +329,8 @@ final class ForkConfigTests: XCTestCase {
         XCTAssertTrue(c.voiceAlerts)
         XCTAssertTrue(c.autoSession)
         XCTAssertTrue(c.codeMode)
-        XCTAssertEqual(c.codeModeDimAfter, 60)
+        XCTAssertTrue(c.idleBlackout)
+        XCTAssertEqual(c.idleBlackoutAfter, 60)
         XCTAssertFalse(c.freezeAllApps, "a config.json without the key never opts in to freezing every app")
     }
 
@@ -320,9 +340,9 @@ final class ForkConfigTests: XCTestCase {
         c.autoSession = false
         c.autoSessionAgents = ["com.example.agent"]
         c.codeMode = false
-        c.codeModeDimAfter = 120
-        c.codeModeDimLevel = 0.3
-        c.codeModeKeyboardOffAfter = 45
+        c.idleBlackout = false
+        c.idleBlackoutAfter = 120
+        c.keyboardOffAfter = 45
         let back = try JSONDecoder().decode(Config.self, from: JSONEncoder().encode(c))
         XCTAssertEqual(back, c)
     }

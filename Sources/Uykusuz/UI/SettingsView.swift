@@ -264,7 +264,7 @@ struct SettingsView: View {
 
     /// Fork additions: the automatic session for Claude and code mode.
     private var agentModeSection: some View {
-        Section("Claude ve kod modu") {
+        Section("Claude, kod modu ve ekran") {
             LabeledContent("Claude Code hook'ları") {
                 HStack {
                     Text(claudeHooksInstalled ? "Kurulu" : "Kurulu değil")
@@ -283,18 +283,20 @@ struct SettingsView: View {
                     .foregroundStyle(.red)
             }
             Toggle("Claude çalışırken otomatik oturum", isOn: bind(\.autoSession))
-            Text("Claude bir Claude Code oturumu yürüttüğü sürece oturum kendiliğinden başlar ve uzar; Claude 5 dakika boşta kalınca biter. Kapak kapansa da Mac uyanık kalır, bu yüzden Mac'i kapalı bir çantaya koymayın. Otomatik oturumu siz bitirirseniz Claude kapanana kadar yenisi başlamaz.")
+            Text("Claude bir görev yürüttüğü sürece oturum kendiliğinden başlar ve uzar; Claude 5 dakika çalışmayınca biter. Kapak kapansa da Mac uyanık kalır, bu yüzden Mac'i kapalı bir çantaya koymayın. Otomatik oturumu siz bitirirseniz Claude bir kez durana kadar yenisi başlamaz.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Toggle("Kod modu (kapak açıkken, Claude çalışırken)", isOn: bind(\.codeMode))
+            Toggle("Kod modu: Claude çalışırken Düşük Güç Modu (kapak açıkken)", isOn: bind(\.codeMode))
                 .onChange(of: manager.config.codeMode) { manager.services?.reevaluateFloors() }
-            Stepper(value: bind(\.codeModeDimAfter), in: 30...600, step: 30) {
-                LabeledContent("Ekranı kısma süresi", value: "\(Int(manager.config.codeModeDimAfter)) sn")
+            Toggle("Boşta siyah ekran (ekran koruyucu yerine)", isOn: bind(\.idleBlackout))
+                .onChange(of: manager.config.idleBlackout) { manager.services?.reevaluateFloors() }
+            Stepper(value: bind(\.idleBlackoutAfter), in: 15...600, step: 15) {
+                LabeledContent("Ekranı karartma süresi", value: "\(Int(manager.config.idleBlackoutAfter)) sn")
             }
-            Stepper(value: bind(\.codeModeKeyboardOffAfter), in: 10...600, step: 10) {
-                LabeledContent("Klavye ışığını kapatma süresi", value: "\(Int(manager.config.codeModeKeyboardOffAfter)) sn")
+            Stepper(value: bind(\.keyboardOffAfter), in: 10...600, step: 10) {
+                LabeledContent("Klavye ışığını kapatma süresi", value: "\(Int(manager.config.keyboardOffAfter)) sn")
             }
-            Text("Kod modunda Düşük Güç Modu açılır (pildeyken etkili). Bu sürelerde girdi olmazsa ekran %\(Int((manager.config.codeModeDimLevel * 100).rounded())) parlaklığa iner ve klavye ışığı kapanır; bir tuşa ya da fareye dokununca ikisi de geri gelir.")
+            Text("Oturum sürerken kapak açıkken ekran koruyucu ve ekran uykusu çalışmaz. Bu süre boyunca girdi olmazsa ekran parlaklığı 0'a iner ve ekran hiç ışık vermez; klavye ışığı da söner. Bir tuşa ya da fareye dokununca ikisi de geri gelir. Bu sırada ekran kendiliğinden kilitlenmez; Mac'in başından kalkarken Ctrl+Cmd+Q ile kilitleyin.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

@@ -65,10 +65,13 @@ Upstream Insomnia'dan farklı olarak Uykusuz'da:
   Kurulu değilken Claude masaüstü uygulaması açık olduğu sürece çalışıyor
   sayılır.
 - **Kod modu.** Bir oturum sürerken kapak açıksa ve Claude çalışıyorsa
-  Düşük Güç Modu açılır (pildeyken etkili); 60 sn girdi olmazsa ekran %15
-  parlaklığa iner, 30 sn olmazsa klavye ışığı kapanır. Bir tuşa ya da
-  fareye dokununca ikisi de eski seviyesine döner. Süreler Ayarlar >
-  Claude ve kod modu bölümünden değişir.
+  Düşük Güç Modu açılır (pildeyken etkili).
+- **Boşta siyah ekran.** Oturum sürerken kapak açıkken ekran koruyucu ve
+  ekran uykusu çalışmaz. 60 sn girdi olmazsa ekran parlaklığı 0'a iner ve
+  ekran hiç ışık vermez; 30 sn olmazsa klavye ışığı söner. Bir tuşa ya da
+  fareye dokununca ikisi de eski seviyesine döner. Bu sırada ekran
+  kendiliğinden kilitlenmez; Mac'in başından kalkarken Ctrl+Cmd+Q ile
+  kilitleyin. Süreler Ayarlar > Claude, kod modu ve ekran bölümünden değişir.
 - **Kapak kapalıyken sesli uyarı.** Kapak kapalıyken bildirimler
   görünmediği için pil eşiği, ısınma ve oturum sonu Türkçe sesle (Yelda)
   söylenir: Uykusuz sesi bir an açar, söyler ve eski ses ayarını geri koyar.
