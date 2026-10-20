@@ -13,7 +13,6 @@
   <img alt="Apple Silicon" src="https://img.shields.io/badge/Apple%20Silicon-arm64-1d1d1f">
   <img alt="Swift 6.2" src="https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white">
   <img alt="Arayüz: Türkçe" src="https://img.shields.io/badge/aray%C3%BCz-T%C3%BCrk%C3%A7e-c8102e">
-  <img alt="Lisans: MIT" src="https://img.shields.io/badge/lisans-MIT-3da639">
 </p>
 
 <p align="center">
