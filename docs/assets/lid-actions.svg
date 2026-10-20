@@ -1,10 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="460" viewBox="0 0 1000 460" role="img" aria-labelledby="la-title la-desc">
-  <title id="la-title">Uykusuz lid actions during a session</title>
-  <desc id="la-desc">A simplified three-column diagram. Left, an illustrated Settings excerpt titled Lid-close actions: the freeze list contains WhatsApp, Word and Excel; Pause idle Docker is off; Mute audio is on. Arrows lead to the middle column, Lid closes: freeze selected apps, pause idle Docker, mute if enabled. Docker is paused only if the rule is on and two checks, the second right before the pause, find no containers running; a container that is still starting can slip past the second check. Muting saves your volume first. An arrow leads to the right column, Lid opens: try to restore, session continues. Uykusuz resumes only the freezes it can verify it made, resumes Docker only if this rule paused it, and restores the saved volume. The timer never stopped; only its on-screen redraw paused. This repeats every time the lid closes and opens. Without an active session the lid does nothing. The Settings panel is a simplified illustration, not a screenshot.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="576" viewBox="0 0 1100 576" role="img" aria-labelledby="la-title la-desc">
+  <title id="la-title">Oturum sırasında Uykusuz'un kapak eylemleri</title>
+  <desc id="la-desc">Sadeleştirilmiş, üç sütunlu bir çizim. Solda Kapak kapanınca yapılacaklar başlıklı bir Ayarlar kesiti: Ekranı ve klavye ışığını kapat açık; dondurulacaklar listesinde WhatsApp, Word, Excel ve ParaView var; Diğer tüm uygulamaları dondur açık; Boştaki Docker'ı duraklat kapalı; Sesi kapat, Düşük Güç Modu ve Sesli uyarı açık. Oklar ortadaki Kapak kapanınca sütununa gider: ekran ve klavye ışığı kararır, uygulamalar dondurulur (ajanlar ve korunan uygulamalar hariç), Docker yalnızca kural açıksa ve iki denetim de çalışan kapsayıcı bulmazsa duraklar, ses kapanır, Düşük Güç Modu açılır, uyarılar sesli söylenir. Bir ok sağdaki Kapak açılınca sütununa gider: Uykusuz ışığı, sesi ve kendi yaptığını doğrulayabildiği dondurmaları geri yüklemeyi dener; oturum sürer, zamanlayıcı hiç durmaz. Bu, kapak her kapanıp açıldığında yinelenir. Etkin bir oturum yokken kapak hiçbir şey yapmaz. Ayarlar paneli bir ekran görüntüsü değil, sadeleştirilmiş bir çizimdir.</desc>
   <style>
     svg { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif; }
     .bg { fill: #F3F2EF; }
     .panel { fill: #FAF9F6; stroke: #DBD9D4; stroke-width: 1.5; }
+    .chip { fill: #F0EEE9; stroke: #DBD9D4; stroke-width: 1.2; }
     .sep { stroke: #DBD9D4; stroke-width: 1.5; }
     .t { fill: #292D30; }
     .m { fill: #5F6467; }
@@ -16,11 +17,10 @@
     .knob { fill: #FFFFFF; }
     .on { fill: #536D78; }
     .off { fill: #C9C8C3; }
-    .remove { fill: #9A9C9E; }
-    .minus { fill: none; stroke: #FFFFFF; stroke-width: 2.4; stroke-linecap: round; }
     @media (prefers-color-scheme: dark) {
       .bg { fill: #242628; }
       .panel { fill: #303336; stroke: #3E4145; }
+      .chip { fill: #3A3D41; stroke: #4A4D51; }
       .sep { stroke: #3E4145; }
       .t { fill: #E6E3DD; }
       .m { fill: #B5B7B8; }
@@ -31,102 +31,124 @@
       .mark-fill { fill: #E6E3DD; }
       .on { fill: #A6BBC3; }
       .off { fill: #45494D; }
-      .remove { fill: #7A7D80; }
     }
   </style>
   <defs>
-    <!-- EyeMarkGeometry on its 24-unit grid, monochrome. Closed: the lid shades the whole lens, lashes below.
-         Open: lid gone, pupil with its highlight bite showing, lashes above. Paths match docs/mockups/menubar-ux.html. -->
-    <g id="la-mark-closed">
-      <path class="mark-fill" d="M1.5 12 C7 4.5 17 4.5 22.5 12 C17 19.5 7 19.5 1.5 12 Z"/>
-      <path class="mark-line" d="M1.5 12 C7 4.5 17 4.5 22.5 12 C17 19.5 7 19.5 1.5 12 Z"/>
-      <path class="mark-line" d="M4.5499 17.8023 L3.1442 20.1659 M8.2636 19.3782 L7.5468 22.0332 M12 19.875 L12 22.625 M15.7364 19.3782 L16.4532 22.0332 M19.4501 17.8023 L20.8558 20.1659"/>
-    </g>
+    <!-- EyeMarkGeometry on its 24-unit grid, monochrome. Open: lid gone, pupil with its highlight bite showing,
+         lashes above. Paths match docs/mockups/menubar-ux.html. -->
     <g id="la-mark-open">
       <path class="mark-line" d="M1.5 12 C7 4.5 17 4.5 22.5 12 C17 19.5 7 19.5 1.5 12 Z"/>
       <path class="mark-fill" d="M15.3953 9.8853 A4 4 0 1 1 14.1147 8.6047 A1.4 1.4 0 1 0 15.3953 9.8853 Z"/>
       <path class="mark-line" d="M4.5499 6.1977 L3.1442 3.8341 M8.2636 4.6218 L7.5468 1.9668 M12 4.125 L12 1.375 M15.7364 4.6218 L16.4532 1.9668 M19.4501 6.1977 L20.8558 3.8341"/>
+    </g>
+    <!-- Toggles, 48 x 28: the knob sits left when off, right when on. -->
+    <g id="la-on">
+      <rect class="on" x="0" y="0" width="48" height="28" rx="14"/>
+      <circle class="knob" cx="34" cy="14" r="11"/>
+    </g>
+    <g id="la-off">
+      <rect class="off" x="0" y="0" width="48" height="28" rx="14"/>
+      <circle class="knob" cx="14" cy="14" r="11"/>
     </g>
     <marker id="la-arrow" viewBox="0 0 14 14" markerWidth="14" markerHeight="14" refX="11" refY="7" markerUnits="userSpaceOnUse" orient="auto">
       <path class="a" d="M2 2 L12 7 L2 12 Z"/>
     </marker>
   </defs>
 
-  <rect class="bg" x="0" y="0" width="1000" height="460" rx="24"/>
+  <rect class="bg" x="0" y="0" width="1100" height="576" rx="24"/>
 
   <!-- Header -->
   <g transform="translate(32 20) scale(1.6667)">
     <use href="#la-mark-open"/>
   </g>
-  <text class="t" x="88" y="50" font-size="26" font-weight="700">What the lid does during a session</text>
+  <text class="t" x="88" y="50" font-size="26" font-weight="700">Oturum sırasında kapak ne yapar</text>
 
-  <!-- Column 1: simplified Settings illustration -->
+  <!-- Column 1: simplified Settings illustration. Rows sit on the same centres as their actions in column 2. -->
   <g>
-    <rect class="panel" x="32" y="80" width="300" height="300" rx="16"/>
-    <text class="t" x="52" y="114" font-size="20" font-weight="700">Lid-close actions</text>
+    <rect class="panel" x="32" y="80" width="392" height="404" rx="16"/>
+    <text class="t" x="52" y="116" font-size="19" font-weight="700">Kapak kapanınca yapılacaklar</text>
 
-    <text class="t" x="52" y="158" font-size="19">WhatsApp</text>
-    <circle class="remove" cx="302" cy="152" r="10"/>
-    <path class="minus" d="M296 152 H308"/>
-    <text class="t" x="52" y="192" font-size="19">Word</text>
-    <circle class="remove" cx="302" cy="186" r="10"/>
-    <path class="minus" d="M296 186 H308"/>
-    <text class="t" x="52" y="226" font-size="19">Excel</text>
-    <circle class="remove" cx="302" cy="220" r="10"/>
-    <path class="minus" d="M296 220 H308"/>
+    <text class="t" x="52" y="162" font-size="18">Ekranı ve klavye ışığını kapat</text>
+    <use href="#la-on" x="356" y="142"/>
 
-    <path class="sep" d="M52 250 H312"/>
+    <path class="sep" d="M52 182 H404"/>
 
-    <!-- Docker toggle: off -->
-    <text class="t" x="52" y="290" font-size="19">Pause idle Docker</text>
-    <rect class="off" x="260" y="268" width="52" height="30" rx="15"/>
-    <circle class="knob" cx="275" cy="283" r="12"/>
+    <text class="m" x="52" y="208" font-size="15">Dondurulacaklar</text>
+    <rect class="chip" x="52" y="220" width="99" height="30" rx="15"/>
+    <text class="t" x="101.5" y="241" font-size="16" text-anchor="middle">WhatsApp</text>
+    <rect class="chip" x="159" y="220" width="63" height="30" rx="15"/>
+    <text class="t" x="190.5" y="241" font-size="16" text-anchor="middle">Word</text>
+    <rect class="chip" x="230" y="220" width="62" height="30" rx="15"/>
+    <text class="t" x="261" y="241" font-size="16" text-anchor="middle">Excel</text>
+    <rect class="chip" x="300" y="220" width="91" height="30" rx="15"/>
+    <text class="t" x="345.5" y="241" font-size="16" text-anchor="middle">ParaView</text>
 
-    <!-- Mute toggle: on -->
-    <text class="t" x="52" y="348" font-size="19">Mute audio</text>
-    <rect class="on" x="260" y="326" width="52" height="30" rx="15"/>
-    <circle class="knob" cx="297" cy="341" r="12"/>
+    <text class="t" x="52" y="286" font-size="18">Diğer tüm uygulamaları dondur</text>
+    <use href="#la-on" x="356" y="266"/>
+
+    <path class="sep" d="M52 306 H404"/>
+
+    <text class="t" x="52" y="340" font-size="18">Boştaki Docker'ı duraklat</text>
+    <use href="#la-off" x="356" y="320"/>
+
+    <text class="t" x="52" y="380" font-size="18">Sesi kapat</text>
+    <use href="#la-on" x="356" y="360"/>
+
+    <text class="t" x="52" y="420" font-size="18">Düşük Güç Modu</text>
+    <use href="#la-on" x="356" y="400"/>
+
+    <text class="t" x="52" y="460" font-size="18">Sesli uyarı</text>
+    <use href="#la-on" x="356" y="440"/>
   </g>
-  <text class="m" x="32" y="406" font-size="17">Simplified Settings</text>
+  <text class="m" x="32" y="510" font-size="16">Sadeleştirilmiş Ayarlar</text>
 
   <!-- Arrows: each setting to its lid-close action -->
-  <path class="ln" d="M340 186 H366" marker-end="url(#la-arrow)"/>
-  <path class="ln" d="M340 283 H366" marker-end="url(#la-arrow)"/>
-  <path class="ln" d="M340 341 H366" marker-end="url(#la-arrow)"/>
+  <path class="ln" d="M432 156 H458" marker-end="url(#la-arrow)"/>
+  <path class="ln" d="M432 256 H458" marker-end="url(#la-arrow)"/>
+  <path class="ln" d="M432 334 H458" marker-end="url(#la-arrow)"/>
+  <path class="ln" d="M432 374 H458" marker-end="url(#la-arrow)"/>
+  <path class="ln" d="M432 414 H458" marker-end="url(#la-arrow)"/>
+  <path class="ln" d="M432 454 H458" marker-end="url(#la-arrow)"/>
 
-  <!-- Column 2: Lid closes -->
+  <!-- Column 2: Kapak kapanınca -->
   <g>
-    <rect class="panel" x="372" y="80" width="290" height="300" rx="16"/>
-    <g class="ic" transform="translate(392 96)">
+    <rect class="panel" x="464" y="80" width="330" height="404" rx="16"/>
+    <g class="ic" transform="translate(484 96)">
       <rect x="2" y="16" width="36" height="8" rx="3"/>
       <path d="M8 11 H32"/>
     </g>
-    <text class="t" x="444" y="120" font-size="22" font-weight="700">Lid closes</text>
+    <text class="t" x="536" y="120" font-size="22" font-weight="700">Kapak kapanınca</text>
 
-    <text class="t" x="392" y="193" font-size="20" font-weight="600">Freeze selected apps</text>
-    <text class="t" x="392" y="290" font-size="20" font-weight="600">Pause idle Docker</text>
-    <text class="t" x="392" y="348" font-size="20" font-weight="600">Mute if enabled</text>
+    <text class="t" x="484" y="163" font-size="19" font-weight="600">Ekran ve klavye ışığı kararır</text>
+    <text class="t" x="484" y="250" font-size="19" font-weight="600">Uygulamalar dondurulur</text>
+    <text class="m" x="484" y="275" font-size="16">Ajanlar ve korunan uygulamalar hariç</text>
+    <text class="t" x="484" y="341" font-size="19" font-weight="600">Boştaki Docker duraklar <tspan class="m" font-size="16" font-weight="400">· açıksa</tspan></text>
+    <text class="t" x="484" y="381" font-size="19" font-weight="600">Ses kapanır</text>
+    <text class="t" x="484" y="421" font-size="19" font-weight="600">Düşük Güç Modu açılır</text>
+    <text class="t" x="484" y="461" font-size="19" font-weight="600">Uyarılar sesli söylenir</text>
   </g>
 
-  <path class="ln" d="M670 230 H696" marker-end="url(#la-arrow)"/>
+  <path class="ln" d="M802 282 H828" marker-end="url(#la-arrow)"/>
 
-  <!-- Column 3: Lid opens -->
+  <!-- Column 3: Kapak açılınca -->
   <g>
-    <rect class="panel" x="702" y="80" width="266" height="300" rx="16"/>
-    <g class="ic" transform="translate(722 96)">
+    <rect class="panel" x="834" y="80" width="234" height="404" rx="16"/>
+    <g class="ic" transform="translate(852 96)">
       <rect x="8" y="2" width="24" height="17" rx="3"/>
       <rect x="2" y="22" width="36" height="6" rx="3"/>
     </g>
-    <text class="t" x="774" y="120" font-size="22" font-weight="700">Lid opens</text>
+    <text class="t" x="900" y="120" font-size="22" font-weight="700">Kapak açılınca</text>
 
-    <text class="t" x="722" y="193" font-size="20" font-weight="600">Try to restore</text>
-    <text class="t" x="722" y="290" font-size="20" font-weight="600">Session continues</text>
+    <text class="t" x="854" y="250" font-size="19" font-weight="600">Geri yüklemeyi dener</text>
+    <text class="m" x="854" y="275" font-size="16">Işık, ses ve uygulamalar</text>
+    <text class="t" x="854" y="381" font-size="19" font-weight="600">Oturum sürer</text>
+    <text class="m" x="854" y="406" font-size="16">Zamanlayıcı hiç durmaz</text>
   </g>
 
   <!-- Footer -->
   <g class="ic">
-    <circle cx="44" cy="436" r="10"/>
-    <path d="M44 431 V436 H48.5"/>
+    <circle cx="44" cy="542" r="10"/>
+    <path d="M44 537 V542 H48.5"/>
   </g>
-  <text class="m" x="64" y="442" font-size="19">Active sessions only. Timer keeps running.</text>
+  <text class="m" x="64" y="548" font-size="18">Yalnızca etkin bir oturumda. Zamanlayıcı kapak kapalıyken de işler.</text>
 </svg>

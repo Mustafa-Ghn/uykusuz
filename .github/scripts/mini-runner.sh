@@ -13,7 +13,7 @@
 # at a time: each pass deletes every clone and runner the loop names.
 set -u
 
-REPO=${UYKUSUZ_MINI_REPO:-krishhgg/Insomnia}
+REPO=${UYKUSUZ_MINI_REPO:-Mustafa-Ghn/insomnia-tr}
 TART=${TART:-$HOME/.local/bin/tart}
 BASE=${UYKUSUZ_MINI_BASE:-uykusuz-ci-base}
 LOG_DIR=${UYKUSUZ_MINI_LOGS:-$HOME/Library/Logs/uykusuz-mini}

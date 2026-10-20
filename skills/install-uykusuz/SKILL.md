@@ -1,14 +1,13 @@
 ---
 name: install-uykusuz
-description: Uykusuz'un Türkçe çatalını (bir Mac'i süreli bir oturum boyunca uyanık tutan macOS menü çubuğu uygulaması) Mustafa-Ghn/insomnia-tr deposunun bir çalışma kopyasından kaynak koddan derleyerek kurar ya da yükseltir. Kullanıcı Uykusuz'u kurmak, güncellemek ya da yeniden kurmak istediğinde kullanın.
+description: Uykusuz'u (bir Mac'i süreli bir oturum boyunca uyanık tutan macOS menü çubuğu uygulaması) Mustafa-Ghn/insomnia-tr deposunun bir çalışma kopyasından kaynak koddan derleyerek kurar ya da yükseltir. Kullanıcı Uykusuz'u kurmak, güncellemek ya da yeniden kurmak istediğinde kullanın.
 ---
 
-# Uykusuz'u kurma (Türkçe çatal)
+# Uykusuz'u kurma
 
-Bu çatalın GitHub sürümleri (release) yoktur; yalnızca
+Uykusuz hazır derlenmiş bir paket olarak yayımlanmaz;
 https://github.com/Mustafa-Ghn/insomnia-tr deposunun bir çalışma kopyasından
-`./scripts/install.sh` ile derlenerek kurulur. Özgün projenin
-(krishhgg/Insomnia) sürüm zip dosyalarını indirmeyin. Ayrıntılar çalışma
+`./scripts/install.sh` ile derlenerek kurulur. Ayrıntılar çalışma
 kopyasındaki `docs/install.md` dosyasının "Kaynaktan derleme", "Neler kurulur"
 ve "Yükseltmeler" bölümlerindedir. O sayfayı okuyun, ardından bu adımları
 izleyin. `sudo` komutunu asla kendiniz çalıştırmayın ve ona asla parola
@@ -29,7 +28,7 @@ vermeyin. Bir adım yönetici parolası gerektirdiğinde kullanıcıya Terminal'
    cd insomnia-tr
    ```
 
-   Depo özeldir. Klonlama GitHub kimlik doğrulaması isterse bunu kullanıcının
+   Klonlama GitHub kimlik doğrulaması isterse bunu kullanıcının
    kendisinin yapmasını isteyin (örneğin `gh auth login`); kimlik bilgilerini
    sormayın ve hiçbir yere girmeyin.
 3. **Kurulumu kullanıcıya bırakın.** `./scripts/install.sh` uygulamayı
@@ -54,9 +53,9 @@ vermeyin. Bir adım yönetici parolası gerektirdiğinde kullanıcıya Terminal'
    ./scripts/install.sh
    ```
 
-   `--app` ya da `--allow-unverified-origin` önermeyin: bu çatalda doğrulanacak
-   bir indirme yoktur ve bu bayraklar yalnızca özgün projenin sürüm zip
-   dosyaları içindir.
+   `--app` ya da `--allow-unverified-origin` önermeyin: Uykusuz kaynaktan
+   derlenir ve bu bayraklar yalnızca Release iş akışının ürettiği zip
+   paketleri içindir.
 4. **İlk açılış.** Kullanıcı uygulamayı
    `open "$HOME/Applications/Uykusuz.app"` ile açar. macOS ilk açılışı
    engellerse kullanıcı Sistem Ayarları > Gizlilik ve Güvenlik bölümünden izin
@@ -70,7 +69,3 @@ Yükseltme aynı adımlardır: çalışma kopyasında `git pull`, ardından kull
 çalıştıracağı `./scripts/install.sh`. Kurulum betiği çalışan uygulamadan
 kapanmasını ister ve geri alınmayı bekleyen bir oturum değişikliği varsa durur.
 O zaman nedenini bulmak için maintain-uykusuz becerisini kullanın.
-
-Kullanıcı özgün projedeki değişiklikleri de almak isterse README'deki
-"Upstream değişikliklerini alma" bölümünü izleyin. Çevrilmiş metinler
-çakışacağından çakışmaları kullanıcıyla birlikte, elle çözün.

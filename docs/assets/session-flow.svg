@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1130" height="170" viewBox="0 0 1130 170" role="img" aria-labelledby="sb-title sb-desc">
-  <title id="sb-title">Uykusuz session in the menu bar</title>
-  <desc id="sb-desc">Three menu bar snapshots side by side. Set a duration: clicking the closed eye shows three pills labelled Days, Hours and Minutes, with Hours focused. Watch the countdown: the eye opens, showing its pupil, and a live countdown of 3:59:41 ticks beside it, followed by a small x. Hold to end: pressing and holding the x fills a ring around it while the countdown reads 3:59:40.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1090" height="170" viewBox="0 0 1090 170" role="img" aria-labelledby="sb-title sb-desc">
+  <title id="sb-title">Menü çubuğunda bir Uykusuz oturumu</title>
+  <desc id="sb-desc">Yan yana üç menü çubuğu görüntüsü. Süreyi girin: kapalı göze tıklayınca Gün, Saat ve Dakika yazan üç kutu açılır, Saat kutusu seçilidir. Geri sayımı izleyin: göz açılır, gözbebeği görünür ve yanında 3:59:41 gösteren canlı bir geri sayım ile küçük bir çarpı durur. Basılı tutup bitirin: çarpıyı basılı tutmak etrafında bir halka doldurur, geri sayım 3:59:40'ı gösterir.</desc>
   <style>
     svg { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif; }
     .bg { fill: #242628; }
@@ -31,31 +31,32 @@
     </g>
   </defs>
 
-  <rect class="bg" x="0" y="0" width="1130" height="170" rx="24"/>
+  <rect class="bg" x="0" y="0" width="1090" height="170" rx="24"/>
 
   <!-- Single row. Every strip is the menu bar excerpt at native proportions, enlarged 1.25x.
        Outer padding 28, gap between groups 32. Strips share the top edge y=72 and bottom edge y=142;
-       captions share the baseline y=50 and are centred over their own strip. -->
+       captions share the baseline y=50 and are centred over their own strip.
+       Each pill is as wide as its Turkish placeholder plus the pill's padding, as PillView lays it out. -->
 
-  <!-- 1. Set a duration: bar 388 x 56 native, 485 x 70 drawn, x 28..513 -->
-  <text class="cap" x="270.5" y="50" font-size="24" font-weight="600" text-anchor="middle">Set a duration</text>
+  <!-- 1. Süreyi girin: bar 356 x 56 native, 445 x 70 drawn, x 28..473 -->
+  <text class="cap" x="250.5" y="50" font-size="24" font-weight="600" text-anchor="middle">Süreyi girin</text>
   <g transform="translate(28 72) scale(1.25)">
-    <rect class="bar" x="0" y="0" width="388" height="56" rx="12"/>
+    <rect class="bar" x="0" y="0" width="356" height="56" rx="12"/>
     <g transform="translate(14 12.7) scale(1.275)">
       <use href="#sb-mark-closed"/>
     </g>
-    <rect class="pill" x="62" y="11" width="80" height="34" rx="12.6"/>
-    <text class="pill-ph" x="102" y="36" font-size="22" text-anchor="middle">Days</text>
-    <rect class="pill" x="154" y="11" width="92" height="34" rx="12.6"/>
-    <rect class="focus" x="155.4" y="12.4" width="89.2" height="31.2" rx="11.2"/>
-    <text class="pill-ph" x="200" y="36" font-size="22" text-anchor="middle">Hours</text>
-    <rect class="pill" x="258" y="11" width="116" height="34" rx="12.6"/>
-    <text class="pill-ph" x="316" y="36" font-size="22" text-anchor="middle">Minutes</text>
+    <rect class="pill" x="62" y="11" width="74" height="34" rx="12.6"/>
+    <text class="pill-ph" x="99" y="36" font-size="22" text-anchor="middle">Gün</text>
+    <rect class="pill" x="148" y="11" width="80" height="34" rx="12.6"/>
+    <rect class="focus" x="149.4" y="12.4" width="77.2" height="31.2" rx="11.2"/>
+    <text class="pill-ph" x="188" y="36" font-size="22" text-anchor="middle">Saat</text>
+    <rect class="pill" x="240" y="11" width="102" height="34" rx="12.6"/>
+    <text class="pill-ph" x="291" y="36" font-size="22" text-anchor="middle">Dakika</text>
   </g>
 
-  <!-- 2. Watch the countdown: bar 210 x 56 native, 262.5 x 70 drawn, x 545..807.5 -->
-  <text class="cap" x="676.25" y="50" font-size="24" font-weight="600" text-anchor="middle">Watch the countdown</text>
-  <g transform="translate(545 72) scale(1.25)">
+  <!-- 2. Geri sayımı izleyin: bar 210 x 56 native, 262.5 x 70 drawn, x 505..767.5 -->
+  <text class="cap" x="636.25" y="50" font-size="24" font-weight="600" text-anchor="middle">Geri sayımı izleyin</text>
+  <g transform="translate(505 72) scale(1.25)">
     <rect class="bar" x="0" y="0" width="210" height="56" rx="12"/>
     <g transform="translate(14 12.7) scale(1.275)">
       <use href="#sb-mark-open"/>
@@ -67,9 +68,9 @@
     </g>
   </g>
 
-  <!-- 3. Hold to end: same strip, x held with the ring about 60% filled clockwise from the top, x 839.5..1102 -->
-  <text class="cap" x="970.75" y="50" font-size="24" font-weight="600" text-anchor="middle">Hold to end</text>
-  <g transform="translate(839.5 72) scale(1.25)">
+  <!-- 3. Basılı tutup bitirin: same strip, x held with the ring about 60% filled clockwise from the top, x 799.5..1062 -->
+  <text class="cap" x="930.75" y="50" font-size="24" font-weight="600" text-anchor="middle">Basılı tutup bitirin</text>
+  <g transform="translate(799.5 72) scale(1.25)">
     <rect class="bar" x="0" y="0" width="210" height="56" rx="12"/>
     <g transform="translate(14 12.7) scale(1.275)">
       <use href="#sb-mark-open"/>

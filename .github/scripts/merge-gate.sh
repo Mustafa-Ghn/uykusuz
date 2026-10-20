@@ -61,7 +61,7 @@
 #       in the few seconds of the check's last reads and the merge does not
 #       stop it.
 #
-# Environment: GH_REPO (default krishhgg/Insomnia). DRY_RUN=1 prints the
+# Environment: GH_REPO (default Mustafa-Ghn/insomnia-tr). DRY_RUN=1 prints the
 # statuses evaluate and post would send instead of sending them.
 #
 # Runs under macOS /bin/bash 3.2 and the bash on GitHub's Ubuntu runners;
@@ -75,7 +75,7 @@ die() {
   exit 2
 }
 
-REPO=${GH_REPO:-krishhgg/Insomnia}
+REPO=${GH_REPO:-Mustafa-Ghn/insomnia-tr}
 OWNER=${REPO%%/*}
 case $OWNER in
   '' | *[!A-Za-z0-9-]*) die "unexpected repository owner in GH_REPO: $REPO" ;;
@@ -873,7 +873,7 @@ check_pr() {
   return 1
 }
 
-# --admin uses the owner's bypass of the "only krishhgg may merge" ruleset,
+# --admin uses the owner's bypass of the "only the owner may merge" ruleset,
 # which blocks every update to main that does not use it. It does not get
 # past the ruleset that requires the checks above: that one has no bypass
 # list, and on 2026-10-12 a copy of it refused --admin merges of #107 for a

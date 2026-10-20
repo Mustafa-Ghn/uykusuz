@@ -5,11 +5,11 @@ description: Check on, troubleshoot, or uninstall an installed Uykusuz (the macO
 
 # Maintain Uykusuz
 
-Reference pages in https://github.com/krishhgg/Insomnia:
-[docs/recovery.md](https://github.com/krishhgg/Insomnia/blob/main/docs/recovery.md),
-[docs/install.md](https://github.com/krishhgg/Insomnia/blob/main/docs/install.md),
-[docs/lid-close.md](https://github.com/krishhgg/Insomnia/blob/main/docs/lid-close.md) and
-[docs/extras.md](https://github.com/krishhgg/Insomnia/blob/main/docs/extras.md).
+Reference pages in https://github.com/Mustafa-Ghn/insomnia-tr (Turkish):
+[docs/recovery.md](../../docs/recovery.md),
+[docs/install.md](../../docs/install.md),
+[docs/lid-close.md](../../docs/lid-close.md) and
+[docs/extras.md](../../docs/extras.md).
 
 ## Rules
 
@@ -20,9 +20,6 @@ Reference pages in https://github.com/krishhgg/Insomnia:
   still has to undo.
 - Never signal a pid taken from an old log line. Pids get reused. Check it with
   `ps -o pid,stat,lstart,command -p <pid>` first.
-- Kong's Uykusuz API client uses the same support folder name.
-  `brew uninstall --zap uykusuz` for that app moves this app's journal to the
-  Trash. Check which app the user means before anything like that.
 
 ## Check the state
 
@@ -47,14 +44,15 @@ Reference pages in https://github.com/krishhgg/Insomnia:
 
 ## Warnings in the menu
 
-Match the warning to docs/recovery.md, "Recovery limits and manual attention".
+Match the warning to docs/recovery.md, "Kurtarmanın sınırları ve elle
+ilgilenilmesi gerekenler". The menu shows the warnings in Turkish.
 
 - **A stuck power command with a pid.** The user checks the pid, then runs the
   `sudo kill <pid>` the menu shows.
 - **Stopped processes Uykusuz cannot prove it froze.** The user checks each
   pid with `ps` and decides whether to run `kill -CONT <pid>`.
 - **An output device still muted.** Reconnect it and open Uykusuz, or choose
-  "Stop waiting for <device>" in the menu.
+  "Beklemeyi bırak: <device>" in the menu.
 - **Sleep disabled by something else.** Uykusuz did not set it and leaves it
   alone. Whoever set it turns sleep back on with
   `sudo pmset -a disablesleep 0`.
@@ -63,7 +61,7 @@ Match the warning to docs/recovery.md, "Recovery limits and manual attention".
 
 ## Uninstall
 
-Follow "Uninstall" in docs/install.md and hand the user the command, since it
+Follow "Kaldırma" in docs/install.md and hand the user the command, since it
 asks for the password. It stops when something is still waiting to be
 undone. Fix that first, then run it again. A failed uninstall does not mean
 the power settings are back to normal, so check `pmset -g` afterward.

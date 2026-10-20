@@ -1,97 +1,130 @@
-# Security
+# Güvenlik politikası
 
-Uykusuz is experimental software. There is no security-response SLA. Report
-suspected vulnerabilities against the current main branch
-or a release tag, including the affected revision and a minimal,
-non-destructive reproduction.
+Uykusuz deneysel bir yazılımdır ve güvenlik bildirimleri için bir yanıt süresi
+taahhüdü (SLA) yoktur. Bir güvenlik açığından şüpheleniyorsanız onu `main`
+dalının güncel hâline karşı; etkilenen commit'i ve en küçük, zarar vermeyen
+bir yeniden üretme adımını ekleyerek bildirin.
 
-Do not publish passwords, Keychain data, personal logs, or weaponized exploit
-details in a public issue. If GitHub shows a **Report a vulnerability** action
-on this repository's Security page, use that private channel. Otherwise open a
-public issue containing only a request for a private security contact, without
-the sensitive details, and wait for the maintainer to arrange one.
+## Bildirme
 
-The installer grants the user account passwordless access to four exact pmset
-commands listed in the README. This grant is not exclusive to the Uykusuz app:
-other processes running as that user can invoke them too. The app is not
-sandboxed; local logs can contain SSIDs, process metadata, and tmux target names.
-The lines the app writes to `uykusuz.log` also reach the unified log with the
-body marked private, so programs reading `log show` see `<private>` instead of
-those names unless private data logging is enabled on the Mac. The files
-Uykusuz creates (logs, journal, session, config, recovery lock) are mode 0600
-and its directories 0700; the backstop runs with `umask 077`. Uykusuz sets
-only these modes and leaves any access control list (ACL) on these files as it
-is, so an ACL someone added can still give another account access. Logs are capped at
-1 MiB with one older copy kept. A log the user replaced with a symlink is not
-rotated: the file it points to is the user's to manage. Location
-Services access is requested only when a hotspot is saved or a session starts
-with one configured; it is used to read Wi-Fi network names and the app never
-requests location updates. With the App Nap setting on (off by default), the
-app writes `NSAppSleepDisabled` into the preferences of each app on the agent
-list, after recording the previous value in its journal, and puts it back at
-session end.
+Parolaları, Anahtar Zinciri verilerini, kişisel günlükleri ya da silaha
+dönüştürülmüş istismar ayrıntılarını bir issue'ya yazmayın. GitHub bu
+deponun Security sayfasında **Report a vulnerability** düğmesini
+gösteriyorsa o özel kanalı kullanın. Göstermiyorsa hassas ayrıntıları
+yazmadan yalnızca özel bir güvenlik iletişimi isteyen bir issue açın ve
+bakımcının bir kanal ayarlamasını bekleyin.
 
-The hotspot password is a generic-password item in the login Keychain
-(service `uykusuz-hotspot`). Its access list names only the Uykusuz build
-that saved it, so any other program asking for it gets the system Keychain
-prompt, which you can refuse. Uykusuz itself reads the item with prompts
-switched off: an item it may not read is reported in the menu and in Settings
-instead of being prompted for or silently ignored. Two limits remain. Ad-hoc
-signing gives every install a new code identity, so the access list pins one
-build and the password must be entered again after a reinstall; a stable
-signing identity (Developer ID) would let the access list name every build
-signed with it. And the item lives in the file-based login Keychain, which
-ignores the data-protection accessibility classes (this device only, when
-unlocked); using that Keychain needs an access-group entitlement, which needs
-a team id. Releases are ad-hoc signed, so both limits stay.
+## Güvenlik modeli
 
-In releases built by the Release workflow and in builds of the current
-source, the recovery LaunchAgent runs only the `backstop.sh` sealed inside the
-signed app bundle, after `codesign --verify --strict` passes against the code
-requirement pinned in its plist (the build's cdhash for an ad-hoc signature).
-An edited bundle or script is refused and logged. The app pins the code it is
-running (its own designated requirement, after confirming that the bundle on
-disk is still that code and passes the agent's check), so a bundle edited or
-re-signed under the running app is refused, not re-pinned. The plist itself
-lives in `~/Library/LaunchAgents` and, like every per-user LaunchAgent, can be
-edited by any program running as that user. With ad-hoc signatures these
-checks are integrity against accidents and against the app relaying a
-tampered bundle; they are not a boundary against a process running as the
-same user, which can edit the plist, load its own agent, replace and relaunch
-the app, and invoke the four pmset commands directly.
+**Yetki.** Kurulum betiği, kullanıcı hesabına README'de listelenen dört
+`pmset` komutunu parolasız çalıştırma izni verir. Bu izin Uykusuz'a özel
+değildir: aynı kullanıcıyla çalışan diğer süreçler de bu komutları
+çalıştırabilir. Bu dört komut dışında root olarak çalışan bir şey yoktur.
 
-Release zips on both channels, stable releases (`v<version>` tags) and
-nightly prereleases (`nightly-*` tags built from `main`), are built by the
-Release workflow from the commit they name and published with a
-`SHA256SUMS` file and a GitHub build provenance attestation. Verify both
-before installing (`shasum -a 256 -c SHA256SUMS`,
-`gh attestation verify <zip> -R krishhgg/Insomnia --signer-workflow
-krishhgg/Insomnia/.github/workflows/release.yml --source-ref <ref>
---source-digest <commit>`, with `refs/tags/v<version>` or `refs/heads/main`
-as the ref and the full commit the release was built from as the digest; the
-release notes carry the command filled in). `install.sh
---app` then checks the signature, identifier and version of a private copy
-of the bundle before asking for a password, installs that copy, and refuses
-it unless `--allow-unverified-origin` is given, because it cannot verify where
-a bundle came from, whatever its signature names. The attestation shows which workflow run produced
-the bytes, not that the code is free of defects. Releases are ad-hoc signed and
-not notarized ([docs/releasing.md](docs/releasing.md)), so macOS blocks their
-first launch.
+**Ağ.** Uykusuz hiçbir ağ isteği yapmaz: güncelleme denetlemez, kullanım
+verisi ya da çökme raporu göndermez. `NWPathMonitor` yalnızca Wi-Fi
+bağlantısının durumunu izler.
 
-The first stable release, `v0.1.0`, is the exception. It was packaged by hand
-from the app installed on the maintainer's Mac, so it has no attestation: the
-`SHA256SUMS` file and the per-file hashes in its release notes are the only
-check on the download. Its `scripts/install.sh --app` runs
-`codesign --verify --strict --deep` and checks the bundle identifier before
-the password prompt, but it has no `--allow-unverified-origin` opt-in: it
-installs any intact bundle it is given that has that identifier and the
-0.1.0 layout. It does not check the version. Its recovery agent predates the
-sealed script and the pinned requirement described above: the installer
-copies `backstop.sh` into `~/Library/Application Support/Uykusuz/`, and the
-agent runs that copy with `/bin/bash` without checking any code signature, so
-an edited copy runs as it is. The `README.md` in its zip describes that
-layout and its limits.
+**Yerel veriler.** Uygulama korumalı alanda (sandbox) çalışmaz; yerel
+günlükler Wi-Fi adlarını, süreç bilgilerini ve tmux hedef adlarını
+içerebilir. Uygulamanın `uykusuz.log` dosyasına yazdığı satırlar birleşik
+günlüğe (unified log) de gider, ama gövdeleri özel olarak işaretlenir:
+Mac'te özel veri günlüğü açılmadıkça `log show` okuyan programlar bu adlar
+yerine `<private>` görür. Uykusuz'un oluşturduğu dosyalar (günlükler, kayıt
+defteri, oturum, yapılandırma, kurtarma kilidi) 0600, klasörleri 0700
+izinlidir; kurtarma betiği `umask 077` ile çalışır. Uykusuz yalnızca bu
+izinleri ayarlar ve bu dosyalardaki erişim denetim listelerine (ACL)
+dokunmaz; bu yüzden birinin eklediği bir ACL başka bir hesaba yine erişim
+verebilir. Günlükler 1 MiB ile sınırlıdır ve bir eski kopyası tutulur.
+Kullanıcının bir sembolik bağlantıyla değiştirdiği günlük döndürülmez
+(rotate): işaret ettiği dosyayı yönetmek kullanıcıya kalır.
 
-Passing automated checks or a secret scan does not establish the absence of
-vulnerabilities. Do not probe recovery by disrupting someone else's processes,
-power settings, network, or data.
+**Konum izni.** Konum Servisleri izni yalnızca bir hotspot kaydedildiğinde ya
+da hotspot ayarlıyken bir oturum başladığında istenir. Wi-Fi ağ adlarını
+okumak için kullanılır; uygulama hiçbir zaman konum güncellemesi istemez.
+
+**Diğer uygulamalar.** App Nap ayarı açıkken (varsayılan olarak kapalı)
+uygulama, ajan listesindeki her uygulamanın tercihlerine
+`NSAppSleepDisabled` yazar; önce önceki değeri kayıt defterine kaydeder ve
+oturum sonunda geri koyar. Dondurma, kapak kapalıyken uygulamaların
+süreçlerine `SIGSTOP` gönderir; Uykusuz yalnızca kendi dondurduğunu
+doğrulayabildiği süreçleri `SIGCONT` ile çözer ve her süreci başlangıç zamanı
+ve önyükleme oturumuyla doğrular. Apple uygulamaları, ajan uygulamaları ve
+parola yöneticileri hiçbir zaman otomatik olarak dondurulmaz.
+
+**Claude entegrasyonu.** Otomatik oturum, güç kilitlerini IOKit üzerinden
+yalnızca okur (`IOPMCopyAssertionsByProcess`). Claude Code hook'ları
+isteğe bağlıdır ve Ayarlar'dan kurulur: `~/.claude/settings.json` dosyasına
+hiçbir çıktı vermeyen ve hep başarılı dönen bir komut ekler, dosyanın eski
+hâlini yedekler. Komut, uygulama destek klasörüne oturum başına 0600 izinli
+bir işaret dosyası yazar ya da onu siler. Claude'un başlattığı komutları
+algılamak için yalnızca kullanıcının kendi süreçlerinin adları ve
+argümanları okunur.
+
+**Ekran ve girdi.** Boşta siyah ekran yalnızca son girdiden geçen süreyi
+okur (`CGEventSource.secondsSinceLastEventType`); bunun için tuş vuruşlarını
+okumaz, sahte tuş ya da olay göndermez. Süre kutuları açıkken menü çubuğu, dışarı
+tıklanınca kutuları kapatmak için yalnızca fare tıklamalarını dinler. Ekran
+ve klavye parlaklığı için macOS'in özel DisplayServices ve CoreBrightness
+çerçeveleri sabit sistem yollarından `dlopen` ile yüklenir; bunların dışında
+dışarıdan kod yüklenmez. Sesli uyarılar `/usr/bin/say` ile söylenir; metin
+tek bir argüman olarak, `--` ayıracından sonra verilir.
+
+## Hotspot parolası
+
+Hotspot parolası giriş Anahtar Zinciri'nde genel bir parola kaydıdır
+(servis `uykusuz-hotspot`). Erişim listesi yalnızca onu kaydeden Uykusuz
+derlemesini adlandırır; bu yüzden onu isteyen başka bir program, reddedebileceğiniz
+sistem Anahtar Zinciri istemini alır. Uykusuz kaydı istemler kapalıyken
+okur: okuyamadığı bir kayıt, istem gösterilmeden ya da sessizce yok
+sayılmadan menüde ve Ayarlar'da bildirilir. İki sınır kalır. Ad-hoc imza her
+kuruluma yeni bir kod kimliği verir; bu yüzden erişim listesi tek bir
+derlemeyi sabitler ve parola yeniden kurulumdan sonra tekrar girilmelidir
+(kararlı bir imza kimliği, yani Developer ID, erişim listesinin onunla
+imzalanmış her derlemeyi adlandırmasını sağlardı). Ayrıca kayıt, veri
+koruma erişilebilirlik sınıflarını (yalnızca bu aygıt, kilit açıkken) yok
+sayan dosya tabanlı giriş Anahtar Zinciri'nde durur; diğer Anahtar
+Zinciri'ni kullanmak bir erişim grubu yetkisi (entitlement) ve dolayısıyla
+bir takım kimliği gerektirir. Uykusuz ad-hoc imzalandığı için iki sınır da
+geçerlidir.
+
+## Kurtarma ajanı ve kod imzası
+
+Kurtarma LaunchAgent'ı yalnızca imzalı uygulama paketinin içine mühürlenmiş
+`backstop.sh` betiğini çalıştırır; bunu da plist dosyasında sabitlenen kod
+gereksinimine (ad-hoc bir imza için derlemenin cdhash değeri) karşı
+`codesign --verify --strict` geçtikten sonra yapar. Düzenlenmiş bir paket ya
+da betik reddedilir ve günlüğe yazılır. Uygulama, çalıştırdığı kodu sabitler
+(diskteki paketin hâlâ o kod olduğunu ve ajanın denetiminden geçtiğini
+doğruladıktan sonra kendi belirlenmiş gereksinimini); bu yüzden çalışan
+uygulamanın altında düzenlenen ya da yeniden imzalanan bir paket yeniden
+sabitlenmez, reddedilir. plist dosyası ise `~/Library/LaunchAgents` içinde
+durur ve her kullanıcıya özel LaunchAgent gibi, o kullanıcıyla çalışan
+herhangi bir program tarafından düzenlenebilir. Ad-hoc imzalarla bu
+denetimler kazalara ve uygulamanın kurcalanmış bir paketi ajana aktarmasına
+karşı bütünlük sağlar; aynı kullanıcıyla çalışan bir sürece karşı bir sınır
+değildir: böyle bir süreç plist dosyasını düzenleyebilir, kendi ajanını
+yükleyebilir, uygulamayı kapatıp yerine başkasını başlatabilir ve dört `pmset`
+komutunu doğrudan çalıştırabilir.
+
+## Derlemeler
+
+Uykusuz hazır derlenmiş bir paket olarak yayımlanmaz; kurulum betiği
+uygulamayı kaynak koddan ad-hoc imzalı olarak derler. Depodaki Release iş
+akışıyla bir sürüm yayımlanırsa zip dosyası bir `SHA256SUMS` dosyası ve bir
+GitHub derleme kanıtı (attestation) ile yayımlanır; doğrulama adımlarını
+[docs/releasing.md](docs/releasing.md) anlatır. `install.sh --app`, parola
+istemeden önce paketin özel bir kopyasının imzasını, tanımlayıcısını ve
+sürümünü denetler, o kopyayı kurar ve bir paketin nereden geldiğini
+doğrulayamadığı için `--allow-unverified-origin` verilmedikçe kurmayı
+reddeder. Derleme kanıtı, baytları hangi iş akışı çalıştırmasının ürettiğini
+gösterir; kodun kusursuz olduğunu göstermez. Paketler Apple'ın onay sürecinden
+(notarization) geçmediği için macOS indirilen bir kopyanın ilk açılışını
+engeller.
+
+Otomatik denetimlerin ya da bir gizli bilgi taramasının geçmesi açık
+olmadığını kanıtlamaz. Kurtarmayı başkasının süreçlerini, güç ayarlarını,
+ağını ya da verilerini bozarak denemeyin.
+
+Uygulamanın ayrıntılı incelemesi için:
+[GUVENLIK-INCELEMESI.md](GUVENLIK-INCELEMESI.md).

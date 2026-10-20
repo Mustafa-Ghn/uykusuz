@@ -1,173 +1,142 @@
-# Contributing
+# Katkıda bulunma
 
-Uykusuz is a native Swift macOS app. Build and run the Swift test suite on
-macOS 26 with an Xcode toolchain that supports the package's Swift 6.2 tools
-version. Pull requests should include regression tests for changed behavior
-and pass the build, test, and shell-script checks.
+Uykusuz'a ilginiz için teşekkürler. Hata bildirimleri, öneriler ve pull
+request'ler memnuniyetle karşılanır. Bu sayfa, bir değişikliğin hangi
+denetimlerden geçmesi gerektiğini anlatır.
 
-CI runs on every pull request and push to main. The macOS job parses
-`scripts/*.sh` with `/bin/bash -n` under the system bash 3.2 and greps them
-for bash 4 builtins and expansions (`mapfile`, `declare -A`, `${x,,}`),
-because the LaunchAgent, install.sh and uninstall.sh run under 3.2 and
-ShellCheck on Linux does not catch those. It then runs `swift test` and
-builds the release with `-Xswiftc -warnings-as-errors`, so a compiler
-warning fails the build. Two Linux jobs run ShellCheck over `scripts/` and
-`.github/scripts/` and actionlint plus zizmor over `.github/workflows`. Greptile reviews every
-push to a pull request with the rules in `.greptile/`; it reads that folder
-from the pull request's branch.
+## Başlamadan önce
 
-The ShellCheck job, with the ShellCheck version it pins, also lists every
-finding that a directive hides in `scripts/`, and fails unless the list
-matches `.github/shellcheck-hidden.txt`. A directive covers the next
-command, so a `{` added after an existing one and a `}` at the end would
-put the rest of the script under it without touching the directive. If
-your change hides something new on purpose, copy the list CI prints into
-that file. The file counts as config, so the owner OKs the change. The
-check also fails if a `# shellcheck` stands outside a comment, in a
-string, a here-document or backticks, since it could not then remove the
-directives without changing how the script parses.
+- Bir hata bildirirken macOS sürümünü (`sw_vers`), Mac modelini ve
+  `~/Library/Logs/Uykusuz/uykusuz.log` dosyasındaki ilgili satırları ekleyin.
+  Günlükler Wi-Fi adları, süreç ayrıntıları ve tmux hedefleri içerebilir;
+  paylaşmadan önce gözden geçirin.
+- Yeni bir özelliğe ya da bir varsayılanı değiştirmeye başlamadan önce bir
+  issue açın; değişikliğin Uykusuz'a uyup uymadığını önce konuşalım.
+- Güvenlik açıklarını issue'da değil, [SECURITY.md](SECURITY.md) dosyasındaki
+  yoldan bildirin.
 
-The tmux integration cases require tmux at one of the executable paths probed
-by the app. CI installs it explicitly; when checking a local run, inspect the
-skip count so missing tmux is not mistaken for integration coverage. Tests
-use private servers, not a contributor's existing panes.
+## Geliştirme ortamı
 
-Use injected system dependencies and temporary journals for automated tests.
-The test bundle links the UykusuzTestHome target (Tests/UykusuzTestHome),
-whose constructor points `UYKUSUZ_HOME` at a throwaway directory when the
-bundle loads, before XCTest runs anything and whatever `--filter` is used,
-so no test writes to the real ~/Library/Logs or ~/Library/Application
-Support. TestIsolationTests fails if UYKUSUZ_HOME is unset or missing, or
-if any path the app resolves, such as the log a default-argument line goes
-to, falls outside it or inside the real ~/Library.
-Do not execute installation, uninstallation, power-setting changes, process
-freezing, or hotspot switching against a contributor's working machine as part
-of the test suite. Never embed credentials or personal SSIDs in fixtures or logs.
+Uykusuz yerel bir Swift macOS uygulamasıdır. macOS 26 ve paketin Swift 6.2
+araç sürümünü destekleyen bir Xcode gerekir.
 
-For lifecycle changes, test suspension at asynchronous boundaries, shutdown
-during in-flight work, failed restoration, persistence failures, and recovery
-after interruption. Assert observable settings and journal consistency, not
-only that a mock method was called.
+```bash
+swift build
+swift test
+```
 
-Greptile comments and passing CI provide review evidence, not a safety
-certification. Real-machine validation requires a supervised, separately
-approved run on a ventilated surface with recoverable work. Record the exact
-revision, macOS/hardware versions, observed result, and remaining limitations
-in the release validation record. New behavior that needs a real-Mac check
-adds an item to the "Real-Mac checks before a release" list in
-docs/releasing.md. Never stress or heat a machine in a bag. A pull request
-also needs its own real-Mac report before it merges; see "Real-Mac evidence"
-below.
+Uygulamayı kendi Mac'inizde denemek için `./scripts/install.sh` onu çalışma
+kopyasından derleyip kurar ([docs/install.md](docs/install.md)).
 
-The app icon is the menu bar's open eye on a charcoal tile.
-[AppIconArtwork](Sources/Uykusuz/UI/AppIconArtwork.swift) draws it from the
-same [vector geometry](Sources/Uykusuz/UI/EyeMarkGeometry.swift) as the menu
-bar's closed eye, which opens while a session runs. After changing the
-artwork, run `./scripts/generate-app-icon.sh`. It regenerates the packaged PNG
-and ICNS assets and the README's SVG offline, with Xcode's swiftc and
-iconutil.
+## Bir pull request'in geçmesi gerekenler
 
-## How a pull request merges
+- **Testler.** Davranışı değiştiren her değişiklik bir gerileme testi
+  (regression test) içerir ve `swift test` geçer.
+- **Uyarısız derleme.** Release derlemesi uyarıları hata sayar; bir derleyici
+  uyarısı derlemeyi bozar:
+  `swift build -c release -Xswiftc -warnings-as-errors`.
+- **Betikler.** Kurtarma ajanı, `install.sh` ve `uninstall.sh` macOS'in sistem
+  bash'i (3.2) ile çalışır. `scripts/*.sh` dosyaları `/bin/bash -n` ile
+  ayrıştırılır ve bash 4 yapıları (`mapfile`, `declare -A`, `${x,,}`) için
+  taranır; Linux'taki ShellCheck bunları yakalamaz. ShellCheck `scripts/` ve
+  `.github/scripts/` üzerinde, actionlint ve zizmor `.github/workflows`
+  üzerinde bulgu vermemelidir.
+- **Gizlenen ShellCheck bulguları.** ShellCheck işi, `scripts/` içinde bir
+  yönergenin (`# shellcheck ...`) gizlediği her bulguyu listeler ve liste
+  `.github/shellcheck-hidden.txt` ile eşleşmezse başarısız olur. Bir yönerge
+  bir sonraki komutu kapsar; bu yüzden var olan bir yönergenin ardından
+  eklenen bir `{` ve sondaki bir `}`, yönergeye dokunmadan betiğin geri
+  kalanını onun altına alabilir. Değişikliğiniz bilerek yeni bir şeyi
+  gizliyorsa CI'ın yazdırdığı listeyi o dosyaya kopyalayın. Bir
+  `# shellcheck` yorumun dışında (bir dizgede, bir here-document'ta ya da ters
+  tırnaklar içinde) durursa da denetim başarısız olur.
 
-A pull request merges into main only when every check below passes at its
-head commit, the newest commit on its branch. GitHub enforces this, for the
-owner too. A check belongs to one commit, so any push to the branch,
-including a maintainer's fix or a merge of main, starts every check over.
+Aynı denetimleri [.github/workflows/ci.yml](.github/workflows/ci.yml) iş
+akışı tanımlar; GitHub Actions açıkken her pull request'te ve `main`'e her
+push'ta çalışır.
 
-| Check | Passes when |
-|---|---|
-| Swift test and release build (macOS 26) and (macOS 27) | `swift test` and the release build pass on both hosted macOS versions |
-| ShellCheck scripts, Lint workflows | ShellCheck, actionlint and zizmor find nothing |
-| merge-gate/greptile | Greptile reviewed the head and scored it 5/5 |
-| merge-gate/accepted | the owner added the `accepted` label |
-| merge-gate/evidence | the maintainer checked a real-Mac report for the head, or the pull request only changes paths listed under "Real-Mac evidence" |
-| merge-gate/config | the pull request leaves the config that steers checks alone (listed below), the owner wrote it, or the owner OK'd those changes at the head |
-| merge-gate/codex | the maintainer's Codex review of the head has nothing open |
+## Testler
 
-Every review conversation must be resolved too, and the branch must merge
-into main without conflicts. Each CI job must also have tested the pull
-request merged with the current main. When main moves, the maintainer
-reruns CI, which leaves your head commit and your report as they are. The
-[merge gate workflow](.github/workflows/merge-gate.yml) posts the
-merge-gate statuses it can decide from GitHub's data and marks the rest
-pending with the reason; [merge-gate.sh](.github/scripts/merge-gate.sh)
-describes each one.
+- Otomatik testlerde enjekte edilmiş sistem bağımlılıkları ve geçici kayıt
+  defterleri kullanın. Test paketi UykusuzTestHome hedefini
+  (`Tests/UykusuzTestHome`) bağlar; onun kurucusu paket yüklenirken, XCTest
+  herhangi bir şey çalıştırmadan ve hangi `--filter` kullanılırsa kullanılsın,
+  `UYKUSUZ_HOME` değişkenini geçici bir klasöre yöneltir. Böylece hiçbir test
+  gerçek `~/Library/Logs` ya da `~/Library/Application Support` klasörüne
+  yazmaz. TestIsolationTests, `UYKUSUZ_HOME` ayarlı değilse ya da uygulamanın
+  çözdüğü bir yol onun dışına ya da gerçek `~/Library` içine düşerse başarısız
+  olur.
+- Test paketinin bir parçası olarak katkıcının kendi Mac'inde kurulum,
+  kaldırma, güç ayarı değişikliği, süreç dondurma ya da hotspot geçişi
+  çalıştırmayın. Test verilerine ya da günlüklere parola veya kişisel ağ adı
+  koymayın.
+- tmux tümleşik testleri, uygulamanın yokladığı yollardan birinde tmux
+  gerektirir. Yerel bir çalıştırmada atlanan test sayısına bakın; tmux'un
+  olmaması tümleşik test kapsamıyla karıştırılmasın. Testler katkıcının açık
+  bölmelerini değil, özel tmux sunucularını kullanır.
+- Yaşam döngüsünü değiştiren işlerde eşzamansız sınırlarda askıya alınmayı,
+  süren iş sırasında kapanmayı, başarısız geri yüklemeyi, kalıcılık
+  hatalarını ve kesintiden sonra kurtarmayı test edin. Yalnızca bir sahte
+  yöntemin çağrıldığını değil, gözlemlenebilir ayarları ve kayıt defterinin
+  tutarlılığını doğrulayın.
 
-`accepted` is the owner's decision that Uykusuz should have the change at
-all. Before you build a new feature or change a default, open an issue so
-that is settled first.
+## Gerçek Mac'te doğrulama
 
-`config` exists because some files can switch off a check: a pull request
-from a fork runs the workflow files on its own branch, and Greptile reads
-its rules from the branch it reviews. So the gate passes a change without
-the owner's OK only when every file it touches is one of these kinds:
+Geçen otomatik denetimler bir güvenlik sertifikası değildir. Uyku, kapak, pil,
+ekran, ses, dondurma, kurtarma, kurulum ya da hotspot davranışını değiştiren
+bir pull request, en son commit'i için kendi Mac'inizden bir rapor gerektirir.
+Raporu son push'unuzdan sonra yorum olarak ekleyin; yeniden push ederseniz
+yenisini ekleyin. Yalnızca `docs/`, `Tests/`, `.github/`, README.md,
+CONTRIBUTING.md, SECURITY.md, LICENSE ve .gitignore dosyalarını değiştiren bir
+pull request rapor gerektirmez.
 
-- Swift files under `Sources/`, and `.swift`, `.h` or `.c` files under
-  `Tests/`
-- `.md`, `.html` or `.svg` files under `docs/`, and `.md` files under
-  `skills/`
-- `.sh` or `.swift` files directly in `scripts/`, except
-  `scripts/check-lid-simulation-gate.sh`, which CI runs
-- `.plist` files under `Resources/`
-- `README.md` and `LICENSE` (`SECURITY.md` and this file set the project's
-  policy, and Greptile reads them as guidance for every review)
-
-Even there, some files count as config:
-
-- a name starting with a dot, such as `.greptile/` or `.shellcheckrc`
-- an `AGENTS.md`, `AGENTS.override.md`, `CLAUDE.md`, `CLAUDE.local.md` or
-  `GEMINI.md`, which review agents follow
-- a file whose diff adds a ShellCheck directive (`# shellcheck ...`) or a
-  Swift `@diagnose` or `@warn` attribute in any spelling, since those switch
-  off warnings from inside the file
-- a file GitHub shows no diff for, because it is too big or binary, unless
-  it was deleted. No reviewer can read it, one NUL byte makes a script
-  binary, and a script could source it.
-- a symlink or a submodule. CI follows a symlink, so `scripts/x.sh`
-  pointing at an image would be linted with whatever the image holds.
-
-Anything else, such as `.github/`, `Package.swift`, an image or a new kind
-of file, waits for the owner. The kinds in the first list pass only in the
-case shown there, so `scripts/backstop.SH` counts as config: CI's
-`scripts/*.sh` checks would skip it, but a Mac still opens it as
-`scripts/backstop.sh`. The Mac runners check out to a disk that treats `S`,
-`s` and look-alikes such as `ſ` as one letter, so the names that count
-match in any case, and any name with a non-ASCII character counts.
-
-CI runs your code, so a test could make a check pass without doing its
-work. The release build and the lid check run before the tests for that
-reason, and the Codex review looks for tests and sources that skip, weaken
-or tamper with checks.
-
-### Real-Mac evidence
-
-A pull request that changes anything outside `docs/`, `Tests/`, `.github/`,
-`.greptile/`, README.md, CONTRIBUTING.md, SECURITY.md, LICENSE and
-.gitignore needs a report from your own Mac for its head commit. Post it as
-a comment after your last push. If you push again, post a new one. For the
-owner's own pull requests, the owner posts it.
-
-- **Build.** A clean checkout of the head commit, with no other pull
-  requests applied, installed with `./scripts/install.sh`. Post
-  `git rev-parse HEAD` and `git status --short`, which should print nothing.
-- **Mac.** Post `sw_vers`, `sysctl -n hw.model` and
-  `sysctl -n machdep.cpu.brand_string`.
-- **Checks.** Every item in "Real-Mac checks before a release" in
-  [docs/releasing.md](docs/releasing.md) that your change can affect,
-  including any item it adds. For each one, post the steps you ran with
-  times, pass or fail, and the raw output that shows it:
-  - the lines of `~/Library/Logs/Uykusuz/uykusuz.log` for that run;
-  - pmset samples from a sampler you start before the check and leave
-    running:
+- **Derleme.** Başka hiçbir pull request uygulanmamış, en son commit'in temiz
+  bir kopyası, `./scripts/install.sh` ile kurulmuş. `git rev-parse HEAD` ve
+  hiçbir şey yazdırmaması gereken `git status --short` çıktısını ekleyin.
+- **Mac.** `sw_vers`, `sysctl -n hw.model` ve
+  `sysctl -n machdep.cpu.brand_string` çıktılarını ekleyin.
+- **Denetimler.** [docs/releasing.md](docs/releasing.md) içindeki
+  "Real-Mac checks before a release" listesinden değişikliğinizin
+  etkileyebileceği her madde (değişikliğin eklediği maddeler dahil). Her biri
+  için çalıştırdığınız adımları saatleriyle, geçti ya da kaldı sonucunu ve
+  bunu gösteren ham çıktıyı ekleyin:
+  - o çalıştırmanın `~/Library/Logs/Uykusuz/uykusuz.log` satırları;
+  - denetimden önce başlatıp çalışır bıraktığınız bir örnekleyicinin pmset
+    örnekleri:
     ```sh
     while :; do date '+%T'; pmset -g | grep SleepDisabled; pmset -g custom | sed -n '/Battery Power/,/AC Power/p' | grep -E 'powermode|lowpowermode'; sleep 5; done | tee -a ~/uykusuz-samples.txt
     ```
-  - `pmset -g log | grep -E ' (Sleep|Wake|DarkWake) '` for that time
-    window, which shows whether the Mac slept;
-  - any other reading the item names.
-- **Not run.** List anything you could not run, and why.
+  - o zaman aralığı için Mac'in uyuyup uyumadığını gösteren
+    `pmset -g log | grep -E ' (Sleep|Wake|DarkWake) '` çıktısı;
+  - maddenin istediği diğer okumalar.
+- **Çalıştırılmayanlar.** Çalıştıramadığınız her şeyi ve nedenini yazın.
 
-Put long logs in a gist and link it. Run the checks while you are with the
-Mac, on a stable, ventilated surface, never in a bag, and with no unsaved
-work open. The maintainer checks that the report covers the head and every
-affected item, then marks merge-gate/evidence.
+Uzun günlükleri bir gist'e koyup bağlantısını verin. Denetimleri Mac'in
+başındayken, sabit ve iyi havalanan bir yüzeyde, asla bir çantada değil ve
+kaydedilmemiş iş açık değilken çalıştırın. Gerçek Mac'te denetim gerektiren
+yeni bir davranış, docs/releasing.md içindeki listeye bir madde ekler;
+sonuçlar [docs/release-validation.md](docs/release-validation.md) dosyasına
+kaydedilir.
+
+## Simge ve çizimler
+
+Uygulama simgesi, menü çubuğundaki açık gözün koyu bir karo üzerindeki
+hâlidir. [AppIconArtwork](Sources/Uykusuz/UI/AppIconArtwork.swift) onu menü
+çubuğundaki kapalı gözle aynı
+[vektör geometrisinden](Sources/Uykusuz/UI/EyeMarkGeometry.swift) çizer; göz
+oturum sürerken açılır. Çizimi değiştirdikten sonra
+`./scripts/generate-app-icon.sh` çalıştırın: paketlenen PNG ve ICNS
+dosyalarını ve README'deki `docs/assets/eye-open.svg` dosyasını Xcode'un
+swiftc ve iconutil araçlarıyla çevrimdışı yeniden üretir.
+
+README'deki diğer çizimler (`docs/assets/*.svg`) elle yazılmış SVG'lerdir ve
+açık ile koyu temayı `prefers-color-scheme` ile destekler. Bir arayüz metni ya
+da bir varsayılan değiştiğinde ilgili çizimi de güncelleyin.
+
+## Dil
+
+Arayüz, bildirimler, sesli uyarılar, kurulum mesajları ve kullanıcı
+belgeleri Türkçedir. Kod, kod içi yorumlar ve tasarım belgeleri
+([docs/spec.md](docs/spec.md), [docs/releasing.md](docs/releasing.md),
+[docs/release-validation.md](docs/release-validation.md)) İngilizcedir.
+Commit mesajlarını Türkçe, `Uykusuz: <ne değişti>` biçiminde yazın.

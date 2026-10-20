@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="420" viewBox="0 0 1000 420" role="img" aria-labelledby="rf-title rf-desc">
-  <title id="rf-title">Uykusuz recovery flow</title>
-  <desc id="rf-desc">A simplified diagram of two paths that converge. App cleanup runs at the end of a session or when the app reopens. A separate backup check runs every 60 seconds and leaves a valid, unexpired session alone. Both converge on one step: try to restore verified changes. Only changes that can be verified are undone; failed or unreadable evidence is kept rather than treated as clean. Below that, a warning: may need your attention. Two things can need it: saved audio is restored only by reopening the app, and an unconfirmed freeze means you should inspect the process yourself. The backup check undoes recorded changes only. It is not battery or thermal monitoring and cannot restore audio. On the left, an illustrated example of the right-click menu while cleanup is still pending shows a warning line reading Sleep still held with no session, a status line, then Settings and Quit Uykusuz. It is an illustration, not a screenshot.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="476" viewBox="0 0 1100 476" role="img" aria-labelledby="rf-title rf-desc">
+  <title id="rf-title">Uykusuz kurtarma akışı</title>
+  <desc id="rf-desc">Birleşen iki yolun sadeleştirilmiş çizimi. Uygulama temizliği, oturum bitince ya da uygulama yeniden açılınca çalışır. Ayrı bir yedek denetim 60 saniyede bir launchd ile çalışır ve geçerli, süresi dolmamış bir oturuma dokunmaz. İki yol tek bir adımda birleşir: doğrulanan değişiklikleri geri almayı dener. Yalnızca doğrulanabilen değişiklikler geri alınır; başarısız ya da okunamayan kanıt temiz sayılmaz, saklanır. Altında bir uyarı: ilgilenmeniz gerekebilir. İki durum bunu gerektirir: kaydedilmiş ses yalnızca Uykusuz yeniden açılınca geri yüklenir, doğrulanamayan donmuş bir süreci ise kendiniz denetlemelisiniz. Yedek denetim yalnızca kaydedilmiş değişiklikleri geri alır; pili ya da ısıyı izlemez ve sesi geri yükleyemez. Solda, temizlik beklerken sağ tık menüsünün örnek bir çizimi: Oturum yokken uyku hâlâ engelleniyor uyarısı, bir durum satırı, ardından Ayarlar ve Uykusuz'dan Çık. Bir ekran görüntüsü değil, çizimdir.</desc>
   <style>
     svg { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif; }
     .bg { fill: #F3F2EF; }
@@ -34,80 +34,78 @@
   </style>
   <defs>
     <!-- EyeMarkGeometry on its 24-unit grid, monochrome. Closed: the lid shades the whole lens, lashes below.
-         Open: lid gone, pupil with its highlight bite showing, lashes above. Paths match docs/mockups/menubar-ux.html. -->
+         Paths match docs/mockups/menubar-ux.html. -->
     <g id="rf-mark-closed">
       <path class="mark-fill" d="M1.5 12 C7 4.5 17 4.5 22.5 12 C17 19.5 7 19.5 1.5 12 Z"/>
       <path class="mark-line" d="M1.5 12 C7 4.5 17 4.5 22.5 12 C17 19.5 7 19.5 1.5 12 Z"/>
       <path class="mark-line" d="M4.5499 17.8023 L3.1442 20.1659 M8.2636 19.3782 L7.5468 22.0332 M12 19.875 L12 22.625 M15.7364 19.3782 L16.4532 22.0332 M19.4501 17.8023 L20.8558 20.1659"/>
-    </g>
-    <g id="rf-mark-open">
-      <path class="mark-line" d="M1.5 12 C7 4.5 17 4.5 22.5 12 C17 19.5 7 19.5 1.5 12 Z"/>
-      <path class="mark-fill" d="M15.3953 9.8853 A4 4 0 1 1 14.1147 8.6047 A1.4 1.4 0 1 0 15.3953 9.8853 Z"/>
-      <path class="mark-line" d="M4.5499 6.1977 L3.1442 3.8341 M8.2636 4.6218 L7.5468 1.9668 M12 4.125 L12 1.375 M15.7364 4.6218 L16.4532 1.9668 M19.4501 6.1977 L20.8558 3.8341"/>
     </g>
     <marker id="rf-arrow" viewBox="0 0 14 14" markerWidth="14" markerHeight="14" refX="11" refY="7" markerUnits="userSpaceOnUse" orient="auto">
       <path class="a" d="M2 2 L12 7 L2 12 Z"/>
     </marker>
   </defs>
 
-  <rect class="bg" x="0" y="0" width="1000" height="420" rx="24"/>
+  <rect class="bg" x="0" y="0" width="1100" height="476" rx="24"/>
 
   <!-- Header -->
   <g transform="translate(32 20) scale(1.6667)">
     <use href="#rf-mark-closed"/>
   </g>
-  <text class="t" x="88" y="50" font-size="26" font-weight="700">Two ways back to normal</text>
+  <text class="t" x="88" y="50" font-size="26" font-weight="700">Normale dönmenin iki yolu</text>
 
-  <!-- Example right-click menu while cleanup is pending (illustration) -->
+  <!-- Example right-click menu while cleanup is pending (illustration). The lines are StatusMenu's own:
+       SleepHeldLine for no session with sleep still held, StatusLines.machine, then Settings and Quit. -->
   <g>
-    <rect class="menu" x="32" y="112" width="380" height="168" rx="12"/>
-    <text class="warn" x="52" y="146" font-size="19">Sleep still held with no session</text>
-    <text class="m" x="52" y="176" font-size="19">Lid: open · 87%</text>
-    <path class="sep" d="M44 192 H400"/>
-    <text class="t" x="52" y="224" font-size="19">Settings…</text>
-    <text class="m" x="392" y="224" font-size="19" text-anchor="end">⌘,</text>
-    <text class="t" x="52" y="258" font-size="19">Quit Uykusuz</text>
-    <text class="m" x="392" y="258" font-size="19" text-anchor="end">⌘Q</text>
+    <rect class="menu" x="32" y="112" width="400" height="168" rx="12"/>
+    <text class="warn" x="52" y="146" font-size="19">Oturum yokken uyku hâlâ engelleniyor</text>
+    <text class="m" x="52" y="176" font-size="19">Kapak: açık · %87</text>
+    <path class="sep" d="M44 192 H420"/>
+    <text class="t" x="52" y="224" font-size="19">Ayarlar…</text>
+    <text class="m" x="412" y="224" font-size="19" text-anchor="end">⌘,</text>
+    <text class="t" x="52" y="258" font-size="19">Uykusuz'dan Çık</text>
+    <text class="m" x="412" y="258" font-size="19" text-anchor="end">⌘Q</text>
   </g>
-  <text class="m" x="32" y="310" font-size="17">Menu while cleanup is pending. Illustration.</text>
+  <text class="m" x="32" y="310" font-size="17">Temizlik beklerken menü. Çizimdir.</text>
 
   <!-- Node: app cleanup -->
   <g>
-    <rect class="panel" x="452" y="80" width="250" height="120" rx="16"/>
-    <g transform="translate(472 96) scale(1.3333)">
+    <rect class="panel" x="472" y="80" width="290" height="120" rx="16"/>
+    <g transform="translate(492 96) scale(1.3333)">
       <use href="#rf-mark-closed"/>
     </g>
-    <text class="t" x="516" y="122" font-size="22" font-weight="700">App cleanup</text>
-    <text class="m" x="472" y="170" font-size="19">At end or reopen</text>
+    <text class="t" x="536" y="122" font-size="22" font-weight="700">Uygulama temizliği</text>
+    <text class="m" x="492" y="170" font-size="18">Oturum bitince ya da açılışta</text>
   </g>
 
   <!-- Node: backup check -->
   <g>
-    <rect class="panel" x="718" y="80" width="250" height="120" rx="16"/>
-    <g class="ic" transform="translate(738 98)">
+    <rect class="panel" x="778" y="80" width="290" height="120" rx="16"/>
+    <g class="ic" transform="translate(798 98)">
       <circle cx="16" cy="16" r="13"/>
       <path d="M16 8 V16 H22"/>
     </g>
-    <text class="t" x="782" y="122" font-size="22" font-weight="700">Backup check</text>
-    <text class="m" x="738" y="170" font-size="19">Every 60 seconds</text>
+    <text class="t" x="842" y="122" font-size="22" font-weight="700">Yedek denetim</text>
+    <text class="m" x="798" y="170" font-size="18">60 saniyede bir (launchd)</text>
   </g>
 
   <!-- Converge -->
-  <path class="ln" d="M577 200 V224 H843 V200"/>
-  <path class="ln" d="M710 224 V244" marker-end="url(#rf-arrow)"/>
+  <path class="ln" d="M617 200 V224 H923 V200"/>
+  <path class="ln" d="M770 224 V244" marker-end="url(#rf-arrow)"/>
 
   <!-- Restore -->
   <g>
-    <rect class="panel" x="452" y="248" width="516" height="76" rx="16"/>
-    <text class="t" x="710" y="294" font-size="22" font-weight="700" text-anchor="middle">Try to restore verified changes</text>
+    <rect class="panel" x="472" y="248" width="596" height="76" rx="16"/>
+    <text class="t" x="770" y="294" font-size="22" font-weight="700" text-anchor="middle">Doğrulanan değişiklikleri geri almayı dener</text>
   </g>
 
-  <!-- Warning -->
-  <path class="ln" d="M710 324 V350" marker-end="url(#rf-arrow)"/>
+  <!-- Warning, and the two cases that need you -->
+  <path class="ln" d="M770 324 V350" marker-end="url(#rf-arrow)"/>
   <g class="warn-ic">
-    <path d="M567 362 L579 384 H555 Z"/>
-    <path d="M567 370 V377"/>
-    <path d="M567 380.5 V381"/>
+    <path d="M646 362 L658 384 H634 Z"/>
+    <path d="M646 370 V377"/>
+    <path d="M646 380.5 V381"/>
   </g>
-  <text class="warn" x="590" y="382" font-size="22" font-weight="700">May need your attention</text>
+  <text class="warn" x="669" y="382" font-size="22" font-weight="700">İlgilenmeniz gerekebilir</text>
+  <text class="m" x="770" y="418" font-size="18" text-anchor="middle">Kaydedilmiş ses için Uykusuz'u açın</text>
+  <text class="m" x="770" y="446" font-size="18" text-anchor="middle">Doğrulanamayan donmuş süreci denetleyin</text>
 </svg>

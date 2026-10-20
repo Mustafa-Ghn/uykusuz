@@ -1,0 +1,150 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="560" viewBox="0 0 1100 560" role="img" aria-labelledby="ca-title ca-desc">
+  <title id="ca-title">Claude çalışırken otomatik oturum</title>
+  <desc id="ca-desc">Soldan sağa dört adım. 1, Claude başlar: Claude Code hook'ları görevi Uykusuz'a bildirir. 2, Oturum açılır: menü çubuğunda geri sayım yerine Claude yazar; çizimde açık göz, Claude yazısı ve basılı tutarak bitirme düğmesi var. 3, Oturum sürer: Claude çalıştıkça arka planda 2 saatlik dilimlerle uzar. 4, Oturum biter: Claude 5 dakika çalışmayınca biter ve Mac normal uykusuna döner. Altta Kontrol sizde başlıklı bir panel: Claude yazısına tıklayıp süre girerseniz oturum sizin olur, geri sayım başlar ve Claude artık uzatmaz; basılı tutup bitirirseniz Claude durup yeniden başlayana kadar otomatik oturum açılmaz; pil bitiş eşiğine (yüzde 20) ya da ısınma sınırına yakınken otomatik oturum başlamaz; elle başlattığınız oturumlar hep geri sayımla görünür ve Claude onlara dokunmaz.</desc>
+  <style>
+    svg { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif; }
+    .bg { fill: #F3F2EF; }
+    .panel { fill: #FAF9F6; stroke: #DBD9D4; stroke-width: 1.5; }
+    .t { fill: #292D30; }
+    .m { fill: #5F6467; }
+    .a { fill: #536D78; }
+    .badge { fill: #536D78; }
+    .badge-n { fill: #FAF9F6; }
+    .ln { fill: none; stroke: #536D78; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .ic { fill: none; stroke: #292D30; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .mark-line { fill: none; stroke: #292D30; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .mark-fill { fill: #292D30; }
+    /* The menu bar excerpt is drawn dark in both themes, as in session-flow.svg. */
+    .bar { fill: #1E1F21; stroke: #FFFFFF; stroke-opacity: 0.08; stroke-width: 1.2; }
+    .bar-line { fill: none; stroke: #FFFFFF; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .bar-fill { fill: #FFFFFF; }
+    .bar-text { fill: #FFFFFF; }
+    .track { fill: none; stroke: #FFFFFF; stroke-opacity: 0.14; stroke-width: 2.2; }
+    .x { fill: none; stroke: #FFFFFF; stroke-opacity: 0.85; stroke-width: 2; stroke-linecap: round; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #242628; }
+      .panel { fill: #303336; stroke: #3E4145; }
+      .t { fill: #E6E3DD; }
+      .m { fill: #B5B7B8; }
+      .a { fill: #A6BBC3; }
+      .badge { fill: #A6BBC3; }
+      .badge-n { fill: #242628; }
+      .ln { stroke: #A6BBC3; }
+      .ic { stroke: #E6E3DD; }
+      .mark-line { stroke: #E6E3DD; }
+      .mark-fill { fill: #E6E3DD; }
+      .bar { fill: #17191B; stroke-opacity: 0.12; }
+    }
+  </style>
+  <defs>
+    <!-- EyeMarkGeometry on its 24-unit grid, monochrome. Open: lid gone, pupil with its highlight bite showing,
+         lashes above. Paths match docs/mockups/menubar-ux.html. -->
+    <g id="ca-mark-open">
+      <path class="mark-line" d="M1.5 12 C7 4.5 17 4.5 22.5 12 C17 19.5 7 19.5 1.5 12 Z"/>
+      <path class="mark-fill" d="M15.3953 9.8853 A4 4 0 1 1 14.1147 8.6047 A1.4 1.4 0 1 0 15.3953 9.8853 Z"/>
+      <path class="mark-line" d="M4.5499 6.1977 L3.1442 3.8341 M8.2636 4.6218 L7.5468 1.9668 M12 4.125 L12 1.375 M15.7364 4.6218 L16.4532 1.9668 M19.4501 6.1977 L20.8558 3.8341"/>
+    </g>
+    <g id="ca-bar-mark-open">
+      <path class="bar-line" d="M1.5 12 C7 4.5 17 4.5 22.5 12 C17 19.5 7 19.5 1.5 12 Z"/>
+      <path class="bar-fill" d="M15.3953 9.8853 A4 4 0 1 1 14.1147 8.6047 A1.4 1.4 0 1 0 15.3953 9.8853 Z"/>
+      <path class="bar-line" d="M4.5499 6.1977 L3.1442 3.8341 M8.2636 4.6218 L7.5468 1.9668 M12 4.125 L12 1.375 M15.7364 4.6218 L16.4532 1.9668 M19.4501 6.1977 L20.8558 3.8341"/>
+    </g>
+    <marker id="ca-arrow" viewBox="0 0 14 14" markerWidth="14" markerHeight="14" refX="11" refY="7" markerUnits="userSpaceOnUse" orient="auto">
+      <path class="a" d="M2 2 L12 7 L2 12 Z"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1100" height="560" rx="24"/>
+
+  <!-- Header -->
+  <g transform="translate(32 20) scale(1.6667)">
+    <use href="#ca-mark-open"/>
+  </g>
+  <text class="t" x="88" y="50" font-size="26" font-weight="700">Claude çalışırken otomatik oturum</text>
+
+  <!-- Four steps, 232 wide with 36 between: x 32, 300, 568, 836. -->
+  <g>
+    <rect class="panel" x="32" y="80" width="232" height="210" rx="16"/>
+    <circle class="badge" cx="67" cy="116" r="15"/>
+    <text class="badge-n" x="67" y="122" font-size="17" font-weight="700" text-anchor="middle">1</text>
+    <text class="t" x="94" y="123" font-size="20" font-weight="700">Claude başlar</text>
+    <text class="m" x="52" y="166" font-size="17">Claude Code hook'ları</text>
+    <text class="m" x="52" y="190" font-size="17">görevi Uykusuz'a bildirir.</text>
+  </g>
+  <path class="ln" d="M270 185 H294" marker-end="url(#ca-arrow)"/>
+
+  <g>
+    <rect class="panel" x="300" y="80" width="232" height="210" rx="16"/>
+    <circle class="badge" cx="335" cy="116" r="15"/>
+    <text class="badge-n" x="335" y="122" font-size="17" font-weight="700" text-anchor="middle">2</text>
+    <text class="t" x="362" y="123" font-size="20" font-weight="700">Oturum açılır</text>
+    <text class="m" x="320" y="166" font-size="17">Geri sayım yerine</text>
+    <text class="m" x="320" y="190" font-size="17">menü çubuğunda:</text>
+    <!-- Menu bar excerpt: the open eye, "Claude" where the countdown would be, the hold-to-end control. -->
+    <rect class="bar" x="320" y="212" width="192" height="44" rx="10"/>
+    <g transform="translate(332 222) scale(1)">
+      <use href="#ca-bar-mark-open"/>
+    </g>
+    <text class="bar-text" x="366" y="241" font-size="20" font-weight="500">Claude</text>
+    <g transform="translate(490 234)">
+      <circle class="track" cx="0" cy="0" r="10"/>
+      <path class="x" d="M-3.2 -3.2 L3.2 3.2 M3.2 -3.2 L-3.2 3.2"/>
+    </g>
+  </g>
+  <path class="ln" d="M538 185 H562" marker-end="url(#ca-arrow)"/>
+
+  <g>
+    <rect class="panel" x="568" y="80" width="232" height="210" rx="16"/>
+    <circle class="badge" cx="603" cy="116" r="15"/>
+    <text class="badge-n" x="603" y="122" font-size="17" font-weight="700" text-anchor="middle">3</text>
+    <text class="t" x="630" y="123" font-size="20" font-weight="700">Oturum sürer</text>
+    <text class="m" x="588" y="166" font-size="17">Claude çalıştıkça arka</text>
+    <text class="m" x="588" y="190" font-size="17">planda 2 saatlik</text>
+    <text class="m" x="588" y="214" font-size="17">dilimlerle uzar.</text>
+  </g>
+  <path class="ln" d="M806 185 H830" marker-end="url(#ca-arrow)"/>
+
+  <g>
+    <rect class="panel" x="836" y="80" width="232" height="210" rx="16"/>
+    <circle class="badge" cx="871" cy="116" r="15"/>
+    <text class="badge-n" x="871" y="122" font-size="17" font-weight="700" text-anchor="middle">4</text>
+    <text class="t" x="898" y="123" font-size="20" font-weight="700">Oturum biter</text>
+    <text class="m" x="856" y="166" font-size="17">Claude 5 dakika</text>
+    <text class="m" x="856" y="190" font-size="17">çalışmayınca biter; Mac</text>
+    <text class="m" x="856" y="214" font-size="17">normal uykusuna döner.</text>
+  </g>
+
+  <!-- What stays in your hands -->
+  <g>
+    <rect class="panel" x="32" y="316" width="1036" height="212" rx="16"/>
+    <text class="t" x="52" y="352" font-size="20" font-weight="700">Kontrol sizde</text>
+
+    <!-- Pointer: take the session over -->
+    <g class="ic" transform="translate(52 374)">
+      <path d="M6 2 L6 19 L10.2 14.8 L13.2 21.2 L15.8 20 L12.8 13.8 L18.6 13.8 Z"/>
+    </g>
+    <text class="t" x="88" y="394" font-size="18">“Claude” yazısına tıklayıp süre girin: oturum sizin olur, geri sayım başlar, Claude artık uzatmaz.</text>
+
+    <!-- Hold-to-end ring -->
+    <g class="ic" transform="translate(52 410)">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M8.5 8.5 L15.5 15.5 M15.5 8.5 L8.5 15.5"/>
+    </g>
+    <text class="t" x="88" y="430" font-size="18">Basılı tutup bitirirseniz Claude durup yeniden başlayana kadar otomatik oturum açılmaz.</text>
+
+    <!-- Low battery -->
+    <g class="ic" transform="translate(52 446)">
+      <rect x="1" y="6" width="19" height="12" rx="2.5"/>
+      <path d="M22.5 10 V14"/>
+      <path d="M4.5 9.5 V14.5"/>
+    </g>
+    <text class="t" x="88" y="466" font-size="18">Pil bitiş eşiğine (%20) ya da ısınma sınırına yakınken otomatik oturum başlamaz.</text>
+
+    <!-- Clock: a session you start keeps its countdown -->
+    <g class="ic" transform="translate(52 482)">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M12 6.5 V12 H16"/>
+    </g>
+    <text class="t" x="88" y="502" font-size="18">Elle başlattığınız oturumlar hep geri sayımla görünür; Claude onlara dokunmaz.</text>
+  </g>
+</svg>

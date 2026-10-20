@@ -20,13 +20,8 @@ steps; they differ only in how the run starts, the names and the release
 flags. Nobody chooses a nightly: it is whatever `main` held when the run
 started.
 
-`v0.1.0` is an exception to this table. It was packaged by hand from the
-app installed on the maintainer's Mac and published as the first stable
-release; no workflow built it. Its zip is `Insomnia-0.1.0-macos-arm64.zip`
-with `scripts/install.sh`, `scripts/uninstall.sh` and `scripts/backstop.sh`
-from the `v0.1.0` tag, it has no attestation, and its release notes give its
-own checksum and install commands. Version 0.1.0 belongs to that release,
-so the next stable release needs a new version in `Resources/Info.plist`.
+`<version>` is `CFBundleShortVersionString` in `Resources/Info.plist` at the
+commit that was built; a stable tag must match it.
 
 ## What a release contains
 
@@ -63,8 +58,7 @@ one, so its `install.sh` needs `--app`, and its `uninstall.sh` runs only the
 ## Cutting a stable release
 
 1. Set `CFBundleShortVersionString` in `Resources/Info.plist` to the new
-   version (and bump `CFBundleVersion`). Commit on main. `0.1.0` is taken
-   (see Channels).
+   version (and bump `CFBundleVersion`). Commit on main.
 2. Test that commit before anything is published. Start a manual run on it
    (Actions, Release, Run workflow, with the nightly box left unticked),
    download the zip from the run's artifact, check it with
@@ -143,8 +137,8 @@ in System Settings > Privacy & Security.
 
 ```bash
 shasum -a 256 -c SHA256SUMS
-gh attestation verify <zip> -R krishhgg/Insomnia \
-  --signer-workflow krishhgg/Insomnia/.github/workflows/release.yml \
+gh attestation verify <zip> -R Mustafa-Ghn/insomnia-tr \
+  --signer-workflow Mustafa-Ghn/insomnia-tr/.github/workflows/release.yml \
   --source-ref <ref> --source-digest <commit>
 ```
 
@@ -160,8 +154,7 @@ of the repository would do), that it ran for that ref (`--source-ref`), so a
 nightly built from `main` does not pass for a stable tag, and that it built
 that commit (`--source-digest`). Together they show the bytes are what the
 Release workflow built from that commit. They do not show the code is safe;
-the README's warnings apply to every build. `v0.1.0` has no attestation; only
-the checksum in its release notes covers it.
+the README's warnings apply to every build.
 
 The `install.sh --app` in a workflow-built zip then copies the bundle into
 a private temporary directory and checks that copy before the password

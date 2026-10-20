@@ -15,8 +15,8 @@ command -v jq >/dev/null || {
   exit 2
 }
 
-REPO=krishhgg/Insomnia
-OWNER=krishhgg
+REPO=Mustafa-Ghn/insomnia-tr
+OWNER=Mustafa-Ghn
 BOT='github-actions[bot]'
 HEAD_SHA=1111111111111111111111111111111111111111
 MAIN_SHA=2222222222222222222222222222222222222222
@@ -145,7 +145,7 @@ pr_json() {
 # greptile_body <score> <reviewed sha>: Greptile's block as it writes it.
 greptile_body() {
   printf '<h3>Greptile Summary</h3>\n\n<!-- greptile_confidence_score:%s -->\n\n' "$1"
-  printf '<sub>Last reviewed commit: ["Gate"](https://github.com/krishhgg/uykusuz/commit/%s)</sub>\n' "$2"
+  printf '<sub>Last reviewed commit: ["Gate"](https://github.com/Mustafa-Ghn/insomnia-tr/commit/%s)</sub>\n' "$2"
 }
 
 # edit <time> <editor> <description>: one description edit as GraphQL lists
@@ -254,7 +254,7 @@ baseline() {
   echo '[]' | json "commits_${HEAD_SHA}_statuses"
   pr_json someone '[{"name": "accepted"}]'
   greptile 5 "$HEAD_SHA"
-  label_events '[["labeled", "krishhgg"]]'
+  label_events '[["labeled", "Mustafa-Ghn"]]'
   changed docs/guide.md
   head_tree '[{"path": "docs", "mode": "040000"}, {"path": "docs/guide.md", "mode": "100644"}]'
   echo "{\"sha\": \"$MAIN_SHA\"}" | json commits_main
@@ -297,7 +297,7 @@ test_second_evaluate_posts_nothing() {
 }
 
 test_owner_rejection_stands_on_their_own_config_change() {
-  pr_json krishhgg '[{"name": "accepted"}]'
+  pr_json Mustafa-Ghn '[{"name": "accepted"}]'
   changed .github/workflows/ci.yml
   seed "$OWNER" config failure "drop the new job"
   seed "$OWNER" evidence failure "the log shows no sleep"
@@ -331,7 +331,7 @@ test_owner_decision_on_a_later_page_counts() {
   # OK to page 2.
   jq -n '[range(200; 100; -1) | {id: ., context: "other/check", state: "success", creator: {login: "app[bot]"}}]' |
     json "commits_${HEAD_SHA}_statuses.1"
-  echo '[{"id": 50, "context": "merge-gate/evidence", "state": "success", "creator": {"login": "krishhgg"},
+  echo '[{"id": 50, "context": "merge-gate/evidence", "state": "success", "creator": {"login": "Mustafa-Ghn"},
     "description": "report checked", "target_url": null}]' | json "commits_${HEAD_SHA}_statuses.2"
   run 0 evaluate 5
   gate evidence success "report checked"
@@ -346,7 +346,7 @@ test_fork_config_change_waits_for_the_owner() {
 }
 
 test_owner_config_change_passes() {
-  pr_json krishhgg '[{"name": "accepted"}]'
+  pr_json Mustafa-Ghn '[{"name": "accepted"}]'
   changed .github/workflows/ci.yml Package.swift
   run 0 evaluate 5
   gate config success "come from the owner"
@@ -584,7 +584,7 @@ test_newest_greptile_edit_wins_across_pages() {
 }
 
 test_label_from_someone_else_waits() {
-  label_events '[["labeled", "krishhgg"], ["unlabeled", "someone"], ["labeled", "someone"]]'
+  label_events '[["labeled", "Mustafa-Ghn"], ["unlabeled", "someone"], ["labeled", "someone"]]'
   run 0 evaluate 5
   gate accepted pending "not added by the owner (labeled someone)"
 }
@@ -742,7 +742,7 @@ test_check_sees_an_owner_failure_posted_during_a_run() {
 test_check_sees_a_label_removed_before_the_workflow_runs() {
   all_gates_pass
   pr_json someone '[]'
-  label_events '[["labeled", "krishhgg"], ["unlabeled", "krishhgg"]]'
+  label_events '[["labeled", "Mustafa-Ghn"], ["unlabeled", "Mustafa-Ghn"]]'
   run 1 check 5
   says "posted success, but it is now pending: waiting for the owner's accepted label"
 }
@@ -826,7 +826,7 @@ test_an_owner_failure_in_capitals_counts() {
   run 0 evaluate 5
   [ "$(posts evidence)" = 0 ] || fail "posted evidence $(posts evidence) times over the owner's failure"
   run 1 check 5
-  says "FAIL  merge-gate/evidence                      failure: the log shows no sleep [krishhgg]"
+  says "FAIL  merge-gate/evidence                      failure: the log shows no sleep [Mustafa-Ghn]"
 }
 
 test_check_counts_a_ci_status_in_lower_case() {
@@ -877,7 +877,7 @@ test_check_fails_if_any_status_with_the_name_fails() {
 test_merge_stops_if_the_label_goes_during_the_check() {
   all_gates_pass
   later pulls_5 pr_json someone '[]'
-  later issues_5_events label_events '[["labeled", "krishhgg"], ["unlabeled", "krishhgg"]]'
+  later issues_5_events label_events '[["labeled", "Mustafa-Ghn"], ["unlabeled", "Mustafa-Ghn"]]'
   run 2 merge 5
   says "merge-gate/accepted now works out to pending: waiting for the owner's accepted label; run check again"
   says "NOT READY: #5 at 1111111, 1 failing"

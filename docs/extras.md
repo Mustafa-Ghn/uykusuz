@@ -124,9 +124,9 @@ ettiği dosyayı değil bağlantının kendisini taşırdı; bunu da bir kez gü
 yazar. Bağlantıyı siz kurduğunuz için işaret ettiği dosyayı kırpmak size
 kalmıştır.
 
-Uykusuz hiçbir ağ isteği yapmaz. Özgün projedeki "güncellemeleri denetle"
-düğmesi (api.github.com'a iki GET isteği) bu çatalda kaldırıldı. Hotspot'a
-bağlanma ve Wi-Fi durumunu izleme yerel işlemlerdir; dışarıya veri gitmez.
+Uykusuz hiçbir ağ isteği yapmaz: güncelleme denetlemez, kullanım verisi ya da
+çökme raporu göndermez. Hotspot'a bağlanma ve Wi-Fi durumunu izleme yerel
+işlemlerdir; dışarıya veri gitmez.
 
 `UYKUSUZ_HOME`, test amacıyla uygulama destek dosyalarının, günlüklerin ve
 LaunchAgents klasörünün yerini değiştirir. Bir **kurulum korumalı alanı

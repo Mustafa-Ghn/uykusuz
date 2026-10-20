@@ -55,21 +55,20 @@ basın.
 
 Varsayılanları bilmekte yarar var:
 
-- **Seçili uygulamalar:** WhatsApp, Word, Excel ve ParaView dondurma listesindedir.
-  Bu fork'ta "diğer tüm uygulamaları dondur" de varsayılan olarak açıktır;
-  ajanlar, Apple uygulamaları, ProtonVPN ve AnyDesk hiç dondurulmaz.
-  Ayarlanmış ajan uygulamaları bu sıradan listenin dışında tutulur.
+- **Seçili uygulamalar:** WhatsApp, Word, Excel ve ParaView dondurma
+  listesindedir. Ayarlanmış ajan uygulamaları bu sıradan listenin dışında
+  tutulur.
 - **Diğer tüm uygulamalar:** "Kapak kapalıyken diğer tüm uygulamaları dondur"
-  kapalıdır; bu yüzden yeni bir kurulum yalnızca dondurma listesini dondurur.
-  Ajan uygulaması, Apple uygulaması, Docker Desktop ya da yerleşik korumalı bir
-  uygulama (düzenleyiciler, terminaller, tarayıcılar, yapay zekâ uygulamaları,
-  parola yöneticileri, yerel veritabanları, Tailscale, yerel model sunucuları;
-  paket kimliği önekine göre JetBrains IDE'leri) olmayan her Dock uygulamasını
-  da dondurmak için bu seçeneği açın; böylece kapak kapalıyken yalnızca ajanlar
-  çalışmayı sürdürür. Menü çubuğu uygulamaları hiçbir zaman otomatik olarak
-  seçilmez; dondurulmalarını istiyorsanız onları dondurma listesine ekleyin.
-  Ayarlar, otomatik kapsamın o anda neleri donduracağını listeleyen bir
-  "Şu anda dondurulacaklar" satırı gösterir.
+  açıktır: ajan uygulaması, Apple uygulaması, Docker Desktop ya da yerleşik
+  korumalı bir uygulama (düzenleyiciler, terminaller, tarayıcılar, yapay zekâ
+  uygulamaları, parola yöneticileri, yerel veritabanları, Tailscale, ProtonVPN,
+  AnyDesk, yerel model sunucuları; paket kimliği önekine göre JetBrains
+  IDE'leri) olmayan her Dock uygulaması da dondurulur; böylece kapak kapalıyken
+  yalnızca ajanlar çalışmayı sürdürür. Yalnızca dondurma listesini dondurmak
+  için bu seçeneği kapatın. Menü çubuğu uygulamaları hiçbir zaman otomatik
+  olarak seçilmez; dondurulmalarını istiyorsanız onları dondurma listesine
+  ekleyin. Ayarlar, otomatik kapsamın o anda neleri donduracağını listeleyen
+  bir "Şu anda dondurulacaklar" satırı gösterir.
 - **Toplantı, kayıt ve dikte uygulamaları:** "Diğer tüm uygulamaları dondur"
   bunları ve yardımcı uygulamalarını hiçbir zaman dondurmaz: Zoom, Microsoft
   Teams (yeni ve klasik), Webex (ve daha eski Webex Meetings uygulaması),

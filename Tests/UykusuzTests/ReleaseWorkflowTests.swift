@@ -397,7 +397,7 @@ final class ReleaseWorkflowTests: XCTestCase {
     }
 
     /// Release bundles are arm64 only (no universal build), so the notes'
-    /// first line says a release needs an Apple Silicon Mac. The fork's
+    /// first line says a release needs an Apple Silicon Mac. The
     /// README (Turkish, source builds only) states the same requirement in
     /// its Requirements section ("Gereksinimler"), right above Install.
     /// RecoveryScriptTests checks that install.sh --app stops on any other
@@ -409,28 +409,24 @@ final class ReleaseWorkflowTests: XCTestCase {
         XCTAssertTrue(try readmeSection("Gereksinimler").contains("Apple Silicon"), "the README's Requirements section")
     }
 
-    /// The fork's README has no release channels: its Install section
-    /// ("Kurulum") says the fork is installed from source only, gives the
-    /// clone-and-run command for ./scripts/install.sh in place of upstream's
-    /// coding agent prompts, and points at docs/install.md. That page still
-    /// lets a reader choose an upstream channel and sends v0.1.0, which no
-    /// workflow built, to its own release notes.
-    func testTheReadmeOffersBothChannelsAndSetsV010Apart() throws {
+    /// No release is published: the README's Install section ("Kurulum")
+    /// says Uykusuz is built from source, gives the clone-and-run command for
+    /// ./scripts/install.sh and points at docs/install.md. That page gives
+    /// the same command and says a zip from the Release workflow is
+    /// installed with --app rather than built.
+    func testTheReadmeAndTheInstallGuideBuildFromSource() throws {
+        let clone = "git clone https://github.com/Mustafa-Ghn/insomnia-tr.git && cd insomnia-tr && ./scripts/install.sh"
         let install = try readmeSection("Kurulum").split(whereSeparator: \.isWhitespace).joined(separator: " ")
-        for phrase in ["git clone https://github.com/Mustafa-Ghn/insomnia-tr.git && cd insomnia-tr && ./scripts/install.sh",
-                       "Bu çatal yalnızca kaynak koddan kurulur.", "](docs/install.md)"] {
+        for phrase in [clone, "Uykusuz kaynak koddan derlenerek kurulur.", "](docs/install.md)"] {
             XCTAssertTrue(install.contains(phrase), "the README's Install section lacks: \(phrase)")
         }
         let skill = try String(contentsOf: repoRoot.appendingPathComponent("skills/install-uykusuz/SKILL.md"), encoding: .utf8)
         XCTAssertTrue(skill.contains("docs/install.md"), "the install skill follows docs/install.md")
         let guide = try String(contentsOf: repoRoot.appendingPathComponent("docs/install.md"), encoding: .utf8)
             .split(whereSeparator: \.isWhitespace).joined(separator: " ")
-        for phrase in ["Kararlı: GitHub'ın Latest olarak işaretlediği",
-                       "Gecelik: `main` dalında yeni commit olduğunda günde bir kez otomatik olarak derlenen, `nightly-<date>-<commit>` etiketli ön sürümler",
-                       "Gecelik bir sürüm hiçbir zaman Latest olarak işaretlenmez",
-                       "kararlı bir sürüm için `refs/tags/v<version>`, gecelik bir sürüm için `refs/heads/main`",
-                       "--source-ref <ref> --source-digest <commit>",
-                       "Seçtiğiniz sürüm `v0.1.0` ise"] {
+        for phrase in [clone,
+                       "Uykusuz hazır derlenmiş bir paket olarak yayımlanmaz; kaynak koddan derlenerek kurulur",
+                       "derleme yapmaz ve `--app` ile hazır paketi ister"] {
             XCTAssertTrue(guide.contains(phrase), "docs/install.md lacks: \(phrase)")
         }
     }
@@ -438,7 +434,7 @@ final class ReleaseWorkflowTests: XCTestCase {
     private var repoRoot: URL { workflowsDir.deletingLastPathComponent().deletingLastPathComponent() }
 
     /// The README section under `## <title>`, up to the next `## ` heading.
-    /// The fork's README is Turkish: Install is "Kurulum", Requirements is
+    /// The README is Turkish: Install is "Kurulum", Requirements is
     /// "Gereksinimler".
     private func readmeSection(_ title: String) throws -> String {
         let readme = try String(contentsOf: repoRoot.appendingPathComponent("README.md"), encoding: .utf8)
