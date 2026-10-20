@@ -1,7 +1,7 @@
 #!/bin/bash
 # Regenerate Resources/AppIcon-1024.png, Resources/AppIcon.icns and
 # docs/assets/eye-open.svg from the drawing the app carries
-# (Sources/Insomnia/UI/AppIconArtwork.swift over EyeLensGeometry.swift,
+# (Sources/Uykusuz/UI/AppIconArtwork.swift over EyeLensGeometry.swift,
 # EyeMarkGeometry.swift and BrandPalette.swift), via
 # scripts/generate-app-icon.swift. Deterministic: the same sources produce
 # the same bytes. Needs Xcode's swiftc and iconutil.
@@ -95,10 +95,10 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 "$SWIFTC" -O -parse-as-library \
-  "$ROOT/Sources/Insomnia/UI/EyeLensGeometry.swift" \
-  "$ROOT/Sources/Insomnia/UI/EyeMarkGeometry.swift" \
-  "$ROOT/Sources/Insomnia/UI/BrandPalette.swift" \
-  "$ROOT/Sources/Insomnia/UI/AppIconArtwork.swift" \
+  "$ROOT/Sources/Uykusuz/UI/EyeLensGeometry.swift" \
+  "$ROOT/Sources/Uykusuz/UI/EyeMarkGeometry.swift" \
+  "$ROOT/Sources/Uykusuz/UI/BrandPalette.swift" \
+  "$ROOT/Sources/Uykusuz/UI/AppIconArtwork.swift" \
   "$ROOT/scripts/generate-app-icon.swift" \
   -o "$WORK/generate-app-icon"
 

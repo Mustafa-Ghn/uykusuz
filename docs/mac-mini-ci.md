@@ -21,7 +21,7 @@ the mini is off.
 1. It asks GitHub for a just-in-time runner. That runner takes one job and
    then unregisters itself. The request uses a token from the mini's login
    keychain; the token never enters a VM.
-2. It clones the base VM, `insomnia-ci-base`, and boots the clone on
+2. It clones the base VM, `uykusuz-ci-base`, and boots the clone on
    Softnet. A clone is a copy-on-write copy, so it takes seconds and little
    disk.
 3. It starts the runner in the clone and waits for it to exit. One runner
@@ -92,13 +92,13 @@ mini's administrator password.
    keychain; the command asks for it:
 
    ```sh
-   security add-generic-password -s insomnia-mini-runner -a github -w
+   security add-generic-password -s uykusuz-mini-runner -a github -w
    ```
 
 5. On GitHub, set fork run approval to "Require approval for all external
    contributors" (Settings > Actions > General).
 6. Start the loop from a LaunchAgent, so it restarts after a crash or a
-   login. Save this as `~/Library/LaunchAgents/org.insomnia.mini-runner.plist`,
+   login. Save this as `~/Library/LaunchAgents/org.uykusuz.mini-runner.plist`,
    with the path of your checkout of this repository on `main`:
 
    ```xml
@@ -106,11 +106,11 @@ mini's administrator password.
    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
    <plist version="1.0">
    <dict>
-     <key>Label</key><string>org.insomnia.mini-runner</string>
+     <key>Label</key><string>org.uykusuz.mini-runner</string>
      <key>ProgramArguments</key>
      <array>
        <string>/bin/bash</string>
-       <string>/Users/YOU/insomnia-lab/Insomnia/.github/scripts/mini-runner.sh</string>
+       <string>/Users/YOU/uykusuz-lab/Uykusuz/.github/scripts/mini-runner.sh</string>
      </array>
      <key>EnvironmentVariables</key>
      <dict>
@@ -118,27 +118,27 @@ mini's administrator password.
      </dict>
      <key>RunAtLoad</key><true/>
      <key>KeepAlive</key><true/>
-     <key>StandardOutPath</key><string>/Users/YOU/Library/Logs/insomnia-mini/loop.log</string>
-     <key>StandardErrorPath</key><string>/Users/YOU/Library/Logs/insomnia-mini/loop.log</string>
+     <key>StandardOutPath</key><string>/Users/YOU/Library/Logs/uykusuz-mini/loop.log</string>
+     <key>StandardErrorPath</key><string>/Users/YOU/Library/Logs/uykusuz-mini/loop.log</string>
    </dict>
    </plist>
    ```
 
-   Then `mkdir -p ~/Library/Logs/insomnia-mini` and
-   `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/org.insomnia.mini-runner.plist`.
+   Then `mkdir -p ~/Library/Logs/uykusuz-mini` and
+   `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/org.uykusuz.mini-runner.plist`.
 
 The mini must not sleep (`pmset -g` shows `sleep 0`), and its user must stay
 logged in, since a LaunchAgent runs only in a login session.
 
 ## Day to day
 
-- **Logs.** `~/Library/Logs/insomnia-mini/loop.log` has one line per job
+- **Logs.** `~/Library/Logs/uykusuz-mini/loop.log` has one line per job
   step; `mini-<time>.log` next to it has the VM's and the runner's output.
   Delete old ones by hand.
-- **Stop.** `launchctl bootout gui/$(id -u)/org.insomnia.mini-runner`. A
+- **Stop.** `launchctl bootout gui/$(id -u)/org.uykusuz.mini-runner`. A
   job in progress fails on GitHub, and the next start deletes its VM.
 - **New image or runner version.** Stop the loop, `tart delete
-  insomnia-ci-base`, update the pins in `mini-base.sh` if needed, run it,
+  uykusuz-ci-base`, update the pins in `mini-base.sh` if needed, run it,
   and start the loop.
 - **Token expiry.** When the token expires, the loop logs "GitHub gave no
   runner config" once a minute. Make a new token and replace it with the

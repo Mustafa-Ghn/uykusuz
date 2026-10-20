@@ -137,8 +137,8 @@ jobs:
       - name: Check the lid simulation is compiled out of the release binary
         # Looks at the binaries, not the compilation condition: the plain
         # release build above must lack the simulate-lid.sh watcher, and a
-        # build with -DINSOMNIA_LID_SIMULATION (what build-app.sh adds
-        # for INSOMNIA_LID_SIMULATION=1) must have it.
+        # build with -DUYKUSUZ_LID_SIMULATION (what build-app.sh adds
+        # for UYKUSUZ_LID_SIMULATION=1) must have it.
         run: scripts/check-lid-simulation-gate.sh
 
       - name: Install tmux
@@ -176,11 +176,11 @@ jobs:
         # hung test is waiting on, then fails the step instead of waiting
         # for the job timeout. The tests copy every shell script they write
         # (fakes of sudo, pmset, launchctl and the rest) into
-        # INSOMNIA_TEST_SCRIPT_DUMP for the ShellCheck step below.
+        # UYKUSUZ_TEST_SCRIPT_DUMP for the ShellCheck step below.
         env:
           NSUnbufferedIO: "YES"
         run: |
-          INSOMNIA_TEST_SCRIPT_DUMP="$RUNNER_TEMP/test-scripts" swift test &
+          UYKUSUZ_TEST_SCRIPT_DUMP="$RUNNER_TEMP/test-scripts" swift test &
           test_pid=$!
           for ((i = 0; i < 3000; i++)); do
             kill -0 "$test_pid" 2>/dev/null || break
@@ -241,7 +241,7 @@ jobs:
           tar -xzf "$tools/shellcheck.tar.gz" -C "$tools" --strip-components 1 "shellcheck-v${SHELLCHECK_VERSION}/shellcheck"
           "$tools/shellcheck" --version
           if [ ! -s "$dump/index.tsv" ]; then
-            echo "::error::the tests wrote no scripts to $dump; INSOMNIA_TEST_SCRIPT_DUMP did not reach them"
+            echo "::error::the tests wrote no scripts to $dump; UYKUSUZ_TEST_SCRIPT_DUMP did not reach them"
             exit 1
           fi
           echo "$(wc -l < "$dump/index.tsv" | tr -d ' ') distinct scripts"

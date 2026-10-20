@@ -12,12 +12,12 @@
 # backstop nor a relaunched app can republish the journal while it is being
 # removed.
 #
-# If anything Insomnia changed is still journaled, nothing is removed: the
+# If anything Uykusuz changed is still journaled, nothing is removed: the
 # LaunchAgent keeps retrying every minute, the sudoers rule keeps pmset
 # undoable, and state.json keeps the evidence. The message says what to do.
 # A brightness the app kept because its private-call guard refused the
 # restore on this macOS does not stop the uninstall, since nothing here can
-# restore it; state.json is kept, even with --purge, so a later Insomnia
+# restore it; state.json is kept, even with --purge, so a later Uykusuz
 # that can make the call restores it at launch. The app's records about that
 # entry and about a restore under its Low Power Mode (displayRestoredUnderLowPower,
 # keptDisplayUnderLowPower, keptDisplayUnderLowPowerBoot, keptDisplayReadLit)
@@ -31,7 +31,7 @@
 # their escapes decoded, as the app does.
 #
 # Deletion is by exact owned file, never by directory tree: --purge removes
-# the files Insomnia writes (see Paths.swift), the session.json copies the
+# the files Uykusuz writes (see Paths.swift), the session.json copies the
 # app or backstop.sh moved aside (session.json.unreadable-<stamp>, only that
 # exact shape), and then rmdir's its own directories only if they are empty.
 # Only regular files are removed; anything else at one of those paths is
@@ -41,7 +41,7 @@
 # matched by the exact names install.sh gives them, and the agent plist goes
 # with the candidate plists install.sh and the app stage it from.
 #
-# Honours INSOMNIA_HOME with the same layout as the app (see Paths.swift).
+# Honours UYKUSUZ_HOME with the same layout as the app (see Paths.swift).
 set -euo pipefail
 
 PURGE=0
@@ -59,7 +59,7 @@ done
 # backstop.sh, so one found beside its uninstall.sh was added after the zip
 # was unpacked, for example by another account that created the folder in
 # /tmp beforehand. Never the folder above either: a zip unpacked at
-# /tmp/Insomnia-<version> would make that /tmp, where any account can create
+# /tmp/Uykusuz-<version> would make that /tmp, where any account can create
 # scripts/backstop.sh.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 in_checkout() { [[ "${SCRIPT_DIR##*/}" == scripts && -f "${SCRIPT_DIR%/*}/Package.swift" ]]; }
@@ -90,30 +90,30 @@ QUIT_WAIT_SECONDS=10
 # backstop.sh bounds its own commands; the two sudo calls
 # prompt for a password and are left to sudo's own prompt timeout.
 CALL_TIMEOUT_SECONDS=30
-APP="$HOME/Applications/Insomnia.app"
-SUDOERS=/etc/sudoers.d/insomnia
+APP="$HOME/Applications/Uykusuz.app"
+SUDOERS=/etc/sudoers.d/uykusuz
 # The --resume-frozen interface version this checkout's backstop.sh speaks
 # (see step 3).
 RESUME_FROZEN_VERSION=1
 
-if [[ -n "${INSOMNIA_HOME:-}" ]]; then
-  APP_SUPPORT="$INSOMNIA_HOME"
-  LOG_DIR="$INSOMNIA_HOME/Logs"
-  LAUNCH_AGENTS="$INSOMNIA_HOME/LaunchAgents"
+if [[ -n "${UYKUSUZ_HOME:-}" ]]; then
+  APP_SUPPORT="$UYKUSUZ_HOME"
+  LOG_DIR="$UYKUSUZ_HOME/Logs"
+  LAUNCH_AGENTS="$UYKUSUZ_HOME/LaunchAgents"
   OWN_LAUNCH_AGENTS_DIR=1
 else
-  APP_SUPPORT="$HOME/Library/Application Support/Insomnia"
-  LOG_DIR="$HOME/Library/Logs/Insomnia"
+  APP_SUPPORT="$HOME/Library/Application Support/Uykusuz"
+  LOG_DIR="$HOME/Library/Logs/Uykusuz"
   LAUNCH_AGENTS="$HOME/Library/LaunchAgents"
   OWN_LAUNCH_AGENTS_DIR=0
 fi
-LABEL="com.insomnia.backstop"
+LABEL="com.mustafaghn.uykusuz.backstop"
 PLIST="$LAUNCH_AGENTS/$LABEL.plist"
 SESSION="$APP_SUPPORT/session.json"
 STATE="$APP_SUPPORT/state.json"
 CONFIG="$APP_SUPPORT/config.json"
 # The agent list the app ships with (Config.defaultAgentList in
-# Sources/Insomnia/Model/Config.swift; a test keeps this copy in step). An
+# Sources/Uykusuz/Model/Config.swift; a test keeps this copy in step). An
 # older build may have set NSAppSleepDisabled for any of these, even one the
 # user later took off the list in config.json, so the check below covers
 # both lists.
@@ -145,7 +145,7 @@ UID_NUM="$(id -u)"
 step() { printf '\n==> %s\n' "$*"; }
 
 # Scratch space for bounded(): this run's own directory, emptied on exit.
-WORK="$("$MKTEMP" -d "${TMPDIR:-/tmp}/insomnia-uninstall.XXXXXX")"
+WORK="$("$MKTEMP" -d "${TMPDIR:-/tmp}/uykusuz-uninstall.XXXXXX")"
 trap '"$RM" -f "$WORK"/call.* 2>/dev/null; "$RMDIR" "$WORK" 2>/dev/null || true' EXIT
 
 # Run one external call with a time limit. Its combined output is left in
@@ -223,7 +223,7 @@ supervise() { # base command args...
 
 # Fail closed on paths that are not the exact things install.sh created.
 case "$APP_SUPPORT" in /*) ;; *) echo "reddedildi: uygulama destek yolu mutlak değil: $APP_SUPPORT" >&2; exit 1 ;; esac
-[[ "$(basename "$APP")" == "Insomnia.app" ]] || { echo "reddedildi: $APP bir Insomnia.app paket yolu değil" >&2; exit 1; }
+[[ "$(basename "$APP")" == "Uykusuz.app" ]] || { echo "reddedildi: $APP bir Uykusuz.app paket yolu değil" >&2; exit 1; }
 
 extract() { # file keypath (raw scalar; non-zero if missing)
   "$PLUTIL" -extract "$2" raw -o - "$1" 2>/dev/null
@@ -688,7 +688,7 @@ list_unrecorded_app_nap() {
     if (( found == 0 )); then
       found=1
       cat <<MSG
-Şu ajan uygulamalarında NSAppSleepDisabled YES ve Insomnia'da önceki değerine
+Şu ajan uygulamalarında NSAppSleepDisabled YES ve Uykusuz'da önceki değerine
 dair bir kayıt yok (eski bir derleme bunu kaydetmeden ayarlamış). Olduğu gibi
 bırakıldılar. Birinde App Nap'i yeniden açmak için şunu çalıştırın:
 MSG
@@ -713,8 +713,8 @@ MSG
 # name (a directory, a FIFO, a symlink) goes to NOT_MOVED_ASIDE and is never
 # removed, even when the app or backstop.sh renamed it there: a session.json
 # that cannot be read is moved without being opened, whatever it is, and
-# Insomnia did not create its contents. Other names under the prefix are
-# not Insomnia's and are skipped.
+# Uykusuz did not create its contents. Other names under the prefix are
+# not Uykusuz's and are skipped.
 collect_moved_aside_sessions() {
   local f
   MOVED_ASIDE=()
@@ -731,8 +731,8 @@ collect_moved_aside_sessions() {
   return 0
 }
 
-# Removes files Insomnia wrote, one path per argument. Only a regular file
-# is removed. Anything else at one of these paths is not something Insomnia
+# Removes files Uykusuz wrote, one path per argument. Only a regular file
+# is removed. Anything else at one of these paths is not something Uykusuz
 # wrote; it is left and named, so a stray directory never stops the run
 # halfway. A removal that fails is named and counted, and the rest go on.
 remove_failures=0
@@ -745,7 +745,7 @@ remove_owned() { # path...
         remove_failures=$((remove_failures + 1))
       fi
     elif [[ -e "$f" || -L "$f" ]]; then
-      echo "$f bırakıldı: normal bir dosya değil, yani onu Insomnia yazmadı."
+      echo "$f bırakıldı: normal bir dosya değil, yani onu Uykusuz yazmadı."
     fi
   done
   return 0
@@ -755,7 +755,7 @@ abort_incomplete() { # backstop exit status, problem lines...
   local rc="$1"; shift
   cat >&2 <<MSG
 
-Kaldırma, HİÇBİR ŞEY kaldırılmadan durduruldu: Insomnia'nın değişiklikleri tümüyle
+Kaldırma, HİÇBİR ŞEY kaldırılmadan durduruldu: Uykusuz'un değişiklikleri tümüyle
 geri alınmadı (backstop çıkış kodu: $rc). $STATE içinde hâlâ kayıtlı olanlar:
 MSG
   local p
@@ -767,20 +767,20 @@ sudoers kuralı pmset değişikliklerini geri alınabilir tutar ve kayıt defter
 
 Yapılacaklar (ardından bu betiği yeniden çalıştırın):
   - Kaydedilmiş ses (ses düzeyi/sessiz), ekran parlaklığı ya da klavye arka ışığı:
-    Insomnia.app uygulamasını açın; açılışta bunları kayıt defterinden geri yükler.
+    Uykusuz.app uygulamasını açın; açılışta bunları kayıt defterinden geri yükler.
     Ekran karanlıksa önce parlaklık artırma tuşuna basın.
   - Kapak kapanınca sessize alınmış ve hâlâ sessiz olan bir çıkış aygıtı: aygıtı
-    bağlayıp Insomnia.app uygulamasını açın; ses düzeyini geri yükler. Aygıt kalıcı
-    olarak yoksa Insomnia.app uygulamasını açın ve menüsünden "Beklemeyi bırak: <aygıt>"
+    bağlayıp Uykusuz.app uygulamasını açın; ses düzeyini geri yükler. Aygıt kalıcı
+    olarak yoksa Uykusuz.app uygulamasını açın ve menüsünden "Beklemeyi bırak: <aygıt>"
     öğesini seçin; aygıt o zaman olduğu gibi kalır.
   - pmset hataları (uyku / Düşük Güç Modu): $SUDOERS dosyasını denetleyin
     (yeniden kurmak için scripts/install.sh betiğini yeniden çalıştırın) ya da
     'sudo pmset -a disablesleep 0' / 'sudo pmset -b lowpowermode 0' komutunu kendiniz çalıştırın.
-  - Dondurulmuş ya da eski biçimde kaydedilmiş pid'ler: çözmek için Insomnia.app
+  - Dondurulmuş ya da eski biçimde kaydedilmiş pid'ler: çözmek için Uykusuz.app
     uygulamasını açın ya da her birini 'ps -o pid,stat,lstart,command -p <pid>' ile
     inceleyin ve tanıdığınız bir süreçse 'kill -CONT <pid>' ile kendiniz çözün.
   - App Nap (NSAppSleepDisabled): kurtarma ajanı 'defaults write' ya da 'defaults delete'
-    komutunu her dakika yeniden dener ve Insomnia.app açılışta bunları eski hâline
+    komutunu her dakika yeniden dener ve Uykusuz.app açılışta bunları eski hâline
     getirir. 'defaults' başarısız olmayı sürdürürse günlüğe bakın.
   - Okunamayan state.json: ne uygulama ne de kurtarma ajanı onu onarır ya da kaldırır.
     Günlüğe bakarak elle onarın ya da değişikliklerinin geri alındığından emin
@@ -794,7 +794,7 @@ Yapılacaklar (ardından bu betiği yeniden çalıştırın):
     yeniden adlandırma başarısız olmuştur (günlüğe bakın): onu kaldırın ya da bu klasörün
     dışına taşıyın, sonra yeniden çalıştırın. Bulunduğu yerde okunabilir hâle getirmeyin:
     uygulama o zaman o oturumu sürdürür.
-  - Günlük: $LOG_DIR/insomnia.log
+  - Günlük: $LOG_DIR/uykusuz.log
 MSG
   exit 1
 }
@@ -802,9 +802,9 @@ MSG
 # A pgrep that does not answer in time counts as "running": fail closed.
 app_running() {
   local rc=0
-  bounded "$PGREP" -x Insomnia || rc=$?
+  bounded "$PGREP" -x Uykusuz || rc=$?
   if (( rc == 124 )); then
-    echo "pgrep ${CALL_TIMEOUT_SECONDS} saniye içinde yanıt vermedi; Insomnia çalışıyor kabul ediliyor." >&2
+    echo "pgrep ${CALL_TIMEOUT_SECONDS} saniye içinde yanıt vermedi; Uykusuz çalışıyor kabul ediliyor." >&2
     return 0
   fi
   return "$rc"
@@ -813,16 +813,16 @@ app_running() {
 # 1. Quit the app --------------------------------------------------------------
 # Ask politely and wait. The app refuses to quit while it has unresolved
 # recovery work, and that refusal must stand: no pkill, no force.
-step "Insomnia kapatılıyor"
+step "Uykusuz kapatılıyor"
 if app_running; then
-  "$OSASCRIPT" -e 'tell application id "com.kgarg.insomnia" to quit' >/dev/null 2>&1 || true
+  "$OSASCRIPT" -e 'tell application id "com.mustafaghn.uykusuz" to quit' >/dev/null 2>&1 || true
   for (( i = 0; i < QUIT_WAIT_SECONDS; i++ )); do
     app_running || break
     sleep 1
   done
   if app_running; then
-    echo "Insomnia hâlâ çalışıyor (kendi kurtarması bitene dek kapanmayı reddediyor olabilir)." >&2
-    echo "Bitmesini bekleyin ya da menüsünden Insomnia'dan çıkın, ardından yeniden çalıştırın. Hiçbir şey kaldırılmadı." >&2
+    echo "Uykusuz hâlâ çalışıyor (kendi kurtarması bitene dek kapanmayı reddediyor olabilir)." >&2
+    echo "Bitmesini bekleyin ya da menüsünden Uykusuz'dan çıkın, ardından yeniden çalıştırın. Hiçbir şey kaldırılmadı." >&2
     exit 1
   fi
 fi
@@ -839,7 +839,7 @@ if (( lock_rc != 0 )); then
   exit 75
 fi
 if app_running; then
-  echo "Insomnia yeniden açıldı; Insomnia'dan çıkıp yeniden çalıştırın. Hiçbir şey kaldırılmadı." >&2
+  echo "Uykusuz yeniden açıldı; Uykusuz'dan çıkıp yeniden çalıştırın. Hiçbir şey kaldırılmadı." >&2
   exit 1
 fi
 
@@ -847,7 +847,7 @@ fi
 # The backstop inherits fd 9 and shares this lock instead of waiting on it.
 # From a source checkout, the checkout's backstop.sh hands frozen entries
 # that record microseconds to the installed app binary, and runs that binary
-# only when the bundle's Info.plist declares InsomniaResumeFrozenVersion
+# only when the bundle's Info.plist declares UykusuzResumeFrozenVersion
 # RESUME_FROZEN_VERSION (the same value as in backstop.sh; a test keeps the
 # two in step). So the checkout's copy runs when the app declares that
 # version. An app that does not was installed together with its own
@@ -873,7 +873,7 @@ if in_checkout && [[ -f "$SCRIPT_DIR/backstop.sh" ]]; then
 fi
 installed_version=""
 if [[ -f "$APP/Contents/Info.plist" ]]; then
-  installed_version="$(extract "$APP/Contents/Info.plist" InsomniaResumeFrozenVersion || true)"
+  installed_version="$(extract "$APP/Contents/Info.plist" UykusuzResumeFrozenVersion || true)"
 fi
 if [[ -n "$CHECKOUT_BACKSTOP" ]] && { [[ "$installed_version" == "$RESUME_FROZEN_VERSION" ]] || { [[ ! -f "$APP/Contents/Resources/backstop.sh" ]] && [[ ! -f "$APP_SUPPORT/backstop.sh" ]]; }; }; then
   BACKSTOP="$CHECKOUT_BACKSTOP"
@@ -882,11 +882,11 @@ elif [[ -f "$APP/Contents/Resources/backstop.sh" ]]; then
   bounded "$CODESIGN" --verify --strict "$APP" || verify_rc=$?
   if (( verify_rc == 124 )); then
     echo "'codesign --verify --strict $APP' ${CALL_TIMEOUT_SECONDS} saniye içinde yanıt vermedi; bu yüzden içinde mühürlü backstop.sh çalıştırılmadı." >&2
-    echo "Hiçbir şey kaldırılmadı. codesign yanıt verdiğinde yeniden çalıştırın ya da scripts/uninstall.sh betiğini kaynak kodun bir kopyasından çalıştırın: bu uygulama InsomniaResumeFrozenVersion $RESUME_FROZEN_VERSION bildiriyorsa betik kendi backstop.sh dosyasını çalıştırır." >&2
+    echo "Hiçbir şey kaldırılmadı. codesign yanıt verdiğinde yeniden çalıştırın ya da scripts/uninstall.sh betiğini kaynak kodun bir kopyasından çalıştırın: bu uygulama UykusuzResumeFrozenVersion $RESUME_FROZEN_VERSION bildiriyorsa betik kendi backstop.sh dosyasını çalıştırır." >&2
     exit 1
   elif (( verify_rc != 0 )); then
     echo "$APP 'codesign --verify --strict' denetiminden geçmiyor (çıkış kodu $verify_rc: ${BOUNDED_OUTPUT:-ayrıntı yok}); bu yüzden içinde mühürlü backstop.sh çalıştırılmadı." >&2
-    echo "Hiçbir şey kaldırılmadı. Yeniden kurup yeniden çalıştırın ya da scripts/uninstall.sh betiğini kaynak kodun bir kopyasından çalıştırın: bu uygulama InsomniaResumeFrozenVersion $RESUME_FROZEN_VERSION bildiriyorsa betik kendi backstop.sh dosyasını çalıştırır." >&2
+    echo "Hiçbir şey kaldırılmadı. Yeniden kurup yeniden çalıştırın ya da scripts/uninstall.sh betiğini kaynak kodun bir kopyasından çalıştırın: bu uygulama UykusuzResumeFrozenVersion $RESUME_FROZEN_VERSION bildiriyorsa betik kendi backstop.sh dosyasını çalıştırır." >&2
     exit 1
   fi
   echo "$APP doğrulandı"
@@ -902,7 +902,7 @@ else
   exit 1
 fi
 if [[ -n "$CHECKOUT_BACKSTOP" && "$BACKSTOP" != "$CHECKOUT_BACKSTOP" ]]; then
-  echo "$APP, InsomniaResumeFrozenVersion $RESUME_FROZEN_VERSION bildirmiyor; onunla birlikte kurulan backstop kullanılıyor: $BACKSTOP"
+  echo "$APP, UykusuzResumeFrozenVersion $RESUME_FROZEN_VERSION bildirmiyor; onunla birlikte kurulan backstop kullanılıyor: $BACKSTOP"
 fi
 echo "kullanılıyor: $BACKSTOP"
 recovery_rc=0
@@ -915,7 +915,7 @@ while IFS= read -r line; do
   [[ -n "$line" ]] && problems+=("$line")
 done < <(journal_problems)
 if (( recovery_rc != 0 )) && (( ${#problems[@]} == 0 )); then
-  problems+=("backstop $recovery_rc çıkış koduyla sonlandı; bkz. $LOG_DIR/insomnia.log")
+  problems+=("backstop $recovery_rc çıkış koduyla sonlandı; bkz. $LOG_DIR/uykusuz.log")
 fi
 if (( ${#problems[@]} > 0 )); then
   abort_incomplete "$recovery_rc" "${problems[@]}"
@@ -928,12 +928,12 @@ done < <(refused_brightness)
 if (( ${#kept_brightness[@]} > 0 )); then
   echo "Geri yüklenmedi ve $STATE içinde tutuluyor:"
   for line in "${kept_brightness[@]}"; do echo "  - $line"; done
-  echo "Insomnia'nın özel çağrı koruması bu macOS sürümünde o geri yüklemeyi reddetti; bu yüzden"
+  echo "Uykusuz'un özel çağrı koruması bu macOS sürümünde o geri yüklemeyi reddetti; bu yüzden"
   echo "burada hiçbir adım bunu yapamaz. Düzeyi parlaklık tuşlarıyla ya da Denetim Merkezi'nden ayarlayın."
-  echo "Dosya yerinde kalır; böylece bu çağrıyı yapabilen sonraki bir Insomnia açılışta onu geri yükler."
+  echo "Dosya yerinde kalır; böylece bu çağrıyı yapabilen sonraki bir Uykusuz açılışta onu geri yükler."
 fi
 if app_running; then
-  echo "Insomnia yeniden açıldı; Insomnia'dan çıkıp yeniden çalıştırın. Hiçbir şey kaldırılmadı." >&2
+  echo "Uykusuz yeniden açıldı; Uykusuz'dan çıkıp yeniden çalıştırın. Hiçbir şey kaldırılmadı." >&2
   exit 1
 fi
 
@@ -984,21 +984,21 @@ fi
 step "Uygulama paketi kaldırılıyor"
 "$RM" -rf "$APP"
 # install.sh's leftovers beside the bundle, by the exact names it gives them.
-# An upgrade sets the previous bundle aside at .Insomnia.app.previous during
-# its swap and assembles the new one in .Insomnia.app.staging.<pid>.<six
+# An upgrade sets the previous bundle aside at .Uykusuz.app.previous during
+# its swap and assembles the new one in .Uykusuz.app.staging.<pid>.<six
 # letters and digits> (mktemp). The swap runs under the recovery lock, which
 # this script holds, so a set-aside bundle belongs to a run that was stopped.
 # A staging directory whose run is still alive belongs to an install that
 # has not reached the lock yet, and stays. kill -0 only asks whether the
 # process exists; it sends no signal. Symlinks and any other name are left.
 APP_DIR="$(dirname "$APP")"
-PREVIOUS_APP="$APP_DIR/.Insomnia.app.previous"
+PREVIOUS_APP="$APP_DIR/.Uykusuz.app.previous"
 if [[ -d "$PREVIOUS_APP" && ! -L "$PREVIOUS_APP" ]]; then
   "$RM" -rf "$PREVIOUS_APP"
   echo "yarıda kalmış bir kurulumun kenara ayırdığı önceki paket kaldırıldı: $PREVIOUS_APP"
 fi
-staging_re='^\.Insomnia\.app\.staging\.([0-9]+)\.[A-Za-z0-9]{6}$'
-for dir in "$APP_DIR"/.Insomnia.app.staging.*; do
+staging_re='^\.Uykusuz\.app\.staging\.([0-9]+)\.[A-Za-z0-9]{6}$'
+for dir in "$APP_DIR"/.Uykusuz.app.staging.*; do
   [[ -d "$dir" && ! -L "$dir" ]] || continue
   [[ "${dir##*/}" =~ $staging_re ]] || continue
   owner="${BASH_REMATCH[1]}"
@@ -1013,10 +1013,10 @@ done
 # $APP_SUPPORT/backstop.sh below is the writable copy of older installs; the
 # current one went with the bundle.
 if (( PURGE == 1 )); then
-  step "Insomnia'nın dosyaları temizleniyor: $APP_SUPPORT ve $LOG_DIR"
+  step "Uykusuz'un dosyaları temizleniyor: $APP_SUPPORT ve $LOG_DIR"
   remove_owned "$SESSION" "$APP_SUPPORT/config.json" "$APP_SUPPORT/backstop.sh" \
         "$APP_SUPPORT/unfinished-command.json" \
-        "$LOG_DIR/insomnia.log" "$LOG_DIR/insomnia.log.1" \
+        "$LOG_DIR/uykusuz.log" "$LOG_DIR/uykusuz.log.1" \
         "$LOG_DIR/handoffs.log" "$LOG_DIR/handoffs.log.1"
   (( ${#kept_brightness[@]} > 0 )) || remove_owned "$STATE"
   collect_moved_aside_sessions
@@ -1036,7 +1036,7 @@ if (( PURGE == 1 )); then
   "$RMDIR" "$LOG_DIR" 2>/dev/null || true
   (( OWN_LAUNCH_AGENTS_DIR == 1 )) && { "$RMDIR" "$LAUNCH_AGENTS" 2>/dev/null || true; }
   echo "$LOCK tutuldu (kurtarma kilidi hiçbir zaman silinmez; tamamen kaldırmak istiyorsanız $APP_SUPPORT klasörünü elle silin)."
-  [[ -d "$LOG_DIR" ]] && echo "$LOG_DIR tutuldu: içinde hâlâ Insomnia'nın oluşturmadığı dosyalar var."
+  [[ -d "$LOG_DIR" ]] && echo "$LOG_DIR tutuldu: içinde hâlâ Uykusuz'un oluşturmadığı dosyalar var."
 else
   # unfinished-command.json names a sudo pmset that held the recovery lock;
   # this run holds it now, so that command has exited.

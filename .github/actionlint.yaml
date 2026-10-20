@@ -3,8 +3,8 @@
 # predates it and rejects unknown labels, so it is listed here. Remove the
 # entry once a pinned actionlint knows the label.
 #
-# insomnia-mini is the owner's Mac mini (.github/workflows/mac-mini.yml).
+# uykusuz-mini is the owner's Mac mini (.github/workflows/mac-mini.yml).
 self-hosted-runner:
   labels:
     - xcode-27
-    - insomnia-mini
+    - uykusuz-mini

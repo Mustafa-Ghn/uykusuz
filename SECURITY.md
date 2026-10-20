@@ -1,6 +1,6 @@
 # Security
 
-Insomnia is experimental software. There is no security-response SLA. Report
+Uykusuz is experimental software. There is no security-response SLA. Report
 suspected vulnerabilities against the current main branch
 or a release tag, including the affected revision and a minimal,
 non-destructive reproduction.
@@ -12,14 +12,14 @@ public issue containing only a request for a private security contact, without
 the sensitive details, and wait for the maintainer to arrange one.
 
 The installer grants the user account passwordless access to four exact pmset
-commands listed in the README. This grant is not exclusive to the Insomnia app:
+commands listed in the README. This grant is not exclusive to the Uykusuz app:
 other processes running as that user can invoke them too. The app is not
 sandboxed; local logs can contain SSIDs, process metadata, and tmux target names.
-The lines the app writes to `insomnia.log` also reach the unified log with the
+The lines the app writes to `uykusuz.log` also reach the unified log with the
 body marked private, so programs reading `log show` see `<private>` instead of
 those names unless private data logging is enabled on the Mac. The files
-Insomnia creates (logs, journal, session, config, recovery lock) are mode 0600
-and its directories 0700; the backstop runs with `umask 077`. Insomnia sets
+Uykusuz creates (logs, journal, session, config, recovery lock) are mode 0600
+and its directories 0700; the backstop runs with `umask 077`. Uykusuz sets
 only these modes and leaves any access control list (ACL) on these files as it
 is, so an ACL someone added can still give another account access. Logs are capped at
 1 MiB with one older copy kept. A log the user replaced with a symlink is not
@@ -32,9 +32,9 @@ list, after recording the previous value in its journal, and puts it back at
 session end.
 
 The hotspot password is a generic-password item in the login Keychain
-(service `insomnia-hotspot`). Its access list names only the Insomnia build
+(service `uykusuz-hotspot`). Its access list names only the Uykusuz build
 that saved it, so any other program asking for it gets the system Keychain
-prompt, which you can refuse. Insomnia itself reads the item with prompts
+prompt, which you can refuse. Uykusuz itself reads the item with prompts
 switched off: an item it may not read is reported in the menu and in Settings
 instead of being prompted for or silently ignored. Two limits remain. Ad-hoc
 signing gives every install a new code identity, so the access list pins one
@@ -87,7 +87,7 @@ the password prompt, but it has no `--allow-unverified-origin` opt-in: it
 installs any intact bundle it is given that has that identifier and the
 0.1.0 layout. It does not check the version. Its recovery agent predates the
 sealed script and the pinned requirement described above: the installer
-copies `backstop.sh` into `~/Library/Application Support/Insomnia/`, and the
+copies `backstop.sh` into `~/Library/Application Support/Uykusuz/`, and the
 agent runs that copy with `/bin/bash` without checking any code signature, so
 an edited copy runs as it is. The `README.md` in its zip describes that
 layout and its limits.

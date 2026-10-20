@@ -10,8 +10,8 @@
 set -eu
 
 TART=${TART:-$HOME/.local/bin/tart}
-IMAGE=${INSOMNIA_MINI_IMAGE:-ghcr.io/cirruslabs/macos-golden-gate-xcode:27}
-BASE=${INSOMNIA_MINI_BASE:-insomnia-ci-base}
+IMAGE=${UYKUSUZ_MINI_IMAGE:-ghcr.io/cirruslabs/macos-golden-gate-xcode:27}
+BASE=${UYKUSUZ_MINI_BASE:-uykusuz-ci-base}
 RUNNER_VERSION=2.338.0
 # sha256 of actions-runner-osx-arm64-2.338.0.tar.gz, as the release lists it.
 RUNNER_SHA256=df4cebda25c86a886ed204e49fee63f5c2e7cec5f447b5c98440a826bbdf9df2
@@ -93,17 +93,17 @@ HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_ENV_HINTS=1 
 # leaves off.
 sudo tee -a /etc/pf.conf >/dev/null <<'RULES'
 
-# Insomnia CI: no private or tailnet addresses; DNS allowed.
+# Uykusuz CI: no private or tailnet addresses; DNS allowed.
 pass out quick proto { udp tcp } to any port 53
 block drop out quick to { 100.64.0.0/10, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16 }
 RULES
 sudo /sbin/pfctl -n -f /etc/pf.conf
-sudo tee /Library/LaunchDaemons/org.insomnia.ci-pf.plist >/dev/null <<'PLIST'
+sudo tee /Library/LaunchDaemons/org.uykusuz.ci-pf.plist >/dev/null <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>Label</key><string>org.insomnia.ci-pf</string>
+  <key>Label</key><string>org.uykusuz.ci-pf</string>
   <key>ProgramArguments</key>
   <array><string>/sbin/pfctl</string><string>-E</string><string>-f</string><string>/etc/pf.conf</string></array>
   <key>RunAtLoad</key><true/>

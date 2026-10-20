@@ -392,11 +392,11 @@ logs, the animator cadence log) are removed before merge.
 Revision 3's paced width (3 pt per display-link callback) was built, reviewed and run live, and
 was worse than the spring: opens took most of a second and closes stalled mid-blink. Sampling the
 main thread during those flights (`/usr/bin/sample`, diag streams and samples under
-`/tmp/insomnia-lid-plan`) showed where the time went: after every `NSStatusItem.length` write the
+`/tmp/uykusuz-lid-plan`) showed where the time went: after every `NSStatusItem.length` write the
 app's next Core Animation commit blocks in `CABackingStoreUpdate → CA::Context::synchronize →
 CA::Render::Context::wait_for_synchronize` while Control Center re-lays out the menu bar. That
 wait is 8 ms on a good pass, 33–42 ms on a bad one, and 106–133 ms once at a session end; in one
-second of a slow open 240–380 ms was spent in it. Nothing of Insomnia's own code appeared in the
+second of a slow open 240–380 ms was spent in it. Nothing of Uykusuz's own code appeared in the
 samples, and asking the display link for the full rate (`preferredFrameRateRange` 80–120 Hz) made
 no difference: the stalls are window-server waits per write, not a frame-rate problem. So no
 per-frame width write can be smooth on this machine, whatever the step. Apple's own items never

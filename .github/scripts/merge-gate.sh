@@ -13,7 +13,7 @@
 #                        one reviewed commit, so text the author adds next to
 #                        Greptile's block cannot supply them.
 #   merge-gate/accepted  The owner added the "accepted" label: they want the
-#                        change in Insomnia. The newest add or removal of the
+#                        change in Uykusuz. The newest add or removal of the
 #                        label must be the owner adding it.
 #   merge-gate/evidence  The maintainer checked a real-Mac report for the
 #                        head, or the head changes only paths that never run

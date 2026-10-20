@@ -3,7 +3,7 @@
 [README](../README.md#kurtarma-nasıl-çalışır) kısa sürümü içerir. Bu sayfa her
 durumu anlatır.
 
-Insomnia bekleyen değişiklikleri bir kurtarma kayıt defterine yazar. Oturum
+Uykusuz bekleyen değişiklikleri bir kurtarma kayıt defterine yazar. Oturum
 bitince uygulama bunları geri almaya çalışır. Bağımsız bir `launchd` ajanı her
 dakika denetler ve uygulama beklenmedik biçimde kapandıktan sonra, kaydedilmiş
 bitiş zamanı geçtiğinde kurtarmayı deneyebilir. Geçerli ve süresi dolmamış bir
@@ -38,7 +38,7 @@ sürümün gerçek Mac üzerindeki çökme, yeniden başlatma ve kurulum denetim
 - **Süreç sahipliği:** otomatik çözme, kaydedilmiş süreç başlangıç zamanını ve
   önyükleme oturumunu denetler. Uygulama her pid değerini SIGSTOP göndermeden
   önce kayıt defterine yazar ve bu yazma başarısız olursa hiçbir şey göndermez.
-  Kimlik bilgisi ancak çekirdek Insomnia'nın kendi durdurmasını doğruladıktan
+  Kimlik bilgisi ancak çekirdek Uykusuz'un kendi durdurmasını doğruladıktan
   sonra eklenir; böylece başka birinin durdurduğu bir süreç hiçbir zaman
   çözülmez. Doğrulamayı kaydeden yazma başarısız olursa uygulama, az önce
   durdurduğu ve kimliği hâlâ eşleşen her pid değerine, henüz durdurulmuş
@@ -53,13 +53,13 @@ sürümün gerçek Mac üzerindeki çökme, yeniden başlatma ve kurulum denetim
 - **Kimlik doğrulaması atomik bir güvence değildir:** uygulama başlangıç
   zamanını mikrosaniyesine kadar denetler; backstop ise mikrosaniye kaydeden her
   girdi için aynı denetimi yapmasını ve sinyali göndermesini kurulu uygulama
-  ikili dosyasından (`Insomnia --resume-frozen`) ister; bu türdeki tüm girdiler,
+  ikili dosyasından (`Uykusuz --resume-frozen`) ister; bu türdeki tüm girdiler,
   30 saniyelik sınırı olan tek bir çağrıyla gider. Girdiler ikili dosyaya
   standart girdi üzerinden verilir; böylece uzun bir kayıt defteri argüman
   boyutu sınırını aşamaz. Backstop bu girdilere asla kendisi sinyal göndermez.
   İkili dosya yoksa, zamanında bitmezse ya da girdi başına beklenen tek satırdan
   başka bir yanıt verirse girdileri tutar. İkili dosyayı yalnızca kurulu paket
-  `Info.plist` dosyasında `InsomniaResumeFrozenVersion` bildirdiğinde
+  `Info.plist` dosyasında `UykusuzResumeFrozenVersion` bildirdiğinde
   çalıştırır; böylece daha eski bir derlemeyi hiçbir zaman başlatmaz. İkili
   dosya, hâlâ sinyal gönderebildiği sürece kurtarma kilidini tutar ve aynı
   sınırdan sonra kendini sonlandırır; böylece çağrının ortasında öldürülen bir
@@ -78,7 +78,7 @@ sürümün gerçek Mac üzerindeki çökme, yeniden başlatma ve kurulum denetim
   betiğinde olduğu gibi bulunduğu yerde durur: başka hiçbir şey geri alınmaz,
   kayıt defteri girdilerini korur ve kurtarma kilidi komut çıkana kadar tutulur.
   Komut kilidi kendisi tutar (standart girdisi kilit dosyasına açılmış bir
-  tanımlayıcıdır); böylece Insomnia bu arada çökse ya da zorla kapatılsa bile
+  tanımlayıcıdır); böylece Uykusuz bu arada çökse ya da zorla kapatılsa bile
   backstop, komutun daha sonra geçersiz kılacağı bir geri alma çalıştırmak yerine
   komutu bekler. Bir bildirim ve bir menü uyarısı pid değerini ve
   `sudo kill <pid>` komutunu verir; komut çıkınca uyarı kaybolur. Pid ayrıca
@@ -92,14 +92,14 @@ sürümün gerçek Mac üzerindeki çökme, yeniden başlatma ve kurulum denetim
   bir oturumu pil alt sınırlarıyla birlikte sürdürür ve Düşük Güç Modu durumunu,
   aşağıda anlatıldığı gibi kendi komutu çıktıktan sonra denetlediği şekilde
   denetler. Kullanıcının bu sonraki denemeden önce başlattığı bir oturum da aynı
-  denetimden geçer. Komut çıkana kadar Insomnia kapanmayı ya da oturum
+  denetimden geçer. Komut çıkana kadar Uykusuz kapanmayı ya da oturum
   başlatmayı reddeder ve reddettiği her bitiş ya da kapak olayını kaydeder.
   Çıkış kodu 0 olan bir `disablesleep 0` ya da `lowpowermode 0` yapılmış
   sayılır: kayıt defteri girdisi kilit bırakılmadan önce temizlenir ve komut
   yeniden çalıştırılmaz. O kayıt defteri yazması başarısız olursa menü bunu
   söyler ve geri alma yeniden çalışır; sonraki bir yazma girdiyi temizleyince
   satır kaybolur. Başka her çıkış kodu başarısızlık sayılır. O zaman bekleyen
-  bir bitiş yeniden çalışır. Aksi hâlde Insomnia, Düşük Güç Modu durumunu okur.
+  bir bitiş yeniden çalışır. Aksi hâlde Uykusuz, Düşük Güç Modu durumunu okur.
   Mod kapalı görünürse kendi `lowpowermode 0` komutunu çalıştırır ve modu ancak
   bu başarılı olunca unutur. Ardından 2 saniyelik kapak sıçrama önleme
   (debounce) süresini bekledikten sonra reddedilmiş bir kapak olayını yeniden
@@ -109,16 +109,16 @@ sürümün gerçek Mac üzerindeki çökme, yeniden başlatma ve kurulum denetim
 - **Ses:** backstop ses düzeyi ve sessiz girdilerini korur ama CoreAudio
   ayarlarını geri yükleyemez. Kurtarma için uygulamayı yeniden açın. Bağlı
   olmayan bir çıkış aygıtı yeniden bağlanana kadar girdisini korur ve bekleyen
-  bir aygıt varken kaldırma durur: aygıtı bağlayıp Insomnia'yı açın ya da
+  bir aygıt varken kaldırma durur: aygıtı bağlayıp Uykusuz'u açın ya da
   menüden "Beklemeyi bırak: <aygıt>" öğesini seçin.
 - **Başka bir şeyin kapattığı uyku:** açılışta oturum ve kayıt defteri girdisi
   yokken `pmset -g` çıktısındaki `SleepDisabled 1` değerine dokunulmaz: onu
-  Insomnia ayarlamamıştır ve yalnızca sahibi geri almalıdır. Menü bir uyarı
+  Uykusuz ayarlamamıştır ve yalnızca sahibi geri almalıdır. Menü bir uyarı
   gösterir ve bir bildirim `sudo pmset -a disablesleep 0` komutunu verir. Bir
-  Insomnia oturumunu bitirmek, kim ayarlamış olursa olsun onu 0 yapar.
-- **Düşük Güç Modu:** Insomnia, zaten açık olan bir tercihin sahipliğini
+  Uykusuz oturumunu bitirmek, kim ayarlamış olursa olsun onu 0 yapar.
+- **Düşük Güç Modu:** Uykusuz, zaten açık olan bir tercihin sahipliğini
   üstlenmemek için mevcut ayarı denetler.
-- **App Nap:** varsayılan olarak kapalı. Ayar açıkken Insomnia her ajan
+- **App Nap:** varsayılan olarak kapalı. Ayar açıkken Uykusuz her ajan
   uygulamasının önceki `NSAppSleepDisabled` değerini, yazmadan önce kayıt
   defterine kaydeder ve oturum sonunda, backstop.sh içinde ve kaldırmada geri
   koyar. Daha eski bir derlemenin kayıt tutmadan yazdığı değerler tahmin

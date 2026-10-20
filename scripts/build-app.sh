@@ -1,10 +1,10 @@
 #!/bin/bash
-# Build Insomnia and assemble an ad-hoc signed Insomnia.app. install.sh runs this for
+# Build Uykusuz and assemble an ad-hoc signed Uykusuz.app. install.sh runs this for
 # source installs, and .github/workflows/release.yml runs it for the
 # downloadable package, so both produce the same bundle.
 #
 # Usage: scripts/build-app.sh --output DIR
-#   Writes DIR/Insomnia.app, replacing a bundle already at that path. DIR is
+#   Writes DIR/Uykusuz.app, replacing a bundle already at that path. DIR is
 #   created if needed. Prints the bundle path last.
 #
 # The signature is always ad-hoc (`codesign --sign -`): releases are ad-hoc
@@ -72,16 +72,16 @@ stale_package_interfaces() {
 # 1. Build -------------------------------------------------------------------
 step "Building (release)"
 cd "$ROOT"
-# INSOMNIA_LID_SIMULATION=1 compiles the scripts/simulate-lid.sh file trigger
+# UYKUSUZ_LID_SIMULATION=1 compiles the scripts/simulate-lid.sh file trigger
 # (LidSimulation.swift) into this release build, for release validation on
 # a machine whose lid stays open (install.sh passes it through from its own
 # environment). A normal build has no watcher: nothing reads the trigger
 # file. Such a build says so in the log at launch, in the status menu and in
 # Settings. The release workflow never sets it.
 BUILD_FLAGS=()
-if [[ "${INSOMNIA_LID_SIMULATION:-}" == 1 ]]; then
-  BUILD_FLAGS+=(-Xswiftc -DINSOMNIA_LID_SIMULATION)
-  echo "lid simulation compiled in (INSOMNIA_LID_SIMULATION=1): scripts/simulate-lid.sh will drive the lid actions during sessions"
+if [[ "${UYKUSUZ_LID_SIMULATION:-}" == 1 ]]; then
+  BUILD_FLAGS+=(-Xswiftc -DUYKUSUZ_LID_SIMULATION)
+  echo "lid simulation compiled in (UYKUSUZ_LID_SIMULATION=1): scripts/simulate-lid.sh will drive the lid actions during sessions"
 fi
 # ${arr[@]+"${arr[@]}"}: an empty array expands to nothing under set -u on
 # the bash 3.2 that ships with macOS.
@@ -111,15 +111,15 @@ STALE
   fi
   exit "$build_rc"
 fi
-BIN="$("$SWIFT" build -c release ${BUILD_FLAGS[@]+"${BUILD_FLAGS[@]}"} --show-bin-path)/Insomnia"
+BIN="$("$SWIFT" build -c release ${BUILD_FLAGS[@]+"${BUILD_FLAGS[@]}"} --show-bin-path)/Uykusuz"
 [[ -x "$BIN" ]] || { echo "binary not found at $BIN" >&2; exit 1; }
 
 # 2. Bundle ------------------------------------------------------------------
-APP="$OUTPUT/Insomnia.app"
+APP="$OUTPUT/Uykusuz.app"
 step "Assembling $APP"
 "$RM" -rf "$APP"
 "$MKDIR" -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-"$CP" "$BIN" "$APP/Contents/MacOS/Insomnia"
+"$CP" "$BIN" "$APP/Contents/MacOS/Uykusuz"
 "$CP" "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 "$CP" "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 # backstop.sh goes into the bundle before it is signed, so the signature's

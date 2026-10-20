@@ -18,11 +18,11 @@
   {
     "path": "scripts/backstop.sh",
     "description": "The standalone recovery script launchd runs every 60 s. Its header states what it undoes from state.json, what it keeps for the app, the journal shape check, the shared lock, and why a timed-out sudo pmset is never SIGKILLed.",
-    "scope": ["Sources/Insomnia/Core/**", "Sources/Insomnia/Model/RuntimeState.swift", "scripts/**"]
+    "scope": ["Sources/Uykusuz/Core/**", "Sources/Uykusuz/Model/RuntimeState.swift", "scripts/**"]
   },
   {
-    "path": "Sources/Insomnia/Model/RuntimeState.swift",
+    "path": "Sources/Uykusuz/Model/RuntimeState.swift",
     "description": "The shape of state.json: every key the shell reads, the flat FrozenProcess encoding, the legacy frozenPids migration, and the isDirty and hasLidActions predicates.",
-    "scope": ["Sources/Insomnia/Core/**", "scripts/**"]
+    "scope": ["Sources/Uykusuz/Core/**", "scripts/**"]
   }
 ]

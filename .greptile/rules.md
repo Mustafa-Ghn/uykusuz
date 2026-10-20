@@ -1,4 +1,4 @@
-# Review context for Insomnia
+# Review context for Uykusuz
 
 Plain markdown that Greptile reads alongside `.greptile/config.json`. The
 checkable rules live in that file; this one explains how the app and its
@@ -7,10 +7,10 @@ they are not flagged again.
 
 ## How recovery works
 
-The app writes two JSON files under `~/Library/Application Support/Insomnia`
-(or `INSOMNIA_HOME`): `session.json`, whose `endsAt` is the only thing that
+The app writes two JSON files under `~/Library/Application Support/Uykusuz`
+(or `UYKUSUZ_HOME`): `session.json`, whose `endsAt` is the only thing that
 keeps sleep disabled, and `state.json` (`RuntimeState`), the journal of
-everything Insomnia changed and must undo. Every change is journaled before
+everything Uykusuz changed and must undo. Every change is journaled before
 it is made and undone from the journal, never from memory. A session starts
 by writing both files, arming the launchd backstop, and only then running
 `sudo -n pmset -a disablesleep 1`; it never starts without the backstop.
@@ -24,10 +24,10 @@ missing or expired it runs `sudo -n pmset -a disablesleep 0` and
 journaled pid that still exists, is stopped, started in this boot session at
 the journaled second, and belongs to this user. Entries that record
 `startedAtMicros` it never signals itself: it hands them to the installed
-app binary (`Insomnia --resume-frozen <seconds>`), which checks each to the
+app binary (`Uykusuz --resume-frozen <seconds>`), which checks each to the
 microsecond and signals it, and keeps them on any unexpected answer. It runs
 the binary only when the bundle's `Info.plist` declares
-`InsomniaResumeFrozenVersion` equal to its `RESUME_FROZEN_VERSION`, and the
+`UykusuzResumeFrozenVersion` equal to its `RESUME_FROZEN_VERSION`, and the
 binary keeps the recovery lock on fd 9 until it ends itself after
 `<seconds>`. It keeps, and never
 restores, `savedOutputVolume`, `savedMuted`, `savedAudioOutputs`,
@@ -102,12 +102,12 @@ Flag a change that breaks one of these; do not flag the behavior itself.
   the session ends: `scheduleReassert(nil, nil)` returns early and leaves a
   scheduled task alive. powerd re-applies its own remembered brightness a
   moment after the wake, and a session ending inside that window does not
-  change that; the write after Insomnia's own Low Power Mode ends also needs
+  change that; the write after Uykusuz's own Low Power Mode ends also needs
   the task to survive the empty undo. A new lid close journals fresh values
   before it darkens, and the task checks the journal before it writes.
   Raised on PR #15 and withdrawn.
 - `SessionManager.swift`, `settleDisplayAfterLowPower`. The display write
-  after Insomnia's own Low Power Mode ends is best effort: a failed write is
+  after Uykusuz's own Low Power Mode ends is best effort: a failed write is
   logged and `displayRestoredUnderLowPower` is dropped, not retried, because
   the only later place to retry is a restore where the mode is no longer
   ours, by which time the panel has been the user's for an unknown time.
@@ -142,7 +142,7 @@ Flag a change that breaks one of these; do not flag the behavior itself.
   supervising subshell keeps the lock until the command ends, so every later
   app start and backstop run is refused as "lock held" until then. Killing
   sudo would orphan a root pmset outside any transaction.
-- `backstop.sh`, `run_app_bounded`. The `Insomnia --resume-frozen` call
+- `backstop.sh`, `run_app_bounded`. The `Uykusuz --resume-frozen` call
   is killed with SIGKILL when SIGTERM plus 3 s does not end it, unlike
   `run_bounded`: it is the user's own unprivileged binary, and once SIGKILL
   is delivered it runs no more code, so it cannot signal anything later.
@@ -163,8 +163,8 @@ Flag a change that breaks one of these; do not flag the behavior itself.
   unblocking it, so an orphaned binary frees the lock on its own. One that
   is still alive after SIGKILL keeps the lock until the kernel ends it.
 - `backstop.sh`, `resume_via_app`, and `uninstall.sh`, step 3. The shell
-  runs the binary only when `INSOMNIA_INFO` declares
-  `InsomniaResumeFrozenVersion` equal to `RESUME_FROZEN_VERSION`; otherwise
+  runs the binary only when `UYKUSUZ_INFO` declares
+  `UykusuzResumeFrozenVersion` equal to `RESUME_FROZEN_VERSION`; otherwise
   it keeps those entries without running anything, because an older build
   would start the menu bar app. `install.sh` copies the binary before
   `Info.plist`. `uninstall.sh` runs the checkout's backstop only when the
@@ -183,7 +183,7 @@ Flag a change that breaks one of these; do not flag the behavior itself.
   Legacy `frozenPids` are never signaled or cleared there, even when the
   pid is gone (spec section 8).
 - `ProcessControl.swift`, `LidActions.swift`, `backstop.sh`. Only pids
-  Insomnia stopped are resumed, and only when the journaled identity still
+  Uykusuz stopped are resumed, and only when the journaled identity still
   matches. Provisional entries written before the kernel confirmed the stop
   (identity nil) are never signaled and stay journaled for manual
   inspection. One exception: when the write that confirms a freeze fails,
@@ -217,7 +217,7 @@ Flag a change that breaks one of these; do not flag the behavior itself.
   `disablesleep`, `pmset -b` for `lowpowermode`, so the guard behaves the
   same with and without a charger (spec open decisions).
 - `Log.swift`. Every log line is also appended as plain text to
-  `insomnia.log`, a local file shared with `backstop.sh` so one file tells
+  `uykusuz.log`, a local file shared with `backstop.sh` so one file tells
   the whole story. That file may contain SSIDs, process metadata and tmux
   target names (SECURITY.md). The privacy rule applies to the unified log.
 - `LidActions.swift`. Lid events do nothing when no session is active

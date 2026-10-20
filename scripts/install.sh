@@ -1,8 +1,8 @@
 #!/bin/bash
-# Install Insomnia: put Insomnia.app (with backstop.sh sealed inside it) in
+# Install Uykusuz: put Uykusuz.app (with backstop.sh sealed inside it) in
 # ~/Applications, install the LaunchAgent that verifies the bundle and runs
 # that script, and write the sudoers rule. Idempotent; asks for sudo once (for
-# /etc/sudoers.d/insomnia), before anything of a previous install is touched.
+# /etc/sudoers.d/uykusuz), before anything of a previous install is touched.
 # The bundle and the LaunchAgent are replaced together, in one locked step
 # (the agent pins one build, so the two must match at every moment), and a
 # run that stops after that step began puts the previous bundle back. Not
@@ -14,7 +14,7 @@
 #                                             (scripts/build-app.sh, ad-hoc
 #                                             signed); only from a checkout's
 #                                             scripts/ folder (in_checkout)
-#   ./install.sh --app /path/to/Insomnia.app  installs a prebuilt bundle, such
+#   ./install.sh --app /path/to/Uykusuz.app  installs a prebuilt bundle, such
 #                                             as the one in a release zip
 #                                             (arm64 only, so this stops on a
 #                                             Mac without Apple Silicon), after
@@ -35,11 +35,11 @@
 set -euo pipefail
 
 # Installation always uses the standard per-user layout. A relocated
-# INSOMNIA_HOME would make the backstop run here act on one tree while the
+# UYKUSUZ_HOME would make the backstop run here act on one tree while the
 # app is installed against another, so refuse rather than guess.
-if [[ -n "${INSOMNIA_HOME:-}" ]]; then
-  echo "INSOMNIA_HOME ayarlanmış ($INSOMNIA_HOME). install.sh yalnızca ~/Library altındaki standart düzeni destekler;" >&2
-  echo "INSOMNIA_HOME değişkenini kaldırıp (unset) yeniden çalıştırın. Hiçbir şey değiştirilmedi." >&2
+if [[ -n "${UYKUSUZ_HOME:-}" ]]; then
+  echo "UYKUSUZ_HOME ayarlanmış ($UYKUSUZ_HOME). install.sh yalnızca ~/Library altındaki standart düzeni destekler;" >&2
+  echo "UYKUSUZ_HOME değişkenini kaldırıp (unset) yeniden çalıştırın. Hiçbir şey değiştirilmedi." >&2
   exit 1
 fi
 
@@ -71,33 +71,33 @@ LOCK_TIMEOUT_SECONDS=10
 CALL_TIMEOUT_SECONDS=30
 
 # What a prebuilt bundle (--app) must be.
-BUNDLE_ID=com.kgarg.insomnia
+BUNDLE_ID=com.mustafaghn.uykusuz
 
 # The folder this script is in. build-app.sh and backstop.sh are taken from
 # there, and only when it is the scripts/ folder of a source checkout, with
 # Package.swift one level up (in_checkout). A release zip's folder is not: it
-# holds Insomnia.app, install.sh and uninstall.sh, so a build-app.sh found
+# holds Uykusuz.app, install.sh and uninstall.sh, so a build-app.sh found
 # beside this script there was added after the zip was unpacked, for example
 # by another account that created the folder in /tmp beforehand. Never the
-# folder above either: a zip unpacked at /tmp/Insomnia-<version> would make
+# folder above either: a zip unpacked at /tmp/Uykusuz-<version> would make
 # that /tmp, where any account can create scripts/build-app.sh.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 in_checkout() { [[ "${SCRIPT_DIR##*/}" == scripts && -f "${SCRIPT_DIR%/*}/Package.swift" ]]; }
 APP_DIR="$HOME/Applications"
-APP="$APP_DIR/Insomnia.app"
-APP_SUPPORT="$HOME/Library/Application Support/Insomnia"
-LOG_DIR="$HOME/Library/Logs/Insomnia"
+APP="$APP_DIR/Uykusuz.app"
+APP_SUPPORT="$HOME/Library/Application Support/Uykusuz"
+LOG_DIR="$HOME/Library/Logs/Uykusuz"
 LAUNCH_AGENTS="$HOME/Library/LaunchAgents"
-LABEL="com.insomnia.backstop"
+LABEL="com.mustafaghn.uykusuz.backstop"
 PLIST="$LAUNCH_AGENTS/$LABEL.plist"
-SUDOERS=/etc/sudoers.d/insomnia
+SUDOERS=/etc/sudoers.d/uykusuz
 UID_NUM="$(id -u)"
 # Where the new bundle is assembled and signed (step 3) and where the previous
 # one waits during the swap (step 6). Both inside $APP_DIR, so the swap is two
 # renames on one filesystem. The staging directory's name carries the PID of
 # the run that made it, so a later run can tell a dead run's leftover from
 # the directory of an install that is still running (step 5).
-PREVIOUS_APP="$APP_DIR/.Insomnia.app.previous"
+PREVIOUS_APP="$APP_DIR/.Uykusuz.app.previous"
 STAGE=""
 NEW_APP=""
 # Where build-app.sh writes a source build before it is staged.
@@ -108,7 +108,7 @@ CANDIDATE_DIR=""
 WORK=""
 
 step() { printf '\n==> %s\n' "$*"; }
-usage() { echo "kullanım: $0 [--app /yol/Insomnia.app [--allow-unverified-origin]]" >&2; }
+usage() { echo "kullanım: $0 [--app /yol/Uykusuz.app [--allow-unverified-origin]]" >&2; }
 # A command for the user to paste, each word quoted for the shell, so a space,
 # quote or $ in a path stays part of that path.
 command_line() { local line; line="$(printf '%q ' "$@")"; printf '%s' "${line% }"; }
@@ -238,8 +238,8 @@ if (( ALLOW_UNVERIFIED_ORIGIN )) && [[ -z "$PREBUILT" ]]; then
   usage
   exit 2
 fi
-if [[ "${INSOMNIA_LID_SIMULATION:-}" == 1 && -n "$PREBUILT" ]]; then
-  echo "INSOMNIA_LID_SIMULATION=1 yalnızca kaynaktan derlemede geçerlidir; --app ile verilen paket zaten derlenmiş. Hiçbir şey değiştirilmedi." >&2
+if [[ "${UYKUSUZ_LID_SIMULATION:-}" == 1 && -n "$PREBUILT" ]]; then
+  echo "UYKUSUZ_LID_SIMULATION=1 yalnızca kaynaktan derlemede geçerlidir; --app ile verilen paket zaten derlenmiş. Hiçbir şey değiştirilmedi." >&2
   exit 2
 fi
 
@@ -292,7 +292,7 @@ cleanup() {
 }
 trap cleanup EXIT
 # Scratch space for bounded(): this run's own directory, emptied on exit.
-WORK="$("$MKTEMP" -d "${TMPDIR:-/tmp}/insomnia-install.XXXXXX")"
+WORK="$("$MKTEMP" -d "${TMPDIR:-/tmp}/uykusuz-install.XXXXXX")"
 
 # 1. The bundle to install ---------------------------------------------------
 #    Built or verified before the password prompt: nothing on the machine has
@@ -305,7 +305,7 @@ if [[ -n "$PREBUILT" ]]; then
   # Mac reads 0 or has no such key.
   arm64="$("$SYSCTL" -n hw.optional.arm64 2>/dev/null || true)"
   if [[ "$arm64" != 1 ]]; then
-    echo "Insomnia sürüm paketleri yalnızca Apple Silicon Mac'lerde çalışır ve bu Mac öyle değil ('sysctl -n hw.optional.arm64' sonucu: ${arm64:-değer yok}). Bunun yerine kaynak kod kopyasından derleyip kurun (README, Kurulum). Hiçbir şey değiştirilmedi." >&2
+    echo "Uykusuz sürüm paketleri yalnızca Apple Silicon Mac'lerde çalışır ve bu Mac öyle değil ('sysctl -n hw.optional.arm64' sonucu: ${arm64:-değer yok}). Bunun yerine kaynak kod kopyasından derleyip kurun (README, Kurulum). Hiçbir şey değiştirilmedi." >&2
     exit 1
   fi
   if [[ ! -d "$PREBUILT" || ! -f "$PREBUILT/Contents/Info.plist" ]]; then
@@ -317,7 +317,7 @@ if [[ -n "$PREBUILT" ]]; then
   # shared folder, /tmp); a bundle swapped there while the password prompt
   # waits is never copied in. BUILD_DIR is removed at exit, as for a build.
   BUILD_DIR="$("$MKTEMP" -d)"
-  CHECKED_APP="$BUILD_DIR/Insomnia.app"
+  CHECKED_APP="$BUILD_DIR/Uykusuz.app"
   if ! "$DITTO" "$PREBUILT" "$CHECKED_APP"; then
     echo "denetlemek için kopyalanamadı: $PREBUILT. Hiçbir şey değiştirilmedi." >&2
     exit 1
@@ -354,13 +354,13 @@ if [[ -n "$PREBUILT" ]]; then
   # check, so every prebuilt bundle needs --allow-unverified-origin, the flag
   # that says they did.
   if (( ALLOW_UNVERIFIED_ORIGIN )); then
-    echo "UYARI: Insomnia $PREBUILT_VERSION sürümünün kökeni doğrulanmadı. İmzası paketin bozulmadığını gösterir, onu kimin yaptığını değil."
+    echo "UYARI: Uykusuz $PREBUILT_VERSION sürümünün kökeni doğrulanmadı. İmzası paketin bozulmadığını gösterir, onu kimin yaptığını değil."
     echo "--allow-unverified-origin: yine de kuruluyor. İçindeki backstop.sh girişte ve her 60 saniyede bir sizin hesabınızla çalışacak."
     echo "Yalnızca zip dosyasını SHA256SUMS ve 'gh attestation verify' ile kendiniz denetlediyseniz devam edin (docs/install.md)."
     echo "Sürümler Apple onaylı (notarized) değildir; bu yüzden macOS, indirilen bir sürümün ilk açılışını siz Sistem Ayarları > Gizlilik ve Güvenlik bölümünde izin verene dek engeller."
   else
     cat >&2 <<REFUSE
-$PREBUILT konumundaki Insomnia $PREBUILT_VERSION sürümünün kökeni doğrulanmadı. İmzası paketin
+$PREBUILT konumundaki Uykusuz $PREBUILT_VERSION sürümünün kökeni doğrulanmadı. İmzası paketin
 bozulmadığını gösterir, onu kimin yaptığını değil: herkes bu tanımlayıcıyla bir paket imzalayabilir ve
 bu install.sh paketin nereden geldiğini bilemez. Kurulursa içindeki backstop.sh girişte ve her 60 saniyede
 bir sizin hesabınızla çalışır. Hiçbir şey değiştirilmedi.
@@ -381,7 +381,7 @@ else
   fi
   BUILD_DIR="$("$MKTEMP" -d)"
   "$SCRIPT_DIR/build-app.sh" --output "$BUILD_DIR"
-  SOURCE_APP="$BUILD_DIR/Insomnia.app"
+  SOURCE_APP="$BUILD_DIR/Uykusuz.app"
 fi
 
 # 2. sudoers -----------------------------------------------------------------
@@ -391,7 +391,7 @@ fi
 step "$SUDOERS yazılıyor (parolanız bir kez istenecek)"
 TMP_SUDOERS="$("$MKTEMP")"
 cat > "$TMP_SUDOERS" <<SUDO
-# Installed by Insomnia install.sh. Exactly four commands, nothing else.
+# Installed by Uykusuz install.sh. Exactly four commands, nothing else.
 $USER ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 1
 $USER ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 0
 $USER ALL=(root) NOPASSWD: /usr/bin/pmset -b lowpowermode 1
@@ -425,30 +425,30 @@ fi
 #    replaced in step 6, in the same locked step as the LaunchAgent: the
 #    agent pins one build's requirement, so the bundle at $APP and the loaded
 #    agent must be a matching pair before, during and after a failed run.
-step "Insomnia.app hazırlanıyor"
+step "Uykusuz.app hazırlanıyor"
 # Ask the app to quit and wait until it has actually exited. It refuses to
 # quit while it has unresolved recovery work; that refusal stands (no pkill),
 # and nothing of the old install is overwritten while it is still running.
-if "$PGREP" -x Insomnia >/dev/null 2>&1; then
-  echo "Insomnia çalışıyor; önce kapatılıyor (bu, süren oturumu bitirir)."
-  "$OSASCRIPT" -e 'tell application id "com.kgarg.insomnia" to quit' >/dev/null 2>&1 || true
+if "$PGREP" -x Uykusuz >/dev/null 2>&1; then
+  echo "Uykusuz çalışıyor; önce kapatılıyor (bu, süren oturumu bitirir)."
+  "$OSASCRIPT" -e 'tell application id "com.mustafaghn.uykusuz" to quit' >/dev/null 2>&1 || true
   for (( i = 0; i < QUIT_WAIT_SECONDS; i++ )); do
-    "$PGREP" -x Insomnia >/dev/null 2>&1 || break
+    "$PGREP" -x Uykusuz >/dev/null 2>&1 || break
     sleep 1
   done
-  if "$PGREP" -x Insomnia >/dev/null 2>&1; then
-    echo "Insomnia ${QUIT_WAIT_SECONDS} saniye sonra hâlâ çalışıyor (kendi kurtarması bitene dek kapanmayı reddediyor olabilir)." >&2
-    echo "Bitmesini bekleyin ya da menüsünden Insomnia'dan çıkın, ardından yeniden çalıştırın. $SUDOERS kuruldu; uygulama (backstop.sh dahil) ve LaunchAgent olduğu gibi bırakıldı." >&2
+  if "$PGREP" -x Uykusuz >/dev/null 2>&1; then
+    echo "Uykusuz ${QUIT_WAIT_SECONDS} saniye sonra hâlâ çalışıyor (kendi kurtarması bitene dek kapanmayı reddediyor olabilir)." >&2
+    echo "Bitmesini bekleyin ya da menüsünden Uykusuz'dan çıkın, ardından yeniden çalıştırın. $SUDOERS kuruldu; uygulama (backstop.sh dahil) ve LaunchAgent olduğu gibi bırakıldı." >&2
     exit 1
   fi
 fi
 "$MKDIR" -p "$APP_DIR"
-STAGE="$("$MKTEMP" -d "$APP_DIR/.Insomnia.app.staging.$$.XXXXXX")"
-NEW_APP="$STAGE/Insomnia.app"
+STAGE="$("$MKTEMP" -d "$APP_DIR/.Uykusuz.app.staging.$$.XXXXXX")"
+NEW_APP="$STAGE/Uykusuz.app"
 # The bundle is copied here whole and reaches $APP in one rename under the
 # recovery lock (step 5), so backstop.sh never sees this binary beside an
 # older Info.plist or the reverse (it runs the binary's --resume-frozen mode
-# only once Info.plist declares InsomniaResumeFrozenVersion).
+# only once Info.plist declares UykusuzResumeFrozenVersion).
 # ditto keeps the signature's resource seal and every attribute intact (a
 # downloaded bundle keeps its quarantine flag; Gatekeeper decides at launch).
 "$DITTO" "$SOURCE_APP" "$NEW_APP"
@@ -518,12 +518,12 @@ fi
 # session. A sudo that does not stop on SIGTERM keeps the lock until it ends.
 # A pgrep that cannot answer does not say the app is gone, so the run stops.
 pgrep_rc=0
-bounded "$PGREP" -x Insomnia || pgrep_rc=$?
+bounded "$PGREP" -x Uykusuz || pgrep_rc=$?
 if (( pgrep_rc == 0 )); then
-  echo "Insomnia yeniden açıldı; Insomnia'dan çıkıp yeniden çalıştırın. $APP konumundaki uygulama ve LaunchAgent olduğu gibi bırakıldı." >&2
+  echo "Uykusuz yeniden açıldı; Uykusuz'dan çıkıp yeniden çalıştırın. $APP konumundaki uygulama ve LaunchAgent olduğu gibi bırakıldı." >&2
   exit 1
 elif (( pgrep_rc != 1 )); then
-  echo "pgrep $(call_result "$pgrep_rc"); bu yüzden Insomnia'nın yeniden açılıp açılmadığı bilinmiyor. $APP konumundaki uygulama ve LaunchAgent olduğu gibi bırakıldı; yeniden çalıştırın." >&2
+  echo "pgrep $(call_result "$pgrep_rc"); bu yüzden Uykusuz'un yeniden açılıp açılmadığı bilinmiyor. $APP konumundaki uygulama ve LaunchAgent olduğu gibi bırakıldı; yeniden çalıştırın." >&2
   exit 1
 fi
 # The rule was verified in step 2, before this run waited for the lock. An
@@ -604,8 +604,8 @@ fi
 # alive belongs to an install that is still assembling its bundle and has
 # not reached this lock yet, so it stays. kill -0 only asks whether the
 # process exists; it sends no signal.
-staging_re='^\.Insomnia\.app\.staging\.([0-9]+)\.[A-Za-z0-9]{6}$'
-for dir in "$APP_DIR"/.Insomnia.app.staging.*; do
+staging_re='^\.Uykusuz\.app\.staging\.([0-9]+)\.[A-Za-z0-9]{6}$'
+for dir in "$APP_DIR"/.Uykusuz.app.staging.*; do
   [[ -d "$dir" && ! -L "$dir" && "$dir" != "$STAGE" ]] || continue
   [[ "${dir##*/}" =~ $staging_re ]] || continue
   if "$KILL" -0 "${BASH_REMATCH[1]}" 2>/dev/null; then
@@ -685,7 +685,7 @@ Kurulum durduruldu: backstop.sh önceki bir oturumu tümüyle geri alamadı
 (çıkış kodu: $recovery_rc). $pair_note
 Şu ana kadar kurulan: $SUDOERS.
 $agent_note
-$LOG_DIR/insomnia.log dosyasını denetleyin ve bildirdiği sorunu çözün. Kaydedilmiş ses,
+$LOG_DIR/uykusuz.log dosyasını denetleyin ve bildirdiği sorunu çözün. Kaydedilmiş ses,
 ekran parlaklığı ya da klavye arka ışığı için uygulama gerekir; kuruluysa açın:
   $(command_line open "$APP")
 $manual_step
@@ -832,7 +832,7 @@ fi
 #    are `/bin/sh -c "$AGENT_PROGRAM" sh "$REQUIREMENT" "$APP"`: the program
 #    runs `codesign --verify --strict -R=<requirement>` on the bundle and
 #    execs Contents/Resources/backstop.sh only when that passes; otherwise it
-#    logs one line to $LOG_DIR/insomnia.log and exits 1 without running
+#    logs one line to $LOG_DIR/uykusuz.log and exits 1 without running
 #    anything. AGENT_PROGRAM must stay byte for byte what LaunchdBackstop.swift
 #    writes (LaunchdBackstopTests compares them), or the app reloads the agent
 #    at every session start. Same pattern as the app for the file itself: the
@@ -857,7 +857,7 @@ CANDIDATE="$CANDIDATE_DIR/$LABEL.candidate-$$.plist"
 before="$(loaded_state)"
 
 # shellcheck disable=SC2016  # the $1/$2/$HOME/$r below are for the agent's shell, not this one
-AGENT_PROGRAM='r="$(/usr/bin/codesign --verify --strict "-R=$1" "$2" 2>&1)" && exec /bin/bash "$2/Contents/Resources/backstop.sh"; mkdir -p "$HOME/Library/Logs/Insomnia"; printf "%s [error] backstop agent: %s does not satisfy the pinned code requirement; backstop.sh not run. Reinstall Insomnia (scripts/install.sh). codesign: %s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$2" "$(printf %s "$r" | tr "\n" " ")" >> "$HOME/Library/Logs/Insomnia/insomnia.log"; exit 1'
+AGENT_PROGRAM='r="$(/usr/bin/codesign --verify --strict "-R=$1" "$2" 2>&1)" && exec /bin/bash "$2/Contents/Resources/backstop.sh"; mkdir -p "$HOME/Library/Logs/Uykusuz"; printf "%s [error] backstop agent: %s does not satisfy the pinned code requirement; backstop.sh not run. Reinstall Uykusuz (scripts/install.sh). codesign: %s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$2" "$(printf %s "$r" | tr "\n" " ")" >> "$HOME/Library/Logs/Uykusuz/uykusuz.log"; exit 1'
 xml_escape() { sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'; }
 cat > "$CANDIDATE" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -1132,6 +1132,6 @@ Sonraki adımlar:
   1. Başlatın:          $(command_line open "$APP")
   2. İsteğe bağlı:      Sistem Ayarları > Wi-Fi > Erişim noktalarına katılmak için sor (Ask to join hotspots): Otomatik
   3. Ayar dosyası:      $APP_SUPPORT/config.json
-  4. Günlükler:         $LOG_DIR/insomnia.log
+  4. Günlükler:         $LOG_DIR/uykusuz.log
   5. Kaldırma:          $(command_line "$UNINSTALL")
 NEXT

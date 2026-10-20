@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="112" height="112" viewBox="100 100 824 824" role="img" aria-labelledby="eo-title eo-desc">
-  <title id="eo-title">Insomnia</title>
-  <desc id="eo-desc">The Insomnia mark: an open almond-shaped eye with a round pupil and five lashes above the upper lid, drawn in moon-white on a charcoal rounded tile.</desc>
+  <title id="eo-title">Uykusuz</title>
+  <desc id="eo-desc">The Uykusuz mark: an open almond-shaped eye with a round pupil and five lashes above the upper lid, drawn in moon-white on a charcoal rounded tile.</desc>
   <!-- scripts/generate-app-icon.sh writes this file from AppIconArtwork, and PackagingTests fails if the two differ, so edit the Swift drawing and rerun the script. The layout matches the app icon: an 824-unit tile inset 100 units in a 1024 canvas, corners at 22.37% of the tile, the 24-unit mark grid at 76% of the tile side. -->
   <rect x="100" y="100" width="824" height="824" rx="184.3288" fill="#303336"/>
   <!-- EyeMarkGeometry at progress 1 on its 24-unit grid. The paths are the lens, closed by two cubic lids, then the pupil with the highlight cut as a notch from its upper right edge, then the five lashes above the upper lid. -->

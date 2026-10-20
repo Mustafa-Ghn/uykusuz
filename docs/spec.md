@@ -1,4 +1,4 @@
-# Insomnia — keep the Mac awake and working with the lid closed
+# Uykusuz — keep the Mac awake and working with the lid closed
 
 These are design notes, not a release certification. The
 [README](../README.md) describes supported use and recovery limits; the
@@ -10,7 +10,7 @@ are not exhaustive descriptions of the current code.
 
 ## Purpose
 
-Insomnia is a menu bar app for timed awake sessions on a MacBook, used on a
+Uykusuz is a menu bar app for timed awake sessions on a MacBook, used on a
 stable, well-ventilated surface. It must not be used to keep a Mac awake in a
 closed bag. Its design goals are to:
 
@@ -35,7 +35,7 @@ closed bag. Its design goals are to:
 - macOS 26 on Apple Silicon (built and tested on MacBook Pro M5).
 - Swift 6, SwiftUI content hosted in a custom `NSStatusItem`, Swift Package.
   No Xcode project.
-- `build-app.sh` assembles a minimal `Insomnia.app` bundle (`LSUIElement =
+- `build-app.sh` assembles a minimal `Uykusuz.app` bundle (`LSUIElement =
   true`, no Dock icon) with `backstop.sh` sealed under `Contents/Resources`
   and signs it ad-hoc.
   `install.sh` installs that build, or a prebuilt bundle passed with
@@ -66,7 +66,7 @@ Session {
   extendedBy:  [TimeInterval]
 }
 
-RuntimeState {                // everything Insomnia changed and must undo
+RuntimeState {                // everything Uykusuz changed and must undo
   sleepDisabledByUs:  Bool
   lowPowerSetByUs:    Bool
   frozenProcesses:    [{pid, startedAt, startedAtMicros, bootSession}]
@@ -86,7 +86,7 @@ RuntimeState {                // everything Insomnia changed and must undo
 }
 ```
 
-Both are written to `~/Library/Application Support/Insomnia/` as JSON on every
+Both are written to `~/Library/Application Support/Uykusuz/` as JSON on every
 change. They are the source of truth for reconcile and for the backstop.
 Legacy `frozenPids` entries lack ownership identity and need conservative
 recovery; newly written journals use `frozenProcesses`.
@@ -111,11 +111,11 @@ recovery; newly written journals use `frozenProcesses`.
 - Session end (timer, End now, Quit, battery floor, thermal critical):
   `sudo pmset -a disablesleep 0`, undo every RuntimeState entry, delete
   session, notify.
-- Quitting Insomnia always ends the session. There is no "keep awake after quit".
+- Quitting Uykusuz always ends the session. There is no "keep awake after quit".
 
 ### 2. Sleep guard and root access
 
-- `install.sh` writes `/etc/sudoers.d/insomnia` allowing the user to run,
+- `install.sh` writes `/etc/sudoers.d/uykusuz` allowing the user to run,
   without a password, exactly:
   - `/usr/bin/pmset -a disablesleep 1`
   - `/usr/bin/pmset -a disablesleep 0`
@@ -126,7 +126,7 @@ recovery; newly written journals use `frozenProcesses`.
 ### 3. Lid observer
 
 - IOKit interest notification on `IOPMrootDomain` for `AppleClamshellState`.
-  Insomnia sleeps in its run loop; the kernel wakes it on change. Zero cost
+  Uykusuz sleeps in its run loop; the kernel wakes it on change. Zero cost
   between events.
 - 2-second debounce to ignore flapping.
 - Lid close and open each run a fixed, reversible action list (below).
@@ -203,7 +203,7 @@ count a waiting entry as not restored, since nothing failed. The close
 left the device at 0, so a reading above 0 is a level set since, as the
 error asked: the darkening is already undone, and the entry is cleared
 without a write rather than overwrite that level. A display reading above
-0 taken while Insomnia's own Low Power Mode is on is the mode's rescaled
+0 taken while Uykusuz's own Low Power Mode is on is the mode's rescaled
 value and not that level, and once the mode is off the panel comes back
 over a time nobody has measured. So no display reading above 0 taken
 under the mode, or after it in the same boot of the Mac, decides the
@@ -240,7 +240,7 @@ boot is taken as this boot's, so the entry waits, at the cost of one more
 restart. backstop.sh, before its own `lowpowermode 0`, gives a record of
 another boot, or with none, its own boot (empty if it cannot read it),
 after a restart or not, and publishes that journal on its own first: the
-mode may have been on in that boot until then, before Insomnia launched in
+mode may have been on in that boot until then, before Uykusuz launched in
 it. A launch in that boot then reads the entry with the same doubt and
 waits for the next restart, even when the mode was already off before the
 agent's switch-off. The record has that boot before the mode goes off, so
@@ -275,7 +275,7 @@ asleep, shows no such thing, and neither does a reading of an earlier
 entry: the record goes with its entry, as the record of the mode does. If
 state.json refuses the record, this process holds it and the next write
 records it. An end does not let Quit go before then: "Restore incomplete"
-says Insomnia retries in 30 s and not to quit until state.json can be
+says Uykusuz retries in 30 s and not to quit until state.json can be
 written, and Quit waits, as for a failed restore whose flag is owed. A
 crash, a forced quit or a lost disk before the record lands loses it, and
 the next launch writes the saved value over a 0, as before any reading.
@@ -288,7 +288,7 @@ not the old saved one. The app also retries the clear at the same pace,
 and reads and writes nothing for it, so a level the user lowers to 0
 meanwhile stays at 0. Quit waits for that clear: a launch after the quit
 would read the entry again, and would write the saved value over a 0 the
-user set since. "Restore incomplete" says Insomnia retries in 30 s and not
+user set since. "Restore incomplete" says Uykusuz retries in 30 s and not
 to quit until state.json can be written, and Start is refused until the
 end goes through. A crash, a forced quit or a lost disk before the clear
 lands leaves the entry to the next launch, which reads the device again.
@@ -296,7 +296,7 @@ A device still at 0 there gets the saved value and both keys are cleared. A fail
 flag, and the entry is retried like any failed restore. If the flag cannot
 be cleared either, the disk still shows a flagged entry, which backstop.sh
 and uninstall.sh pass over, so the app keeps the end itself. "Restore
-incomplete" says Insomnia retries in 30 s, the app retries the write and
+incomplete" says Uykusuz retries in 30 s, the app retries the write and
 the owed flag together, and Quit waits until one of them lands. A write
 that lands while state.json still refuses the clear settles the entry in
 this process, with only the clear owed, and Quit waits for that clear as
@@ -304,13 +304,13 @@ above. A launch or
 re-read with no session whose write fails is ended as for a dirty journal,
 so the agent is armed for it, or the app keeps it while the flag is still
 owed. A write whose clear is owed is done all the same: the second write
-2 s later still goes out, and a display written under Insomnia's Low Power
+2 s later still goes out, and a display written under Uykusuz's Low Power
 Mode still owes its write after the mode, as the clear would have
 journaled. A lid close that can read the device clears the flag too: it
 keeps the earlier saved value while the device reads 0, and saves the new
 level when it reads above 0. For the display that level must be trusted:
 the last sample, the value owed after the mode, or a current read taken
-with the panel awake and Insomnia's Low Power Mode not on at any point in
+with the panel awake and Uykusuz's Low Power Mode not on at any point in
 the run, nor over the entry since the Mac last started. Without one, the close leaves the entry flagged and the panel as
 it is. A rescaled, dimmed or asleep read is not the user's level, and the
 saved value may not be either, since the user may have set one by hand.
@@ -340,7 +340,7 @@ save rather than the one the menu showed. Each save has an ID of its own
 compares it with the journal on disk under the lock, so a later save with
 the same values, written by this or another copy of the app, is not
 dropped. An entry written before entries had an ID has none and is
-compared by its values. While Insomnia runs, a device that
+compared by its values. While Uykusuz runs, a device that
 connects again gets its volume back at once (a CoreAudio device-list
 listener), or at the next lid open if a session is running with the lid
 closed. Each device change reads the journal on disk under the lock, so a
@@ -353,7 +353,7 @@ A restore that fails on a connected device, or a cleared entry that cannot
 be written, is reported and the entry stays. It makes the end incomplete,
 as any failed restore does. The recovery agent keeps these entries but
 cannot restore CoreAudio settings, so the incomplete-restore notification
-says Insomnia tries again itself. That retry runs in process after 30 s,
+says Uykusuz tries again itself. That retry runs in process after 30 s,
 reads the journal again and checks the lid again. A device change that
 could not run at all (the recovery lock was busy, a `sudo pmset` left
 running still held it, or state.json did not decode) is retried the same
@@ -377,7 +377,7 @@ Freeze scope rules:
   automatically; they can be put on the explicit list by hand. With the
   toggle off the explicit list is the whole scope.
 - Hard denylist that can never be frozen, from either scope: `com.apple.*`,
-  Insomnia itself, Docker Desktop (handled by the Docker rule), and any bundle
+  Uykusuz itself, Docker Desktop (handled by the Docker rule), and any bundle
   id in the agent list (below).
 - Built-in protected set (`FreezePlanner.builtInProtected`, checked through
   `isBuiltInProtected`): editors and agent hosts (VS Code and Insiders,
@@ -420,12 +420,12 @@ Freeze scope rules:
   carries it. If the app dies before the confirming write, the stopped
   pids stay journaled without identity and are reported for a person to
   check.
-- Only pids Insomnia stopped are resumed. An app launched while the lid is
+- Only pids Uykusuz stopped are resumed. An app launched while the lid is
   closed is left alone.
 - Electron apps are stopped as a whole process tree (main + helpers), found
   via the responsible-pid relationship, so no helper keeps spinning.
 
-Display and keyboard backlight are handled by Insomnia, not by the hardware.
+Display and keyboard backlight are handled by Uykusuz, not by the hardware.
 The September 16, 2026 audit (docs/release-validation.md) found that the
 sleep guard (`pmset -a disablesleep 1`) removes the only path by which macOS
 turns the built-in panel and keyboard backlight off on clamshell close: that
@@ -450,19 +450,19 @@ never starts sooner) and the panel is awake (`CGDisplayIsAsleep`, else it
 reads the idle-dim value) or the keyboard backlight is neither suppressed by
 display sleep (it reads 0) nor idle-dimmed, and the app keeps the last trusted
 reading of each, sampled every 30 s with the lid open, at start, 3 s after
-each lid open, and just before Insomnia switches Low Power Mode on itself.
+each lid open, and just before Uykusuz switches Low Power Mode on itself.
 The display at the close event is never the user's value when it can be
 avoided: the lid coming down covers the ambient light sensor and
 auto-brightness has already pulled the panel down by the time the close is
 reported (measured 0.75 to 0.335 with the user at the keyboard, so the idle
 rule alone does not catch it), and Low Power Mode rescales it (0.75 reads
 0.5). So the display journals the last open-lid sample; without one, the
-value a lid open restored under Insomnia's own Low Power Mode if that is
+value a lid open restored under Uykusuz's own Low Power Mode if that is
 still journaled as owed and the mode still ours (the app relaunched under
 the mode, so the new sampler has nothing and is held); only without either
 the current read,
 dim or not, since a dim panel on open beats a black one.
-While Low Power Mode is on because Insomnia switched it on (the journal's
+While Low Power Mode is on because Uykusuz switched it on (the journal's
 `lowPowerSetByUs`), the display sample is held: the panel reads the mode's
 value, and the sample taken just before the mode went on is the one to
 restore. The hold follows the journal on disk: after a `lowpowermode 0`
@@ -484,9 +484,9 @@ more 2 s later, because powerd re-applies its own remembered brightness
 asynchronously after the wake and can override the first write; that second
 write is skipped if the lid closed again in the meantime (the close journals
 fresh values first) and superseded by any newer restore. A display restore
-written while Insomnia's own Low Power Mode was on is journaled as
+written while Uykusuz's own Low Power Mode was on is journaled as
 `displayRestoredUnderLowPower` and written once more, then re-asserted the
-same way, right after Insomnia switches the mode off (lid open, charger,
+same way, right after Uykusuz switches the mode off (lid open, charger,
 thermal recovery or session end), because the mode's end rescales the panel
 and can leave it elsewhere than the value written under it. That second
 write is owed only while the panel still reads what was written (within
@@ -505,8 +505,8 @@ state.json refuses to clear the owed write itself, written or dropped,
 that clear is owed too, so no later journal write brings the value back. The
 sample the display journals dates from the last 30 s window in which the
 user was active with the lid open and the panel awake, and is held from
-before Insomnia's own Low Power Mode: a brightness change made within 30 s
-of closing the lid, or under that mode, is not seen. If Insomnia is not running when the lid
+before Uykusuz's own Low Power Mode: a brightness change made within 30 s
+of closing the lid, or under that mode, is not seen. If Uykusuz is not running when the lid
 opens, the brightness-up key restores the panel. Bluetooth is still left alone (needed for Instant
 Hotspot, and negligible).
 
@@ -531,7 +531,7 @@ last held while it was on was the battery or thermal floor, not the lid.
   lists them. Only the agent list can also turn App Nap off; only an
   explicit freeze-list entry overrides the built-in protection.
 - Turning App Nap off is opt-in (`disableAppNapForAgents`, default off). With
-  it off Insomnia never writes another app's preferences. With it on, session
+  it off Uykusuz never writes another app's preferences. With it on, session
   start reads each listed app's `NSAppSleepDisabled`, journals the previous
   value (absent, true or false) in `appNapOverrides`, and only then writes
   `YES`. A journal write failure means no preference write. An app whose key
@@ -561,7 +561,7 @@ last held while it was on was the battery or thermal floor, not the lid.
   occluded, which is every window once the lid is closed with no external
   display. Timers drop to 1 Hz, animation frames stop, pages report hidden.
   This can break computer-use and browser-use agents.
-  - Insomnia inspects running Chromium processes for
+  - Uykusuz inspects running Chromium processes for
     `--disable-backgrounding-occluded-windows` and
     `--disable-renderer-backgrounding`.
   - If a browser is running without them, the menu shows a warning and a
@@ -581,7 +581,7 @@ last held while it was on was the battery or thermal floor, not the lid.
     read counts the same way: nothing confirms the pid is still the
     browser, so the arguments are not read and nothing is quit. The quit
     goes to the `NSRunningApplication` objects found before the read, never
-    to a fresh lookup of their pids. After the quit request Insomnia waits up
+    to a fresh lookup of their pids. After the quit request Uykusuz waits up
     to 10 s, then reads the running list again: any instance still there
     means nothing is launched, and the notification says the browser may
     still quit later and then has to be opened by hand.
@@ -596,8 +596,8 @@ last held while it was on was the battery or thermal floor, not the lid.
     relaunched" notification naming the browser, and the same text stays
     in the menu as a warning line, one per browser, until that browser's
     next relaunch or the next session start, because notifications can be
-    off for Insomnia.
-    Insomnia is the notification center's delegate and asks for banners
+    off for Uykusuz.
+    Uykusuz is the notification center's delegate and asks for banners
     while it is frontmost, as it is right after the confirmation; without
     that, macOS drops a notification from the frontmost app. The process
     side (`BrowserProcessControlling`) is injected so the tests quit
@@ -646,7 +646,7 @@ other floor when the two would cross (`endFloor` at most 95). A `config.json`
 that violates it is corrected at load by raising `lowPowerFloor` to `endFloor`
 + 5 (capped at 100), logged, and written back.
 
-Insomnia does not enable Low Power Mode merely because a session starts; the
+Uykusuz does not enable Low Power Mode merely because a session starts; the
 causes are the battery floor, a serious thermal state, and (by default) a closed
 lid. One evaluation owns the mode: it is switched off only when no cause holds.
 Battery and thermal rules run only while the app is alive; they are not
@@ -657,7 +657,7 @@ provided by the standalone backstop. Performance effects depend on workload.
 - `NWPathMonitor` on the Wi-Fi interface. Event-driven.
 - Path unsatisfied for more than 5 s: use CoreWLAN to run an SSID-filtered
   scan, then join with `associate(to:password:)`. The password is read from
-  the login Keychain (generic-password service `insomnia-hotspot`, account =
+  the login Keychain (generic-password service `uykusuz-hotspot`, account =
   SSID) and is never placed in process arguments. Retry with backoff (5 s,
   10 s, 20 s, 30 s, then every 30 s) until the path is satisfied or the
   session ends.
@@ -688,8 +688,8 @@ provided by the standalone backstop. Performance effects depend on workload.
   keychain changes that only by replacing the item (an in-place update of
   `kSecAttrAccess` did not return when tried on a throwaway keychain): the
   new password is put beside the old item, in the same keychain, under
-  service `insomnia-hotspot.replacing`; the old item is deleted; the new
-  one is renamed to `insomnia-hotspot`. Reads use only `insomnia-hotspot`
+  service `uykusuz-hotspot.replacing`; the old item is deleted; the new
+  one is renamed to `uykusuz-hotspot`. Reads use only `uykusuz-hotspot`
   and never fall back to a `.replacing` item: which save left it, and
   whether that save finished, is not known, and one in another keychain
   on the search list can hold an older password. Until the delete, the
@@ -743,28 +743,28 @@ provided by the standalone backstop. Performance effects depend on workload.
   reads the SSID configured then. Inside a save, the unlock prompt is
   followed by a fresh read of the item and its keychain.
 - macOS 26 requires Location Services permission before CoreWLAN exposes SSIDs
-  or returns results for an SSID-filtered scan. Insomnia requests when-in-use
+  or returns results for an SSID-filtered scan. Uykusuz requests when-in-use
   access when the hotspot is saved or a configured session starts, never at
   launch. Mac apps have no when-in-use state: a grant settles on
   `authorizedAlways`, and System Settings records it as Location Services
-  access for Insomnia (the Settings window says so next to the Location
-  row). Insomnia never starts location updates. The real hotspot join still
+  access for Uykusuz (the Settings window says so next to the Location
+  row). Uykusuz never starts location updates. The real hotspot join still
   must be run on the Mac in the manual test plan below.
 - Log lines naming the SSID, a tmux target or a process reach the unified
   log as private data (`Log.swift`), so `log show` prints `<private>` for
-  the body; `insomnia.log` keeps the text.
+  the body; `uykusuz.log` keeps the text.
 - Each outage is logged with start, end, and gap length to
-  `~/Library/Logs/Insomnia/handoffs.log`. The menu shows the last gap.
-  Like `insomnia.log`, the file is owner-only (0600) and is renamed to
+  `~/Library/Logs/Uykusuz/handoffs.log`. The menu shows the last gap.
+  Like `uykusuz.log`, the file is owner-only (0600) and is renamed to
   `handoffs.log.1` once it passes 1 MiB (`OwnerOnly.swift`). A log the user
   replaced with a symlink is never rotated, so the cap does not hold for it:
   the file it points to is the user's to manage.
 - Path satisfied again after a gap longer than `nudgeThreshold` (default 90 s):
   - For every configured tmux target (`session:window.pane`), resolve the
     concrete pane, read its state and then its mark, the pane-scoped user
-    option `@insomnia-nudge` (`show-options -qpv -t %N`, without `-A`, so
+    option `@uykusuz-nudge` (`show-options -qpv -t %N`, without `-A`, so
     a session or window option never counts). Only a pane marked `on` by
-    the user (`tmux set-option -p -t <target> @insomnia-nudge on`) gets
+    the user (`tmux set-option -p -t <target> @uykusuz-nudge on`) gets
     `tmux send-keys -t %N continue`, followed by `Enter` only when
     `tmuxNudgePressesEnter` is on (default off). An unmarked pane is
     skipped and logged.
@@ -778,10 +778,10 @@ provided by the standalone backstop. Performance effects depend on workload.
 Invariants:
 
 - Sleep is never disabled unless a session file with a future `endsAt` exists.
-- Every change Insomnia makes is in RuntimeState before it is made, and is
+- Every change Uykusuz makes is in RuntimeState before it is made, and is
   undone from RuntimeState, never from memory.
 
-Reconcile runs at every Insomnia launch:
+Reconcile runs at every Uykusuz launch:
 
 1. Session file missing or expired → restore journaled changes: sleep,
    verified owned processes, Low Power Mode if we set it, saved audio, and
@@ -820,9 +820,9 @@ Reconcile runs at every Insomnia launch:
    the sleep guard, then resume observers. If the lid is open, restore recorded
    lid-close actions. Arming or restoration errors must remain visible.
 3. `pmset -g` reports `SleepDisabled 1` with no session and no journal
-   entry → leave it. Step 1 has already undone a disable Insomnia journaled,
+   entry → leave it. Step 1 has already undone a disable Uykusuz journaled,
    so this one was set by something else (a hand-run `pmset`, another tool)
-   and is not Insomnia's to undo. Log it, show it on the menu's warning line,
+   and is not Uykusuz's to undo. Log it, show it on the menu's warning line,
    and notify once per launch with `sudo pmset -a disablesleep 0`. A bit
    still journaled as ours after a failed restore is retried from the
    journal, not from this check. Nothing clears `SleepDisabled` without a
@@ -910,11 +910,11 @@ Backstop, independent of the app:
   passes on the bundle (a bounded call, like its other calls under the
   lock). Once recovery is confirmed and print confirms the agent unloaded,
   it removes the bundle and install.sh's leftovers beside it, by their exact
-  names: `.Insomnia.app.previous`, and `.Insomnia.app.staging.<pid>.<six
+  names: `.Uykusuz.app.previous`, and `.Uykusuz.app.staging.<pid>.<six
   letters and digits>` directories whose run `kill -0` reports gone (a live
   run's stays). Symlinks and other names are left. With the agent plist go
   the candidate plists install.sh and the app stage it from
-  (`com.insomnia.backstop.candidate-*` in `.com.insomnia.backstop.staging`
+  (`com.mustafaghn.uykusuz.backstop.candidate-*` in `.com.mustafaghn.uykusuz.backstop.staging`
   and, from older builds, in the LaunchAgents directory).
 - App and script transactions must coordinate through a shared lock. Failure
   to acquire it must not permit an unprotected journal write or side effect.
@@ -961,11 +961,11 @@ Backstop, independent of the app:
   a display write owed after the mode, by the journal last read, the clear
   is owed the same way and the write waits for the first transaction that
   reads the journal again; it is made only if that journal, with the owed
-  edits, still owes the same value with the mode not Insomnia's. The
+  edits, still owes the same value with the mode not Uykusuz's. The
   unreadable file is not written. Any other exit confirms nothing. When the command
   exits the app retries a pending end.
   Otherwise it reads Low Power Mode under the lock. A mode that reads on
-  stays journaled as Insomnia's. A mode that reads off is switched off
+  stays journaled as Uykusuz's. A mode that reads off is switched off
   once more with the app's own `lowpowermode 0`, and the ownership is
   cleared only when that exits 0. A claim from before the Mac last started
   that it clears this way counts as the mode's end in this boot, as for
@@ -988,8 +988,8 @@ Backstop, independent of the app:
   line goes once a later write clears that entry, unless a newer error
   has replaced it.
   Process recovery must verify identity and avoid resuming a process that
-  Insomnia did not stop. The entries that record `startedAtMicros` go to
-  the installed app binary in one call (`Insomnia --resume-frozen
+  Uykusuz did not stop. The entries that record `startedAtMicros` go to
+  the installed app binary in one call (`Uykusuz --resume-frozen
   <seconds>`, with one line `<pid> <startedAt> <startedAtMicros>
   <bootSession>` per entry on standard input, which has no size limit,
   answered before AppKit starts),
@@ -999,7 +999,7 @@ Backstop, independent of the app:
   `gone`, 1 otherwise. A missing or malformed `<seconds>` (1 to 300), any
   further argument, empty input or a malformed line is a usage error (exit
   64) that checks nothing. The script runs the binary only when the bundle's
-  `Info.plist` declares `InsomniaResumeFrozenVersion` equal to the version
+  `Info.plist` declares `UykusuzResumeFrozenVersion` equal to the version
   the script speaks, because an older build would start the menu bar app
   instead; otherwise it keeps those entries. It runs it with the same
   30-second limit as a power command, then SIGTERM, then SIGKILL, and with
@@ -1018,14 +1018,14 @@ Backstop, independent of the app:
 - The shell does not restore CoreAudio settings. Saved audio must remain in
   the journal for the app to restore. Legacy `savedOutputVolume` /
   `savedMuted` count as unresolved, so the run exits 1 and says to open
-  Insomnia. `savedAudioOutputs` entries are checked for shape and kept, but
+  Uykusuz. `savedAudioOutputs` entries are checked for shape and kept, but
   on their own they leave the journal clean: an entry can wait days for its
   device, the app's menu shows it, and an error every minute would only
   fill the log. The backstop logs them once, when it removes a session or
   undoes something else. Uninstall must preserve recovery tools
   and state when restoration is incomplete, including saved audio. It runs
   the checkout's backstop only when the installed app declares the
-  `InsomniaResumeFrozenVersion` that backstop speaks; otherwise it runs the
+  `UykusuzResumeFrozenVersion` that backstop speaks; otherwise it runs the
   backstop installed with that app, when there is one: the copy sealed in
   its bundle, once `codesign --verify --strict` passes, else the writable
   copy older installs left in Application Support. With no installed copy
@@ -1052,13 +1052,13 @@ Backstop, independent of the app:
 `UNUserNotificationCenter`: session ended (with reason), extend reminder 5
 minutes before end, battery floor reached, battery unreadable twice in a row,
 thermal action taken, network gap recovered (with nudge summary), sleep
-restored by backstop, sleep disabled by something other than Insomnia
+restored by backstop, sleep disabled by something other than Uykusuz
 (reconcile step 3, once per launch), lid-close settings changed by the
 one-time update (section 10, once).
 
 ### 10. Settings
 
-JSON at `~/Library/Application Support/Insomnia/config.json`, edited through a
+JSON at `~/Library/Application Support/Uykusuz/config.json`, edited through a
 small settings window. Like `session.json`, `state.json` and the recovery
 lock it is created mode 0600 in a 0700 directory, and a looser file from an
 older build is tightened when the app reads it:
@@ -1102,7 +1102,7 @@ older build is tightened when the app reads it:
   Settings, and the app turns the flag off rather than put it back; no
   record (a config from before the field) means this is the first launch
   of a build that keeps one, itself a reinstall, so the app registers once
-  and records the install. A user who removed the item while Insomnia's
+  and records the install. A user who removed the item while Uykusuz's
   switch stayed on gets it back that once.
   Every outcome is logged. The Settings switch shows what macOS has on
   file (enabled or waiting for approval), not the flag; a registration
@@ -1141,7 +1141,7 @@ older build is tightened when the app reads it:
 
 Reference: the attached screenshot (coffee icon, then three rounded pill
 fields "Hours", "Minutes", "Seconds", each with a small "?" badge, sitting
-directly in the menu bar). Insomnia copies that interaction and the feel.
+directly in the menu bar). Uykusuz copies that interaction and the feel.
 
 **Idle state.** A single coffee-cup status item. Nothing else in the bar.
 
@@ -1246,10 +1246,10 @@ transitions. If it feels like a web dropdown, it is wrong.
 ## Repository layout
 
 ```
-Insomnia/
+Uykusuz/
   Package.swift
-  Sources/Insomnia/
-    InsomniaApp.swift
+  Sources/Uykusuz/
+    UykusuzApp.swift
     Model/
       Config.swift
       RuntimeState.swift
@@ -1299,7 +1299,7 @@ Insomnia/
       StatusItemController.swift
       StatusRootView.swift
       StatusSource.swift
-  Tests/InsomniaTests/
+  Tests/UykusuzTests/
     BrowserThrottleTests.swift
     ConfigTests.swift
     DisplayPowerTests.swift
@@ -1324,20 +1324,20 @@ Insomnia/
     uninstall.sh           reverse all of the above, restore sleep
     backstop.sh            standalone restore from JSON
     simulate-lid.sh        file trigger for the lid-close action path (debug and
-                           INSOMNIA_LID_SIMULATION=1 builds only)
+                           UYKUSUZ_LID_SIMULATION=1 builds only)
   docs/spec.md
   docs/install.md          install, upgrade and uninstall steps
   docs/lid-close.md        lid-close actions and their defaults
   docs/recovery.md         recovery details and manual attention
   docs/extras.md           hotspot, tmux, Chrome, configuration and privacy
-  skills/                  agent playbooks: install-insomnia, maintain-insomnia
+  skills/                  agent playbooks: install-uykusuz, maintain-uykusuz
   README.md                short overview that links the docs
 ```
 
 ## Install
 
 ```
-git clone https://github.com/krishhgg/Insomnia.git && cd Insomnia
+git clone https://github.com/krishhgg/Insomnia.git && cd Uykusuz
 ./scripts/install.sh      # asks for sudo once, for the sudoers file
 ```
 
@@ -1363,7 +1363,7 @@ validation record.
    every session at login. Saved audio requires the app to reopen.
 5. **Freeze.** Slack and WhatsApp on list, close lid, `ps -o stat` shows `T`
    for their whole trees. Open lid → running, reconnected, no relaunch.
-6. **Docker rule.** Rule on. No containers → paused on close; insomnia.log
+6. **Docker rule.** Rule on. No containers → paused on close; uykusuz.log
    has "first check found no running container" and "second check found no
    running container". One container → untouched, log has "first check found
    containers running". A container started between the two checks →
@@ -1374,7 +1374,7 @@ validation record.
    and choose End: the notification and the menu name the headset as still
    muted. Plug it back in → its volume comes back and the menu line goes.
    Repeat, but Quit with the headset unplugged, plug it in, then launch
-   Insomnia → restored at launch.
+   Uykusuz → restored at launch.
 8. **Chrome occlusion.** Lid closed, Playwright attached to headed Chrome:
    read `document.visibilityState` and measure `setInterval` drift. Repeat with
    both flags. Decide whether feature 5's browser section stays.
@@ -1384,7 +1384,7 @@ validation record.
    confirm the hotspot join works within ~10 s and a Claude Code turn in flight
    completes.
 10. **Nudge.** Mark a disposable pane (`tmux set-option -p -t <target>
-   @insomnia-nudge on`). Gap forced above threshold → that pane receives
+   @uykusuz-nudge on`). Gap forced above threshold → that pane receives
    "continue" and no Enter; an unmarked listed pane receives nothing;
    with "Press Enter after continue" on, the line is submitted.
    Notification posted.
@@ -1398,7 +1398,7 @@ validation record.
     with the lid open using `scripts/simulate-lid.sh closed` then `open`
     during a session; the log shows `lid SIMULATED closed (file trigger)`.
     That needs a build with the watcher compiled in (installed with
-    `INSOMNIA_LID_SIMULATION=1 ./scripts/install.sh`, which `build-app.sh`
+    `UYKUSUZ_LID_SIMULATION=1 ./scripts/install.sh`, which `build-app.sh`
     reads; install.sh refuses it with `--app`; it logs "Lid
     simulation build" at launch). A normal install ignores the trigger:
     the watcher is compiled out so a file written by any other program

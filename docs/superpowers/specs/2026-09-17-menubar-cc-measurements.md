@@ -5,7 +5,7 @@
 > (`CA::Render::Context::wait_for_synchronize`, 8–130 ms), so the length is now written once per
 > layout change. The neighbour measurements here still stand; the recommendation does not.
 
-Method. The real Insomnia status item (autosave position 40, between the AirPods/Wi-Fi items and a
+Method. The real Uykusuz status item (autosave position 40, between the AirPods/Wi-Fi items and a
 third-party item) had its `NSStatusItem.length` driven by a display link along known curves
 (temporary in-app driver, distributed-notification trigger). A separate process polled
 `CGWindowListCopyWindowInfo` at ~2 ms and recorded every change to the bounds of the on-screen

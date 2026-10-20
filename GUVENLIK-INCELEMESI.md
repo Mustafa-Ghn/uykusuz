@@ -1,5 +1,16 @@
 # Güvenlik incelemesi
 
+> **Not:** Bu rapor uygulama henüz "Insomnia" adını taşırken yazıldı. Fork'ta
+> uygulama daha sonra **Uykusuz** (`com.mustafaghn.uykusuz`) olarak yeniden
+> adlandırıldı. Aşağıdaki `insomnia` adları artık şöyle:
+>
+> - `/etc/sudoers.d/insomnia` → `/etc/sudoers.d/uykusuz`
+> - `com.insomnia.backstop` → `com.mustafaghn.uykusuz.backstop`
+> - `~/Library/…/Insomnia` → `~/Library/…/Uykusuz`
+> - `insomnia-hotspot` → `uykusuz-hotspot`
+>
+> Davranış aynı kaldı.
+
 Bu fork'a alınmadan önce [krishhgg/Insomnia](https://github.com/krishhgg/Insomnia)
 kaynak kodu ve yayınlanan derlemesi incelendi. Amaç, uygulamanın saldırgan bir
 davranış içerip içermediğini ve kullanıcı verisini dışarı aktarıp aktarmadığını

@@ -11,14 +11,14 @@
 
 [README](../README.md#kurulum) kısa sürümü içerir. Bu sayfa her adımı ve her
 adımın neyi denetlediğini anlatır. Bir kodlama ajanı, bu sayfadaki adımları
-kullanan [skills/install-insomnia](../skills/install-insomnia/SKILL.md)
+kullanan [skills/install-uykusuz](../skills/install-uykusuz/SKILL.md)
 talimatlarını izleyebilir.
 
 **macOS 26 ya da üstü ve Apple Silicon bir Mac** gerekir.
 
 ## Kanallar
 
-Özgün Insomnia,
+Özgün Uykusuz,
 [sürümler sayfasında](https://github.com/krishhgg/Insomnia/releases) iki
 kanalda yayımlanır:
 
@@ -35,7 +35,7 @@ kanalda yayımlanır:
 Her sürümün notları o sürüme özgü komutları verir. Bir sürüm aşağıdaki
 adımlardan ayrılır: ilk kararlı sürüm olan `v0.1.0`, Release iş akışıyla değil,
 bakımcının kurulu uygulamasından elle paketlenmiştir. Kanıt kaydı (attestation)
-yoktur ve zip dosyası `./scripts/install.sh --app ./Insomnia.app` ile kurulur.
+yoktur ve zip dosyası `./scripts/install.sh --app ./Uykusuz.app` ile kurulur.
 Seçtiğiniz sürüm `v0.1.0` ise (zip dosyası `Insomnia-0.1.0-macos-arm64.zip`),
 2. ve 3. adımlar yerine sürüm notlarındaki kurulum adımlarını izleyin.
 
@@ -66,7 +66,7 @@ kod gereksinimi (aşağıda anlatılanlar) `v0.1.0` sürümünde yoktur.
    dönmez.
 
    ```bash
-   insomnia_nightly() {
+   uykusuz_nightly() {
      local list tag
      list="$(gh api --paginate 'repos/krishhgg/Insomnia/releases?per_page=100' \
        --jq '.[] | select(.prerelease and (.draft | not) and (.tag_name | startswith("nightly-")))
@@ -85,7 +85,7 @@ kod gereksinimi (aşağıda anlatılanlar) `v0.1.0` sürümünde yoktur.
      fi
      gh release download "$tag" --repo krishhgg/Insomnia --pattern '*.zip' --pattern SHA256SUMS
    }
-   insomnia_nightly
+   uykusuz_nightly
    ```
 
    Sürümler sayfasında henüz bir sürüm yoksa kaynaktan derleyin (aşağıda).
@@ -116,8 +116,8 @@ kod gereksinimi (aşağıda anlatılanlar) `v0.1.0` sürümünde yoktur.
    ```bash
    ditto -x -k <zip> .
    cd <.zip uzantısı olmadan zip dosyasının adı>
-   ./install.sh --allow-unverified-origin --app ./Insomnia.app
-   open "$HOME/Applications/Insomnia.app"
+   ./install.sh --allow-unverified-origin --app ./Uykusuz.app
+   open "$HOME/Applications/Uykusuz.app"
    ```
 
    Sürümler ad-hoc imzalıdır ve Apple'ın onay sürecinden (notarization)
@@ -131,7 +131,7 @@ Kurulum betiği, sizden herhangi bir şey istemeden önce paketin imzasını,
 tanımlayıcısını ve sürümünü denetler (`v0.1.0` kurulum betiği imzayı ve
 tanımlayıcıyı denetler, sürümü denetlemez). Ardından uygulamayı ve arka planda
 çalışan bir kurtarma ajanını kurar ve kapsamı dar tutulmuş bir sudoers kuralını
-kurmak için yönetici erişimi ister. Bu kural, yalnızca Insomnia'ya değil,
+kurmak için yönetici erişimi ister. Bu kural, yalnızca Uykusuz'a değil,
 **kullanıcı hesabınıza** dört güç ayarı komutunu parolasız çalıştırma izni
 verir. Kurmadan önce bu izni gözden geçirin.
 
@@ -145,7 +145,7 @@ derlemedir (aşağıda) ve bu derleme orada denenmemiştir.
 
 ```bash
 git clone https://github.com/Mustafa-Ghn/insomnia-tr.git && cd insomnia-tr && ./scripts/install.sh
-open "$HOME/Applications/Insomnia.app"
+open "$HOME/Applications/Uykusuz.app"
 ```
 
 Özgün projenin İngilizce kaynak kodunu derlemek için `main` yerine en son
@@ -155,9 +155,9 @@ Sürümler sayfasında henüz bir sürüm yoksa `main` dalını derlemek için
 
 ```bash
 git clone --branch v<version> --depth 1 https://github.com/krishhgg/Insomnia.git
-cd Insomnia
+cd Uykusuz
 ./scripts/install.sh
-open "$HOME/Applications/Insomnia.app"
+open "$HOME/Applications/Uykusuz.app"
 ```
 
 `scripts/install.sh`, Release iş akışının derlediği paketin aynısını
@@ -185,7 +185,7 @@ Xcode'u yeniden kurmak da onları kaldırır.
 Bu bölüm, Release iş akışıyla derlenen sürümleri ve güncel kaynak koddan
 yapılan derlemeleri (bu çatal dahil) anlatır. `v0.1.0` daha eski bir düzen
 kurar. Onun uygulamasının içinde `backstop.sh` yoktur: kurulum betiği
-`backstop.sh` dosyasını `~/Library/Application Support/Insomnia/` konumuna
+`backstop.sh` dosyasını `~/Library/Application Support/Uykusuz/` konumuna
 kopyalar ve kurtarma ajanı bu kopyayı hiçbir kod imzasını denetlemeden
 `/bin/bash` ile çalıştırır. Aşağıda anlatılan mühürlü betik, sabitlenen kod
 gereksinimi ve düzenlenmiş ya da yeniden imzalanmış bir paketin reddedilmesi
@@ -195,11 +195,11 @@ sınırlarını anlatır.
 
 | Konum | Amaç |
 | --- | --- |
-| `~/Applications/Insomnia.app` | Menü çubuğu uygulaması; `backstop.sh` içine, `Contents/Resources` konumuna mühürlenmiştir |
-| `~/Library/Application Support/Insomnia/` | Yapılandırma ile oturum ve kurtarma kayıt defterleri |
-| `~/Library/LaunchAgents/com.insomnia.backstop.plist` | Kullanıcıya özel kurtarma ajanı: uygulamanın kod imzasını doğrular, ardından mühürlü `backstop.sh` betiğini çalıştırır |
-| `~/Library/Logs/Insomnia/` | `insomnia.log` ve `handoffs.log`; her biri 1 MiB ile sınırlıdır ve bir eski kopyası `.1` olarak tutulur (dosyayı bir sembolik bağlantıyla değiştirmediyseniz) |
-| `/etc/sudoers.d/insomnia` | Aşağıdaki dört komut için izin |
+| `~/Applications/Uykusuz.app` | Menü çubuğu uygulaması; `backstop.sh` içine, `Contents/Resources` konumuna mühürlenmiştir |
+| `~/Library/Application Support/Uykusuz/` | Yapılandırma ile oturum ve kurtarma kayıt defterleri |
+| `~/Library/LaunchAgents/com.mustafaghn.uykusuz.backstop.plist` | Kullanıcıya özel kurtarma ajanı: uygulamanın kod imzasını doğrular, ardından mühürlü `backstop.sh` betiğini çalıştırır |
+| `~/Library/Logs/Uykusuz/` | `uykusuz.log` ve `handoffs.log`; her biri 1 MiB ile sınırlıdır ve bir eski kopyası `.1` olarak tutulur (dosyayı bir sembolik bağlantıyla değiştirmediyseniz) |
+| `/etc/sudoers.d/uykusuz` | Aşağıdaki dört komut için izin |
 
 ```text
 /usr/bin/pmset -a disablesleep 1
@@ -208,7 +208,7 @@ sınırlarını anlatır.
 /usr/bin/pmset -b lowpowermode 0
 ```
 
-Bu izni, sizin hesabınızla çalışan diğer süreçler de kullanabilir. Insomnia
+Bu izni, sizin hesabınızla çalışan diğer süreçler de kullanabilir. Uykusuz
 korumalı alanda (sandbox) çalışmaz. Uygulama, betikler ve kayıt defterleri
 yereldir; hotspot parolaları yapılandırma dosyasında değil, giriş anahtar
 zincirinde tutulur.
@@ -218,7 +218,7 @@ paketin kod gereksinimini (ad-hoc bir derleme için o derlemenin cdhash
 değerini) sabitler ve paketin içine mühürlenmiş `backstop.sh` betiğini
 çalıştırmadan önce bu gereksinime karşı `codesign --verify --strict`
 çalıştırır. Düzenlenmiş bir paket ya da betik bu denetimden geçemez: ajan
-`insomnia.log` dosyasına tek bir satır yazar ve siz yeniden kurana kadar hiçbir
+`uykusuz.log` dosyasına tek bir satır yazar ve siz yeniden kurana kadar hiçbir
 şey çalıştırmaz. Başka bir hesap paketi düzenleyemesin diye kurulum betiği,
 kurduğu paketten grup ve diğer kullanıcıların yazma iznini ve tüm ACL'leri
 kaldırır. İmza bunların hiçbirini kapsamadığından paket yine doğrulanır;
@@ -261,7 +261,7 @@ bunu doğrulayana kadar bekler ve önceki paketi geri koyar; böylece yüklü aj
 her zaman kurulu uygulamayla eşleşir. O adım sırasında taşınamayan bir paket de
 aynı şekilde ele alınır: önceki paket geri konur ve ajanı yeniden yüklenir.
 Önceki paketin kendisi geri taşınamazsa hiçbir şey silinmez: paket
-`~/Applications/.Insomnia.app.previous` konumunda kalır, kurulum betiği onu
+`~/Applications/.Uykusuz.app.previous` konumunda kalır, kurulum betiği onu
 geri koyan ve ajanını yükleyen iki komutu yazdırır ve o zamana kadar ajan
 hiçbir uygulama bulamaz; bu yüzden macOS oturumunuzu kapatmadan önce o
 komutları çalıştırın ya da kurulum betiğini yeniden çalıştırın. Devreden
@@ -295,12 +295,12 @@ bitene kadar kilidi tutar ve kurulum betiği onun pid değerini yazdırır.
 
 ```bash
 ./scripts/uninstall.sh
-# Insomnia'ya ait yapılandırma ve günlükleri de kaldırmak için:
+# Uykusuz'a ait yapılandırma ve günlükleri de kaldırmak için:
 ./scripts/uninstall.sh --purge
 ```
 
 Açılmış bir sürüm zip dosyasından kurduysanız, zip klasöründe
-(`Insomnia-<version>-macos` ya da gecelik sürümün adı) `./uninstall.sh` (ya da
+(`Uykusuz-<version>-macos` ya da gecelik sürümün adı) `./uninstall.sh` (ya da
 `./uninstall.sh --purge`) çalıştırın. Bir çalışma kopyasının kaldırma betiği
 (`scripts` içinde, bir üst klasörde `Package.swift` varken) yanındaki
 `backstop.sh` betiğini çalıştırır. Başka her yerde, örneğin zip klasöründe,
@@ -318,8 +318,8 @@ Kaldırma betiği uygulamayı, ajanı ve sudoers kuralını kaldırmadan önce t
 ister. Kurtarma tamamlanmamışsa ya da uygulama kapanmayı reddederse durur;
 bildirilen sorunu çözüp yeniden deneyin. Uygulamayla birlikte, yarıda kalmış
 bir kurulumun onun yanında bıraktıklarını da kaldırır:
-`~/Applications/.Insomnia.app.previous` ve artık çalışmayan kurulumların
-`.Insomnia.app.staging.*` klasörleri. `~/Applications` içindeki başka hiçbir
-şeye dokunulmaz. `--purge`, rastgele klasör içeriğini değil, Insomnia'ya ait
+`~/Applications/.Uykusuz.app.previous` ve artık çalışmayan kurulumların
+`.Uykusuz.app.staging.*` klasörleri. `~/Applications` içindeki başka hiçbir
+şeye dokunulmaz. `--purge`, rastgele klasör içeriğini değil, Uykusuz'a ait
 dosyaları kaldırır. Eşzamanlı kurtarma işlemlerinin eşgüdümünü korumak için
 küçük bir ortak kilit dosyası bırakılır.

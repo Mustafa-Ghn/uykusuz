@@ -2,9 +2,9 @@ import CoreGraphics
 import Foundation
 import ImageIO
 
-/// Writes the Insomnia app icon files from the drawing the app carries.
+/// Writes the Uykusuz app icon files from the drawing the app carries.
 /// Not part of the SwiftPM targets: scripts/generate-app-icon.sh compiles
-/// this file together with Sources/Insomnia/UI/AppIconArtwork.swift, the
+/// this file together with Sources/Uykusuz/UI/AppIconArtwork.swift, the
 /// geometry it draws (EyeLensGeometry.swift, EyeMarkGeometry.swift) and
 /// BrandPalette.swift, so there is one drawing and no pixel art to keep in
 /// step.

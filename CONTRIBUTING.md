@@ -1,6 +1,6 @@
 # Contributing
 
-Insomnia is a native Swift macOS app. Build and run the Swift test suite on
+Uykusuz is a native Swift macOS app. Build and run the Swift test suite on
 macOS 26 with an Xcode toolchain that supports the package's Swift 6.2 tools
 version. Pull requests should include regression tests for changed behavior
 and pass the build, test, and shell-script checks.
@@ -33,11 +33,11 @@ skip count so missing tmux is not mistaken for integration coverage. Tests
 use private servers, not a contributor's existing panes.
 
 Use injected system dependencies and temporary journals for automated tests.
-The test bundle links the InsomniaTestHome target (Tests/InsomniaTestHome),
-whose constructor points `INSOMNIA_HOME` at a throwaway directory when the
+The test bundle links the UykusuzTestHome target (Tests/UykusuzTestHome),
+whose constructor points `UYKUSUZ_HOME` at a throwaway directory when the
 bundle loads, before XCTest runs anything and whatever `--filter` is used,
 so no test writes to the real ~/Library/Logs or ~/Library/Application
-Support. TestIsolationTests fails if INSOMNIA_HOME is unset or missing, or
+Support. TestIsolationTests fails if UYKUSUZ_HOME is unset or missing, or
 if any path the app resolves, such as the log a default-argument line goes
 to, falls outside it or inside the real ~/Library.
 Do not execute installation, uninstallation, power-setting changes, process
@@ -60,8 +60,8 @@ also needs its own real-Mac report before it merges; see "Real-Mac evidence"
 below.
 
 The app icon is the menu bar's open eye on a charcoal tile.
-[AppIconArtwork](Sources/Insomnia/UI/AppIconArtwork.swift) draws it from the
-same [vector geometry](Sources/Insomnia/UI/EyeMarkGeometry.swift) as the menu
+[AppIconArtwork](Sources/Uykusuz/UI/AppIconArtwork.swift) draws it from the
+same [vector geometry](Sources/Uykusuz/UI/EyeMarkGeometry.swift) as the menu
 bar's closed eye, which opens while a session runs. After changing the
 artwork, run `./scripts/generate-app-icon.sh`. It regenerates the packaged PNG
 and ICNS assets and the README's SVG offline, with Xcode's swiftc and
@@ -93,7 +93,7 @@ merge-gate statuses it can decide from GitHub's data and marks the rest
 pending with the reason; [merge-gate.sh](.github/scripts/merge-gate.sh)
 describes each one.
 
-`accepted` is the owner's decision that Insomnia should have the change at
+`accepted` is the owner's decision that Uykusuz should have the change at
 all. Before you build a new feature or change a default, open an issue so
 that is settled first.
 
@@ -156,11 +156,11 @@ owner's own pull requests, the owner posts it.
   [docs/releasing.md](docs/releasing.md) that your change can affect,
   including any item it adds. For each one, post the steps you ran with
   times, pass or fail, and the raw output that shows it:
-  - the lines of `~/Library/Logs/Insomnia/insomnia.log` for that run;
+  - the lines of `~/Library/Logs/Uykusuz/uykusuz.log` for that run;
   - pmset samples from a sampler you start before the check and leave
     running:
     ```sh
-    while :; do date '+%T'; pmset -g | grep SleepDisabled; pmset -g custom | sed -n '/Battery Power/,/AC Power/p' | grep -E 'powermode|lowpowermode'; sleep 5; done | tee -a ~/insomnia-samples.txt
+    while :; do date '+%T'; pmset -g | grep SleepDisabled; pmset -g custom | sed -n '/Battery Power/,/AC Power/p' | grep -E 'powermode|lowpowermode'; sleep 5; done | tee -a ~/uykusuz-samples.txt
     ```
   - `pmset -g log | grep -E ' (Sleep|Wake|DarkWake) '` for that time
     window, which shows whether the Mac slept;

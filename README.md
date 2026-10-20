@@ -1,17 +1,18 @@
-> **Bu depo hakkında:** Bu depo, Krish Garg'ın geliştirdiği
+> **Bu depo hakkında:** Uykusuz, Krish Garg'ın geliştirdiği
 > [Insomnia](https://github.com/krishhgg/Insomnia) uygulamasının kişisel
 > kullanım için hazırlanmış özel (private) Türkçe çatalıdır (fork). Uygulama
-> arayüzü, kurulum betiklerinin mesajları ve belgeler Türkçeye çevrilmiştir.
+> Uykusuz adıyla (`com.mustafaghn.uykusuz`) yeniden adlandırıldı; arayüzü,
+> kurulum betiklerinin mesajları ve belgeler Türkçeye çevrilmiştir.
 > Özgün proje MIT lisansıyla yayımlanır; bu çatal da aynı lisansı taşır
 > ([LICENSE](LICENSE)). Bu çatalın GitHub sürümleri (release) yoktur: yalnızca
 > bu depodan kaynak kod derlenerek kurulur. Çatala alınmadan önce yapılan
 > güvenlik incelemesi: [GUVENLIK-INCELEMESI.md](GUVENLIK-INCELEMESI.md).
 
 <p align="center">
-  <img src="docs/assets/eye-open.svg" alt="Insomnia: yuvarlak gözbebekli, üstünde beş kirpik olan açık bir göz" width="112">
+  <img src="docs/assets/eye-open.svg" alt="Uykusuz: yuvarlak gözbebekli, üstünde beş kirpik olan açık bir göz" width="112">
 </p>
 
-<h1 align="center">Insomnia</h1>
+<h1 align="center">Uykusuz</h1>
 
 <p align="center">
   <strong>Mac'inizi uyanık tutun. Oturuma bir bitiş zamanı verin.</strong>
@@ -19,7 +20,7 @@
 
 <p align="center">
   Süreli uyanık kalma oturumları için bir macOS menü çubuğu uygulaması.
-  Insomnia, MacBook'unuzun menü çubuğunda duran bir göz simgesidir. Dock simgesi
+  Uykusuz, MacBook'unuzun menü çubuğunda duran bir göz simgesidir. Dock simgesi
   ve ana penceresi yoktur. Mac'inizin ne kadar süre uyanık kalacağını ayarlayın,
   kapak kapanınca ne olacağını seçin ve geri alınamayan bir şey olduğunda bunu
   görün.
@@ -35,7 +36,7 @@
 </p>
 
 > **Mac'i kapalı bir çantada değil, sabit ve iyi havalanan bir yüzeyde
-> kullanın.** Insomnia deneyseldir. Kurtarma başarısız olabilir ve çalışan bir
+> kullanın.** Uykusuz deneyseldir. Kurtarma başarısız olabilir ve çalışan bir
 > zamanlayıcı bir güvenlik garantisi değildir.
 > [Doğrulama durumu](docs/release-validation.md) (İngilizce) · [Apple'ın havalandırma önerileri](https://support.apple.com/en-us/102336)
 
@@ -58,7 +59,7 @@ Bu çatal yalnızca kaynak koddan kurulur. Depoyu klonlayın, kurulum betiğini
 
 ```bash
 git clone https://github.com/Mustafa-Ghn/insomnia-tr.git && cd insomnia-tr && ./scripts/install.sh
-open "$HOME/Applications/Insomnia.app"
+open "$HOME/Applications/Uykusuz.app"
 ```
 
 Depo özel olduğu için `git clone` sırasında GitHub kimlik doğrulaması gerekir
@@ -82,13 +83,13 @@ güncellemeleri denetle" düğmesi yalnızca özgün projenin (krishhgg/Insomnia
 sudoers kuralı bir sistem dosyası olduğu için kurulum betiği parolanızı ister.
 Şunları kurar:
 
-- Uygulamayı, `~/Applications/Insomnia.app` konumuna.
+- Uygulamayı, `~/Applications/Uykusuz.app` konumuna.
 - Bir **kurtarma ajanı**: her dakika çalışan bir `launchd` görevi. Bir oturumun
   bitmesi gerektiği hâlde uygulama artık çalışmıyorsa ajan, oturumun yaptığı
   değişiklikleri geri almaya çalışır.
-- `/etc/sudoers.d/insomnia` konumunda bir **sudoers kuralı**. Bir sudoers kuralı,
+- `/etc/sudoers.d/uykusuz` konumunda bir **sudoers kuralı**. Bir sudoers kuralı,
   kimin neyi `sudo` ile çalıştırabileceğini belirler. Bu kural, yalnızca
-  Insomnia'ya değil, kullanıcı hesabınıza şu dört komutu parolasız çalıştırma
+  Uykusuz'a değil, kullanıcı hesabınıza şu dört komutu parolasız çalıştırma
   izni verir:
 
 ```text
@@ -144,15 +145,15 @@ git merge upstream/main
    Enter'a basın.
 2. **Süre ekleyin.** Oturum sırasında göze ya da geri sayıma tıklayın.
 3. **Erken bitirin.** Geri sayımın yanındaki bitirme denetimini basılı tutun.
-4. **Ayarlar ve durum.** Göze sağ tıklayın. "Insomnia'dan Çık", Insomnia'nın
+4. **Ayarlar ve durum.** Göze sağ tıklayın. "Uykusuz'dan Çık", Uykusuz'un
    önce oturumu geri almasını ister; geri alınmayı bekleyen bir değişiklik
-   varken Insomnia kapanmayı reddeder. Bağlı olmayan bir çıkış aygıtı için
-   kaydedilmiş ses bunu engellemez. Insomnia o aygıtı, uygulama çalışırken
+   varken Uykusuz kapanmayı reddeder. Bağlı olmayan bir çıkış aygıtı için
+   kaydedilmiş ses bunu engellemez. Uykusuz o aygıtı, uygulama çalışırken
    yeniden bağlanırsa ya da bir sonraki açılışta geri yükler.
 
 Kapağı kapatmanız gerekmez; kapağı açmak da oturumu bitirmez.
 
-Pil gücündeyken Insomnia, pil düzeyi %40 eşiğinin altına inince Düşük Güç
+Pil gücündeyken Uykusuz, pil düzeyi %40 eşiğinin altına inince Düşük Güç
 Modu'nu açar ve %10 eşiğinin altında oturumu bitirir. Bunlar varsayılan
 değerlerdir. İkisini de Ayarlar'da değiştirebilirsiniz; bitirme alt sınırını 0
 yapmak pil nedeniyle bitirmeyi kapatır. Isı kuralları, Mac ciddi ölçüde
@@ -162,18 +163,18 @@ yalnızca uygulama çalışırken işler.
 
 İlk oturumunuzdan önce Ayarlar'ı gözden geçirin. Ardından başında
 durabileceğiniz kısa bir oturum çalıştırın ve sonrasında
-`~/Library/Logs/Insomnia/insomnia.log` dosyasını okuyun.
+`~/Library/Logs/Uykusuz/uykusuz.log` dosyasını okuyun.
 
 ## Kapak kapanınca neler olur
 
 <p align="center">
-  <img src="docs/assets/lid-actions.svg" alt="Ayarlar varsayılanlarının çizimi: dondurma listesinde Slack, WhatsApp ve Discord var, Docker'ın boşta kuralı kapalı, sesi kapatma açık. Oturum sırasında kapağın kapanması ayarlanan eylemleri uygular; kapağı yeniden açmak, Insomnia'nın yaptığı doğrulanmış dondurmaları çözmeye ve kaydedilmiş sesi geri yüklemeye çalışır. Oturum sürer. Etkin bir oturum yokken kapak değişiklikleri hiçbir şey yapmaz." width="880">
+  <img src="docs/assets/lid-actions.svg" alt="Ayarlar varsayılanlarının çizimi: dondurma listesinde Slack, WhatsApp ve Discord var, Docker'ın boşta kuralı kapalı, sesi kapatma açık. Oturum sırasında kapağın kapanması ayarlanan eylemleri uygular; kapağı yeniden açmak, Uykusuz'un yaptığı doğrulanmış dondurmaları çözmeye ve kaydedilmiş sesi geri yüklemeye çalışır. Oturum sürer. Etkin bir oturum yokken kapak değişiklikleri hiçbir şey yapmaz." width="880">
 </p>
 
 Oturum sırasında kapağı kapatmak aşağıdakilerin her birini yapar; kapağı açmak
 bunları geri almaya çalışır. Kapak kapalıyken zamanlayıcı geri saymayı sürdürür.
 
-- **Ekran ve klavye ışığı kapanır.** Insomnia önce parlaklıklarını kaydeder.
+- **Ekran ve klavye ışığı kapanır.** Uykusuz önce parlaklıklarını kaydeder.
   Uyku kapalıyken macOS bunu artık kendiliğinden yapmaz.
 - **Dondurma listesindeki uygulamalar dondurulur.** Dondurma, bir uygulamanın
   süreçlerine `SIGSTOP` gönderir; süreçler kapak açılınca `SIGCONT`
@@ -181,7 +182,7 @@ bunları geri almaya çalışır. Kapak kapalıyken zamanlayıcı geri saymayı 
   "Diğer tüm uygulamaları dondur" varsayılan olarak kapalıdır. Açıkken bile
   toplantı, kayıt ve dikte uygulamalarını atlar: Zoom, Teams, Webex, FaceTime,
   Wispr Flow, Granola, Otter, OBS ve Loom.
-- **Ses kapatılır.** Kapağı açmak, Insomnia'nın sesini kapattığı her çıkışın
+- **Ses kapatılır.** Kapağı açmak, Uykusuz'un sesini kapattığı her çıkışın
   sesini, siz başka bir çıkışa geçmiş olsanız bile yeniden açar.
 - **Düşük Güç Modu açılır.** Bir pil ya da ısı kuralı hâlâ gerektirmiyorsa
   kapak açılınca kapanır.
@@ -202,16 +203,16 @@ ayar değişikliği ve kapak eylemlerinin kapağı kapatmadan nasıl denendiği.
   <img src="docs/assets/recovery-flow.svg" alt="Uygulama ve bir launchd kurtarma ajanı, ortak bir kilit ve kurtarma kayıt defteri üzerinden eşgüdüm sağlar. Normal temizliği uygulama yapar. Ajan her dakika denetler ve zamanı gelmiş kurtarmayı dener; geçerli ve etkin oturumlara dokunmaz. Başarısız ya da okunamayan kurtarma kanıtı diskte kalır; kaydedilmiş ses için uygulama gerekir, doğrulanamayan durdurulmuş süreçler ise incelenmelidir." width="880">
 </p>
 
-Insomnia her değişikliği yapmadan önce bir **kurtarma kayıt defterine**, yani
+Uykusuz her değişikliği yapmadan önce bir **kurtarma kayıt defterine**, yani
 diskteki bir dosyaya yazar. Oturumu bitirmek, kayıt defterinde listelenenleri
 geri almayı dener. Uygulama çökerse ya da kapanırsa, oturumun bitiş zamanı
 geçtikten sonra kurtarma ajanı aynısını dener.
 
 Bazı durumlarda sizin ilgilenmeniz gerekir:
 
-- Kurtarma ajanı sesi geri yükleyemez. Bunun için Insomnia'yı yeniden açın.
+- Kurtarma ajanı sesi geri yükleyemez. Bunun için Uykusuz'u yeniden açın.
 - Kurtarma ajanı pili ya da sıcaklığı izlemez.
-- Insomnia yalnızca dondurduğunu kanıtlayabildiği bir süreci çözer.
+- Uykusuz yalnızca dondurduğunu kanıtlayabildiği bir süreci çözer.
   Kanıtlayamadığı dondurulmuş bir süreç, siz denetleyene kadar donmuş kalır.
 
 Menüde bir kurtarma uyarısı görünürse Mac'i başında kimse olmadan bırakmadan
@@ -223,21 +224,21 @@ açıklar.
 <details>
 <summary><strong>iPhone kişisel erişim noktasına geçiş ve tmux</strong></summary>
 
-Oturum sırasında Wi-Fi bağlantısı koparsa Insomnia, iPhone'unuzun kişisel
+Oturum sırasında Wi-Fi bağlantısı koparsa Uykusuz, iPhone'unuzun kişisel
 erişim noktasına (hotspot) katılabilir. Sistem Ayarları > Wi-Fi >
 "Erişim noktalarına katılmak için sor" (Ask to join hotspots) seçeneğini
-Otomatik yapın, ardından hotspot adını ve parolasını Insomnia'nın Ayarlar
+Otomatik yapın, ardından hotspot adını ve parolasını Uykusuz'un Ayarlar
 penceresine girin. Parola giriş anahtar zincirinizde saklanır. macOS, Wi-Fi
-ağ adlarını okumak için Konum Servisleri iznini şart koştuğundan Insomnia bu
-izni ister. Konumunuzu hiçbir zaman okumaz. Insomnia'yı yeniden kurduktan sonra
+ağ adlarını okumak için Konum Servisleri iznini şart koştuğundan Uykusuz bu
+izni ister. Konumunuzu hiçbir zaman okumaz. Uykusuz'u yeniden kurduktan sonra
 parolayı yeniden girin.
 
-Ağ 90 saniye boyunca kesik kalırsa Insomnia, bir kodlama ajanının çalıştığı bir
+Ağ 90 saniye boyunca kesik kalırsa Uykusuz, bir kodlama ajanının çalıştığı bir
 tmux bölmesine `continue` da yazabilir. Yalnızca Ayarlar'da listelediğiniz ve
 kendiniz işaretlediğiniz bölmelere yazar:
 
 ```bash
-tmux set-option -p -t <oturum:pencere.bölme> @insomnia-nudge on
+tmux set-option -p -t <oturum:pencere.bölme> @uykusuz-nudge on
 ```
 
 Siz açmadıkça Enter'a basmaz. İçine yazı yazmadığınız bir bölmeyi işaretleyin.
@@ -263,8 +264,8 @@ ayrıntıları içerir.
 <details>
 <summary><strong>Yapılandırma ve gizlilik</strong></summary>
 
-Ayarlar `~/Library/Application Support/Insomnia/config.json` dosyasında,
-günlükler `~/Library/Logs/Insomnia/` klasöründe tutulur. Insomnia iki klasörü
+Ayarlar `~/Library/Application Support/Uykusuz/config.json` dosyasında,
+günlükler `~/Library/Logs/Uykusuz/` klasöründe tutulur. Uykusuz iki klasörü
 ve içlerindeki dosyaları yalnızca sahibinin erişebileceği izinlere ayarlar.
 Sembolik bağlantılara ve erişim denetim listelerine (ACL'ler, hesap başına ek
 izin girdileri) dokunmaz; bu yüzden başka bir hesap bunlardan biri aracılığıyla

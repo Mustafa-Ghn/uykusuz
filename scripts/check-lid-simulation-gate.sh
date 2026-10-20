@@ -1,8 +1,8 @@
 #!/bin/bash
 # Proves on the built binaries, not on the compilation condition, that the
 # scripts/simulate-lid.sh watcher is compiled out of a plain release build
-# and in only with -DINSOMNIA_LID_SIMULATION (what build-app.sh adds
-# for INSOMNIA_LID_SIMULATION=1). CI runs this after its release build step,
+# and in only with -DUYKUSUZ_LID_SIMULATION (what build-app.sh adds
+# for UYKUSUZ_LID_SIMULATION=1). CI runs this after its release build step,
 # with the same flags, so the plain build here is that binary rather than
 # a rebuild; it can be run locally the same way. It builds into .build
 # only and installs nothing. The opt-in build uses its own scratch path so
@@ -16,7 +16,7 @@ SWIFT=/usr/bin/swift
 NM=/usr/bin/nm
 STRINGS=/usr/bin/strings
 SIM_SCRATCH=.build/lid-simulation
-# The watcher class (Insomnia.LidSimulation, a class: mangled ...13LidSimulationC),
+# The watcher class (Uykusuz.LidSimulation, a class: mangled ...13LidSimulationC),
 # its log lines and the build marker shown in the status menu and Settings.
 SYMBOL='13LidSimulationC'
 TEXTS=("lid SIMULATED" "Lid simulation build:")
@@ -24,9 +24,9 @@ TEXTS=("lid SIMULATED" "Lid simulation build:")
 RELEASE_FLAGS=(-c release -Xswiftc -warnings-as-errors)
 
 "$SWIFT" build "${RELEASE_FLAGS[@]}"
-plain="$("$SWIFT" build "${RELEASE_FLAGS[@]}" --show-bin-path)/Insomnia"
-"$SWIFT" build "${RELEASE_FLAGS[@]}" --scratch-path "$SIM_SCRATCH" -Xswiftc -DINSOMNIA_LID_SIMULATION
-sim="$("$SWIFT" build "${RELEASE_FLAGS[@]}" --scratch-path "$SIM_SCRATCH" -Xswiftc -DINSOMNIA_LID_SIMULATION --show-bin-path)/Insomnia"
+plain="$("$SWIFT" build "${RELEASE_FLAGS[@]}" --show-bin-path)/Uykusuz"
+"$SWIFT" build "${RELEASE_FLAGS[@]}" --scratch-path "$SIM_SCRATCH" -Xswiftc -DUYKUSUZ_LID_SIMULATION
+sim="$("$SWIFT" build "${RELEASE_FLAGS[@]}" --scratch-path "$SIM_SCRATCH" -Xswiftc -DUYKUSUZ_LID_SIMULATION --show-bin-path)/Uykusuz"
 
 failed=0
 # Prints how many lines of $2 contain $1, as a fixed string when $3 is
@@ -74,6 +74,6 @@ check() { # label binary present|absent
 }
 
 check "plain release build ($plain)" "$plain" absent
-check "INSOMNIA_LID_SIMULATION build ($sim)" "$sim" present
+check "UYKUSUZ_LID_SIMULATION build ($sim)" "$sim" present
 (( failed == 0 )) || exit 1
-echo "lid simulation: compiled out of the plain release build, in with INSOMNIA_LID_SIMULATION"
+echo "lid simulation: compiled out of the plain release build, in with UYKUSUZ_LID_SIMULATION"

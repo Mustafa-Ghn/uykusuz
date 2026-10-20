@@ -145,7 +145,7 @@ pr_json() {
 # greptile_body <score> <reviewed sha>: Greptile's block as it writes it.
 greptile_body() {
   printf '<h3>Greptile Summary</h3>\n\n<!-- greptile_confidence_score:%s -->\n\n' "$1"
-  printf '<sub>Last reviewed commit: ["Gate"](https://github.com/krishhgg/insomnia/commit/%s)</sub>\n' "$2"
+  printf '<sub>Last reviewed commit: ["Gate"](https://github.com/krishhgg/uykusuz/commit/%s)</sub>\n' "$2"
 }
 
 # edit <time> <editor> <description>: one description edit as GraphQL lists
@@ -308,7 +308,7 @@ test_owner_rejection_stands_on_their_own_config_change() {
 }
 
 test_owner_decision_comes_back_after_an_overwrite() {
-  changed Sources/Insomnia/App.swift
+  changed Sources/Uykusuz/App.swift
   seed "$OWNER" evidence success "report checked" https://example.com/report
   seed "$BOT" evidence pending "waiting for a real-Mac report"
   run 0 evaluate 5
@@ -325,7 +325,7 @@ test_owner_pending_hands_the_gate_back() {
 }
 
 test_owner_decision_on_a_later_page_counts() {
-  changed Sources/Insomnia/App.swift
+  changed Sources/Uykusuz/App.swift
   rm "$dir/commits_${HEAD_SHA}_statuses.json"
   # GitHub lists the newest first, so 100 newer statuses push the owner's
   # OK to page 2.
@@ -353,14 +353,14 @@ test_owner_config_change_passes() {
 }
 
 test_source_change_needs_evidence() {
-  changed docs/guide.md Sources/Insomnia/App.swift
+  changed docs/guide.md Sources/Uykusuz/App.swift
   run 0 evaluate 5
   gate evidence pending "real-Mac report on 1111111"
   gate config success
 }
 
 test_moving_a_source_file_into_docs_needs_evidence() {
-  echo '{"files": [{"filename": "docs/App.swift", "previous_filename": "Sources/Insomnia/App.swift",
+  echo '{"files": [{"filename": "docs/App.swift", "previous_filename": "Sources/Uykusuz/App.swift",
     "status": "renamed", "changes": 0}]}' | json "compare_main...$HEAD_SHA"
   run 0 evaluate 5
   gate evidence pending
@@ -375,17 +375,17 @@ test_package_swift_is_config_and_needs_evidence() {
 
 test_files_that_steer_checks_are_config() {
   local f
-  for f in Sources/Insomnia/Core/.greptile/config.json greptile.json docs/greptile.json Package@swift-6.swift \
+  for f in Sources/Uykusuz/Core/.greptile/config.json greptile.json docs/greptile.json Package@swift-6.swift \
     scripts/check-lid-simulation-gate.sh .shellcheckrc scripts/.shellcheckrc zizmor.yml zizmor.yaml \
     .gitignore .github/.gitignore docs/.ignore .ignore .gitattributes Sources/.gitattributes \
     package@swift-6.swift PACKAGE.SWIFT Scripts/Check-Lid-Simulation-Gate.sh .GitHub/workflows/ci.yml \
     "$(printf '\305\277cripts/check-lid-simulation-gate.sh')" "$(printf 'Package.\305\277wift')" \
     "$(printf 'docs/caf\303\251.md')" Makefile notes.txt AGENTS.md docs/AGENTS.md skills/x/claude.md \
-    docs/Gemini.md Tests/InsomniaTests/.hidden.swift Tests/InsomniaTests/fixture.json Resources/run.sh \
-    Sources/Insomnia/data.json scripts/lib/x.sh Plugins/Lint/plugin.swift docs/run.sh \
+    docs/Gemini.md Tests/UykusuzTests/.hidden.swift Tests/UykusuzTests/fixture.json Resources/run.sh \
+    Sources/Uykusuz/data.json scripts/lib/x.sh Plugins/Lint/plugin.swift docs/run.sh \
     CONTRIBUTING.md SECURITY.md security.md docs/CLAUDE.local.md \
-    docs/AGENTS.override.md scripts/backstop.SH scripts/Install.Sh Sources/Insomnia/App.SWIFT \
-    sources/Insomnia/App.swift Tests/InsomniaTests/AppTests.Swift tests/InsomniaTests/AppTests.swift \
+    docs/AGENTS.override.md scripts/backstop.SH scripts/Install.Sh Sources/Uykusuz/App.SWIFT \
+    sources/Uykusuz/App.swift Tests/UykusuzTests/AppTests.Swift tests/UykusuzTests/AppTests.swift \
     Docs/install.md docs/Shot.PNG Resources/AppIcon.ICNS resources/Info.plist Skills/x/SKILL.md \
     Readme.md README.MD License docs/shot.png docs/shot.jpg docs/shot.gif Resources/AppIcon.icns \
     Resources/AppIcon-1024.png; do
@@ -396,11 +396,11 @@ test_files_that_steer_checks_are_config() {
 }
 
 test_only_kinds_no_check_reads_skip_config() {
-  changed Sources/Insomnia/App.swift Sources/Insomnia/Package.swift Tests/InsomniaTests/AppTests.swift \
-    Tests/InsomniaTestHome/include/Home.h Tests/InsomniaTestHome/Home.c docs/install.md docs/spec.md \
+  changed Sources/Uykusuz/App.swift Sources/Uykusuz/Package.swift Tests/UykusuzTests/AppTests.swift \
+    Tests/UykusuzTestHome/include/Home.h Tests/UykusuzTestHome/Home.c docs/install.md docs/spec.md \
     docs/release-validation.md \
     docs/mockups/menubar-ux.html docs/assets/eye.svg \
-    scripts/install.sh scripts/generate-app-icon.swift skills/install-insomnia/SKILL.md \
+    scripts/install.sh scripts/generate-app-icon.swift skills/install-uykusuz/SKILL.md \
     Resources/Info.plist README.md LICENSE
   run 0 evaluate 5
   gate config success
@@ -429,7 +429,7 @@ test_an_added_shellcheck_directive_is_config() {
 }
 
 test_a_shellcheck_directive_in_a_swift_test_is_config() {
-  diff_of Tests/InsomniaTests/FakeTests.swift modified 1 $'@@ -1 +1,2 @@\n let a = 1\n+let fake = "#!/bin/sh\\n#shellcheck\tdisable=SC2086"'
+  diff_of Tests/UykusuzTests/FakeTests.swift modified 1 $'@@ -1 +1,2 @@\n let a = 1\n+let fake = "#!/bin/sh\\n#shellcheck\tdisable=SC2086"'
   run 0 evaluate 5
   gate config pending
 }
@@ -438,14 +438,14 @@ test_an_added_swift_warning_control_is_config() {
   local attr
   for attr in '@warn(DeprecatedDeclaration, as: ignored)' '@diagnose(DeprecatedDeclaration, as: ignored)' \
     "@\`diagnose\`(DeprecatedDeclaration, as: ignored)" '@ warn(DeprecatedDeclaration, as: ignored)' '@diagnose'; do
-    diff_of Sources/Insomnia/App.swift modified 1 "$(printf '@@ -1 +1,2 @@\n+%s\n func f() {}' "$attr")"
+    diff_of Sources/Uykusuz/App.swift modified 1 "$(printf '@@ -1 +1,2 @@\n+%s\n func f() {}' "$attr")"
     run 0 evaluate 5
     [ "$(newest config state)" = pending ] || fail "$attr does not count as config"
   done
-  diff_of Sources/Insomnia/App.swift modified 1 $'@@ -1 +1 @@\n+@diagnose'
+  diff_of Sources/Uykusuz/App.swift modified 1 $'@@ -1 +1 @@\n+@diagnose'
   run 0 evaluate 5
   [ "$(newest config state)" = pending ] || fail "@diagnose at the end of a diff does not count as config"
-  diff_of Sources/Insomnia/App.swift modified 1 $'@@ -1 +1,2 @@\n+@warn_unqualified_access\n func f() {}'
+  diff_of Sources/Uykusuz/App.swift modified 1 $'@@ -1 +1,2 @@\n+@warn_unqualified_access\n func f() {}'
   run 0 evaluate 5
   gate config success
 }
@@ -460,8 +460,8 @@ test_a_file_without_a_diff_is_config() {
   # Too big to show, binary (a NUL byte in a script makes it so), or
   # renamed: GitHub sends no patch for any of them.
   local spec
-  for spec in 'Sources/Insomnia/Huge.swift modified 9000' 'scripts/backstop.sh modified 0' \
-    'Sources/Insomnia/B.swift renamed 0' 'docs/assets/eye.svg added 0' 'scripts/x.png.sh added 0' \
+  for spec in 'Sources/Uykusuz/Huge.swift modified 9000' 'scripts/backstop.sh modified 0' \
+    'Sources/Uykusuz/B.swift renamed 0' 'docs/assets/eye.svg added 0' 'scripts/x.png.sh added 0' \
     'Resources/Info.plist modified 0' 'docs/guide.md modified 0'; do
     # shellcheck disable=SC2086 # split the spec into the arguments
     diff_of $spec
@@ -471,7 +471,7 @@ test_a_file_without_a_diff_is_config() {
 }
 
 test_removed_files_need_no_diff() {
-  jq -n '{files: [{filename: "Sources/Insomnia/Old.swift", status: "removed", changes: 9000},
+  jq -n '{files: [{filename: "Sources/Uykusuz/Old.swift", status: "removed", changes: 9000},
     {filename: "scripts/old.sh", status: "removed", changes: 0}]}' | json "compare_main...$HEAD_SHA"
   run 0 evaluate 5
   gate config success
@@ -528,7 +528,7 @@ test_a_line_break_in_a_name_counts_as_config() {
 }
 
 test_skills_need_evidence() {
-  changed skills/insomnia/SKILL.md
+  changed skills/uykusuz/SKILL.md
   run 0 evaluate 5
   gate evidence pending
 }
@@ -819,7 +819,7 @@ test_check_sees_the_pull_request_change_during_the_check() {
 
 test_an_owner_failure_in_capitals_counts() {
   # GitHub treats MERGE-GATE/Evidence as merge-gate/evidence.
-  changed Sources/Insomnia/App.swift
+  changed Sources/Uykusuz/App.swift
   seed "$OWNER" evidence success "report checked"
   seed "$BOT" evidence pending "waiting for a real-Mac report"
   other_status "$OWNER" MERGE-GATE/Evidence failure "the log shows no sleep"
@@ -933,7 +933,7 @@ test_check_counts_a_failing_status_named_like_a_pinned_check() {
 test_an_owner_description_is_restored_once() {
   # A backslash and a tab used to come back escaped, so every run posted
   # the owner's decision again.
-  changed Sources/Insomnia/App.swift
+  changed Sources/Uykusuz/App.swift
   seed "$OWNER" evidence success 'report\checked	on 26.1'
   seed "$BOT" evidence pending "waiting for a real-Mac report"
   run 0 evaluate 5
@@ -959,7 +959,7 @@ test_greptile_edits_at_the_same_time_wait() {
 }
 
 test_a_status_from_a_deleted_account_shifts_nothing() {
-  changed Sources/Insomnia/App.swift
+  changed Sources/Uykusuz/App.swift
   seed "$OWNER" evidence failure "the log shows no sleep"
   change "commits_${HEAD_SHA}_statuses" '[{id: 900, context: "merge-gate/evidence", state: "success",
     creator: null, description: "ok", target_url: null}] + .'

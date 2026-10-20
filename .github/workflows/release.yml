@@ -1,6 +1,6 @@
 name: Release
 
-# Builds the downloadable Insomnia package and publishes it on one of two
+# Builds the downloadable Uykusuz package and publishes it on one of two
 # channels. docs/releasing.md walks through both.
 #
 # Triggers
@@ -150,18 +150,18 @@ jobs:
               fi
               ;;
           esac
-          package="Insomnia-$version-macos"
+          package="Uykusuz-$version-macos"
           if [[ "$CHANNEL" == nightly ]]; then
             want="^nightly-[0-9]{8}-${GITHUB_SHA:0:12}\$"
             if [[ ! "$NIGHTLY_TAG" =~ $want ]]; then
               echo "nightly tag '$NIGHTLY_TAG' does not name $GITHUB_SHA" >&2
               exit 1
             fi
-            package="Insomnia-$version-$NIGHTLY_TAG-macos"
+            package="Uykusuz-$version-$NIGHTLY_TAG-macos"
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "package=$package" >> "$GITHUB_OUTPUT"
-          echo "Insomnia $version, $CHANNEL, package $package"
+          echo "Uykusuz $version, $CHANNEL, package $package"
 
       - name: Print toolchain versions
         run: |
@@ -196,7 +196,7 @@ jobs:
         env:
           # build-app.sh compiles the simulate-lid.sh watcher in for "1"; a
           # release never carries it.
-          INSOMNIA_LID_SIMULATION: ""
+          UYKUSUZ_LID_SIMULATION: ""
         run: scripts/build-app.sh --output dist
 
       - name: Package
@@ -205,13 +205,13 @@ jobs:
         run: |
           pkg="$PACKAGE"
           mkdir -p "release/$pkg"
-          /usr/bin/ditto dist/Insomnia.app "release/$pkg/Insomnia.app"
+          /usr/bin/ditto dist/Uykusuz.app "release/$pkg/Uykusuz.app"
           cp scripts/install.sh scripts/uninstall.sh "release/$pkg/"
           (cd release && /usr/bin/ditto -c -k --sequesterRsrc --keepParent "$pkg" "$pkg.zip")
           (cd release && shasum -a 256 "$pkg.zip" > SHA256SUMS)
           rm -rf "release/$pkg"
           cat release/SHA256SUMS
-          codesign -dvv dist/Insomnia.app 2>&1 | grep -E '^(Identifier|Signature|Authority|TeamIdentifier|CDHash)=' || true
+          codesign -dvv dist/Uykusuz.app 2>&1 | grep -E '^(Identifier|Signature|Authority|TeamIdentifier|CDHash)=' || true
 
       - name: Upload the package as a workflow artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -255,7 +255,7 @@ jobs:
           signing="Stable release. Ad-hoc signed and not notarized, so macOS blocks the first launch until you allow it in System Settings > Privacy & Security. The checksum and attestation below show this zip is what the Release workflow built from the tagged commit."
           install_note="The installer checks the bundle's signature, identifier and version before asking for your password, but it cannot verify where this bundle came from: that is what the checksum and the attestation above are for, and \`--allow-unverified-origin\` says you checked them. It then installs the app, the recovery agent and the sudoers rule described in the README."
           {
-            echo "Insomnia $VERSION for Apple Silicon Macs with macOS 26 or later. The app is built for arm64 only, so the installer stops on an Intel Mac."
+            echo "Uykusuz $VERSION for Apple Silicon Macs with macOS 26 or later. The app is built for arm64 only, so the installer stops on an Intel Mac."
             echo
             echo "$signing"
             echo
@@ -275,8 +275,8 @@ jobs:
             echo '```bash'
             echo "ditto -x -k $zip ."
             echo "cd ${zip%.zip}"
-            echo "./install.sh --allow-unverified-origin --app ./Insomnia.app"
-            echo "open \"\$HOME/Applications/Insomnia.app\""
+            echo "./install.sh --allow-unverified-origin --app ./Uykusuz.app"
+            echo "open \"\$HOME/Applications/Uykusuz.app\""
             echo '```'
             echo
             echo "$install_note"
@@ -291,7 +291,7 @@ jobs:
         run: |
           gh release create "$GITHUB_REF_NAME" release/*.zip release/SHA256SUMS \
             --repo "$GITHUB_REPOSITORY" \
-            --title "Insomnia $VERSION (stable)" \
+            --title "Uykusuz $VERSION (stable)" \
             --notes-file notes.md \
             --verify-tag \
             --latest
@@ -332,7 +332,7 @@ jobs:
           signing="Ad-hoc signed and not notarized, so macOS blocks the first launch until you allow it in System Settings > Privacy & Security. The checksum and attestation below show this zip is what the Release workflow built from that commit of main."
           install_note="The installer checks the bundle's signature, identifier and version before asking for your password, but it cannot verify where this bundle came from: that is what the checksum and the attestation above are for, and \`--allow-unverified-origin\` says you checked them. It then installs the app, the recovery agent and the sudoers rule described in the README."
           {
-            echo "Insomnia $VERSION for Apple Silicon Macs with macOS 26 or later. The app is built for arm64 only, so the installer stops on an Intel Mac."
+            echo "Uykusuz $VERSION for Apple Silicon Macs with macOS 26 or later. The app is built for arm64 only, so the installer stops on an Intel Mac."
             echo
             echo "$channel"
             echo
@@ -356,8 +356,8 @@ jobs:
             echo '```bash'
             echo "ditto -x -k $zip ."
             echo "cd ${zip%.zip}"
-            echo "./install.sh --allow-unverified-origin --app ./Insomnia.app"
-            echo "open \"\$HOME/Applications/Insomnia.app\""
+            echo "./install.sh --allow-unverified-origin --app ./Uykusuz.app"
+            echo "open \"\$HOME/Applications/Uykusuz.app\""
             echo '```'
             echo
             echo "$install_note"
@@ -387,7 +387,7 @@ jobs:
           # published nightly's assets are never replaced.
           gh release create "$TAG" release/*.zip release/SHA256SUMS \
             --repo "$GITHUB_REPOSITORY" \
-            --title "Insomnia nightly ${day:0:4}-${day:4:2}-${day:6:2} (${GITHUB_SHA:0:12})" \
+            --title "Uykusuz nightly ${day:0:4}-${day:4:2}-${day:6:2} (${GITHUB_SHA:0:12})" \
             --notes-file notes.md \
             --verify-tag \
             --prerelease \

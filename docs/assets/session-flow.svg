@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1130" height="170" viewBox="0 0 1130 170" role="img" aria-labelledby="sb-title sb-desc">
-  <title id="sb-title">Insomnia session in the menu bar</title>
+  <title id="sb-title">Uykusuz session in the menu bar</title>
   <desc id="sb-desc">Three menu bar snapshots side by side. Set a duration: clicking the closed eye shows three pills labelled Days, Hours and Minutes, with Hours focused. Watch the countdown: the eye opens, showing its pupil, and a live countdown of 3:59:41 ticks beside it, followed by a small x. Hold to end: pressing and holding the x fills a ring around it while the countdown reads 3:59:40.</desc>
   <style>
     svg { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif; }

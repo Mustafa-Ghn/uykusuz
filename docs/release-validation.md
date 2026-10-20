@@ -10,7 +10,7 @@ lid-closed use is safe. The checks to run before the next release are in
 The maintainer ran these checks on a MacBook with an Apple M5 (Mac17,2) and
 32 GB of memory, on macOS 26.2 (25C56), before the release on October 10,
 2026, and recorded them here on October 11, 2026. The tested build is the
-release's Insomnia.app (version 0.1.0, build 1) with the scripts from the
+release's Uykusuz.app (version 0.1.0, build 1) with the scripts from the
 `v0.1.0` tag, commit `ea5ce15`.
 
 | Check | Result |
@@ -29,10 +29,10 @@ release's Insomnia.app (version 0.1.0, build 1) with the scripts from the
 | Headed-browser throttling with the lid closed | Passed |
 | Battery/thermal event behavior on supported hardware | Passed |
 | Install/upgrade/uninstall with recoverable failure conditions | Passed |
-| Install from the 0.1.0 release zip with `scripts/install.sh --app ./Insomnia.app` on a working Mac, including its `codesign --verify --strict --deep` of the prebuilt bundle and first launch under Gatekeeper | Passed |
+| Install from the 0.1.0 release zip with `scripts/install.sh --app ./Uykusuz.app` on a working Mac, including its `codesign --verify --strict --deep` of the prebuilt bundle and first launch under Gatekeeper | Passed |
 | `scripts/uninstall.sh` run from the unpacked 0.1.0 release folder | Passed |
 
-The release zip holds the Insomnia.app that was installed on the
+The release zip holds the Uykusuz.app that was installed on the
 maintainer's Mac, copied file for file and not re-signed. No GitHub workflow
 built or attested it. Its executable matches the local release build of a
 clean checkout at `b05652c`, apart from two Mach-O size fields and the code
@@ -51,10 +51,10 @@ reported no detected secrets across 175 locally available commits.
 
 ## Remediation evidence
 
-- [CI PR #2](https://github.com/kgarg2468/Insomnia/pull/2), commit
+- [CI PR #2](https://github.com/kgarg2468/Uykusuz/pull/2), commit
   `f20a860`: hosted macOS tests/release build, ShellCheck, and Greptile check
   succeeded. No unresolved review threads were present at verification.
-- [Automation PR #3](https://github.com/kgarg2468/Insomnia/pull/3), commit
+- [Automation PR #3](https://github.com/kgarg2468/Uykusuz/pull/3), commit
   `52a3b29`: after addressing three Greptile findings and a timeout-reporting
   defect, an independent snapshot passed 206 tests, release compilation, and
   ShellCheck. The three review threads are resolved. Follow-up `ba82712`
@@ -96,7 +96,7 @@ earlier green run evidence for subsequent changes.
 During an active session on the development MacBook the user closed the lid
 and the panel stayed lit with the keyboard backlight on. The log shows the
 session starting at 00:48:12, the lid closing at 00:48:19 and opening at
-00:48:25, with Insomnia's lid-close transaction running and freezing Slack
+00:48:25, with Uykusuz's lid-close transaction running and freezing Slack
 (6 pids) only. `pmset -g log` has no "Display is turned off" event in that
 window; the next display-off is the 2-minute idle timer at 01:08:51. Root
 cause: `pmset -a disablesleep 1` (the sleep guard) removes the only path by
@@ -170,11 +170,11 @@ clear is not read or written again, and only its clear is retried; the
 clear goes into the journal ahead of any later write, so a lid close
 journals the level the device reads. When the write fails and state.json
 cannot take the cleared flag either, backstop.sh would pass over the
-entry, so Insomnia retries it in process and holds Quit until the write
+entry, so Uykusuz retries it in process and holds Quit until the write
 lands or the flag is on disk. The sampler takes no reading of a device
 whose brightness is journaled, and each level written from the journal
 or found set since becomes its sample, so a close right after a late
-restore journals that level. A display reading above 0 under Insomnia's
+restore journals that level. A display reading above 0 under Uykusuz's
 own Low Power Mode, or after it in the same boot, relaunches included,
 decides nothing, and a launch after a restart reads the entry again. A
 backstop run whose `lowpowermode 0` exits 0 gives that record its own boot,
@@ -188,7 +188,7 @@ flagged until the panel reads above 0. If state.json refuses that record,
 Quit waits until it lands. A Low Power Mode claim journaled before a
 restart is read before the switch-off, and the read only goes to the
 log. Whether the mode reads on, off or not at all, the switch-off counts
-as Insomnia's in this boot, since a mode that reads off may have gone off
+as Uykusuz's in this boot, since a mode that reads off may have gone off
 only a moment ago. The kept display entry is recorded for this boot, so
 it stays flagged, and the display is not sampled, through this boot,
 relaunches included. A mode off since long before the launch reads the

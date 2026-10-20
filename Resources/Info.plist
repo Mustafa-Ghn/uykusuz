@@ -5,15 +5,15 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>tr</string>
 	<key>CFBundleExecutable</key>
-	<string>Insomnia</string>
+	<string>Uykusuz</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.kgarg.insomnia</string>
+	<string>com.mustafaghn.uykusuz</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Insomnia</string>
+	<string>Uykusuz</string>
 	<key>CFBundleDisplayName</key>
-	<string>Insomnia</string>
+	<string>Uykusuz</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundlePackageType</key>
@@ -29,12 +29,12 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSLocationUsageDescription</key>
-	<string>Insomnia'nın Wi-Fi ağ adlarını görebilmesi ve kişisel erişim noktanıza (hotspot) yeniden katılabilmesi için macOS konum izni gerektirir.</string>
+	<string>Uykusuz'un Wi-Fi ağ adlarını görebilmesi ve kişisel erişim noktanıza (hotspot) yeniden katılabilmesi için macOS konum izni gerektirir.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Insomnia'nın Wi-Fi ağ adlarını görebilmesi ve kişisel erişim noktanıza (hotspot) yeniden katılabilmesi için macOS konum izni gerektirir.</string>
+	<string>Uykusuz'un Wi-Fi ağ adlarını görebilmesi ve kişisel erişim noktanıza (hotspot) yeniden katılabilmesi için macOS konum izni gerektirir.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
-	<key>InsomniaResumeFrozenVersion</key>
+	<key>UykusuzResumeFrozenVersion</key>
 	<integer>1</integer>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Krish Garg. MIT License.</string>

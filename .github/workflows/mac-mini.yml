@@ -27,7 +27,7 @@ concurrency:
 jobs:
   swift:
     name: Swift test (Mac mini, macOS 27 VM)
-    runs-on: [self-hosted, insomnia-mini]
+    runs-on: [self-hosted, uykusuz-mini]
     timeout-minutes: 60
     steps:
       - name: Check the VM

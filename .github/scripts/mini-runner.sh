@@ -13,17 +13,17 @@
 # at a time: each pass deletes every clone and runner the loop names.
 set -u
 
-REPO=${INSOMNIA_MINI_REPO:-krishhgg/Insomnia}
+REPO=${UYKUSUZ_MINI_REPO:-krishhgg/Insomnia}
 TART=${TART:-$HOME/.local/bin/tart}
-BASE=${INSOMNIA_MINI_BASE:-insomnia-ci-base}
-LOG_DIR=${INSOMNIA_MINI_LOGS:-$HOME/Library/Logs/insomnia-mini}
+BASE=${UYKUSUZ_MINI_BASE:-uykusuz-ci-base}
+LOG_DIR=${UYKUSUZ_MINI_LOGS:-$HOME/Library/Logs/uykusuz-mini}
 # The token that registers runners: a fine-grained token for this one
 # repository with Administration read and write, in the login keychain.
-KEYCHAIN_SERVICE=insomnia-mini-runner
-LABEL=insomnia-mini
+KEYCHAIN_SERVICE=uykusuz-mini-runner
+LABEL=uykusuz-mini
 # From the moment the runner takes a job. The job's own timeout is 60
 # minutes; this is the backstop if the runner hangs past it.
-JOB_LIMIT=${INSOMNIA_MINI_JOB_LIMIT:-4500}
+JOB_LIMIT=${UYKUSUZ_MINI_JOB_LIMIT:-4500}
 # Clones and runners this loop made, and only those.
 NAME_PATTERN='^mini-[0-9]{8}-[0-9]{6}$'
 
