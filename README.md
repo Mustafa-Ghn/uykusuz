@@ -96,11 +96,11 @@ Uykusuz kaynak koddan derlenerek kurulur. Depoyu klonlayın, kurulum betiğini
 çalıştırın ve uygulamayı açın:
 
 ```bash
-git clone https://github.com/Mustafa-Ghn/insomnia-tr.git && cd insomnia-tr && ./scripts/install.sh
+git clone https://github.com/Mustafa-Ghn/uykusuz.git && cd uykusuz && ./scripts/install.sh
 open "$HOME/Applications/Uykusuz.app"
 ```
 
-SSH anahtarı kullanıyorsanız `git@github.com:Mustafa-Ghn/insomnia-tr.git`
+SSH anahtarı kullanıyorsanız `git@github.com:Mustafa-Ghn/uykusuz.git`
 adresiyle klonlayın.
 
 `./scripts/install.sh`, uygulamayı bu çalışma kopyasından derler
@@ -148,7 +148,7 @@ Uykusuz güncelleme denetlemez; hiçbir ağ isteği yapmaz. Güncellemek için
 çalıştırın:
 
 ```bash
-cd insomnia-tr
+cd uykusuz
 git pull
 ./scripts/install.sh
 ```

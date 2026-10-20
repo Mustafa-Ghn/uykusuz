@@ -1,12 +1,12 @@
 ---
 name: install-uykusuz
-description: Uykusuz'u (bir Mac'i süreli bir oturum boyunca uyanık tutan macOS menü çubuğu uygulaması) Mustafa-Ghn/insomnia-tr deposunun bir çalışma kopyasından kaynak koddan derleyerek kurar ya da yükseltir. Kullanıcı Uykusuz'u kurmak, güncellemek ya da yeniden kurmak istediğinde kullanın.
+description: Uykusuz'u (bir Mac'i süreli bir oturum boyunca uyanık tutan macOS menü çubuğu uygulaması) Mustafa-Ghn/uykusuz deposunun bir çalışma kopyasından kaynak koddan derleyerek kurar ya da yükseltir. Kullanıcı Uykusuz'u kurmak, güncellemek ya da yeniden kurmak istediğinde kullanın.
 ---
 
 # Uykusuz'u kurma
 
 Uykusuz hazır derlenmiş bir paket olarak yayımlanmaz;
-https://github.com/Mustafa-Ghn/insomnia-tr deposunun bir çalışma kopyasından
+https://github.com/Mustafa-Ghn/uykusuz deposunun bir çalışma kopyasından
 `./scripts/install.sh` ile derlenerek kurulur. Ayrıntılar çalışma
 kopyasındaki `docs/install.md` dosyasının "Kaynaktan derleme", "Neler kurulur"
 ve "Yükseltmeler" bölümlerindedir. O sayfayı okuyun, ardından bu adımları
@@ -24,8 +24,8 @@ vermeyin. Bir adım yönetici parolası gerektirdiğinde kullanıcıya Terminal'
    klonlayın:
 
    ```bash
-   git clone https://github.com/Mustafa-Ghn/insomnia-tr.git
-   cd insomnia-tr
+   git clone https://github.com/Mustafa-Ghn/uykusuz.git
+   cd uykusuz
    ```
 
    Klonlama GitHub kimlik doğrulaması isterse bunu kullanıcının

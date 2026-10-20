@@ -415,7 +415,7 @@ final class ReleaseWorkflowTests: XCTestCase {
     /// the same command and says a zip from the Release workflow is
     /// installed with --app rather than built.
     func testTheReadmeAndTheInstallGuideBuildFromSource() throws {
-        let clone = "git clone https://github.com/Mustafa-Ghn/insomnia-tr.git && cd insomnia-tr && ./scripts/install.sh"
+        let clone = "git clone https://github.com/Mustafa-Ghn/uykusuz.git && cd uykusuz && ./scripts/install.sh"
         let install = try readmeSection("Kurulum").split(whereSeparator: \.isWhitespace).joined(separator: " ")
         for phrase in [clone, "Uykusuz kaynak koddan derlenerek kurulur.", "](docs/install.md)"] {
             XCTAssertTrue(install.contains(phrase), "the README's Install section lacks: \(phrase)")

@@ -61,7 +61,7 @@
 #       in the few seconds of the check's last reads and the merge does not
 #       stop it.
 #
-# Environment: GH_REPO (default Mustafa-Ghn/insomnia-tr). DRY_RUN=1 prints the
+# Environment: GH_REPO (default Mustafa-Ghn/uykusuz). DRY_RUN=1 prints the
 # statuses evaluate and post would send instead of sending them.
 #
 # Runs under macOS /bin/bash 3.2 and the bash on GitHub's Ubuntu runners;
@@ -75,7 +75,7 @@ die() {
   exit 2
 }
 
-REPO=${GH_REPO:-Mustafa-Ghn/insomnia-tr}
+REPO=${GH_REPO:-Mustafa-Ghn/uykusuz}
 OWNER=${REPO%%/*}
 case $OWNER in
   '' | *[!A-Za-z0-9-]*) die "unexpected repository owner in GH_REPO: $REPO" ;;

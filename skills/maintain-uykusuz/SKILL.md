@@ -5,7 +5,7 @@ description: Check on, troubleshoot, or uninstall an installed Uykusuz (the macO
 
 # Maintain Uykusuz
 
-Reference pages in https://github.com/Mustafa-Ghn/insomnia-tr (Turkish):
+Reference pages in https://github.com/Mustafa-Ghn/uykusuz (Turkish):
 [docs/recovery.md](../../docs/recovery.md),
 [docs/install.md](../../docs/install.md),
 [docs/lid-close.md](../../docs/lid-close.md) and

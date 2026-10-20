@@ -13,7 +13,7 @@ talimatlarını izleyebilir.
 paket olarak yayımlanmaz; kaynak koddan derlenerek kurulur:
 
 ```bash
-git clone https://github.com/Mustafa-Ghn/insomnia-tr.git && cd insomnia-tr && ./scripts/install.sh
+git clone https://github.com/Mustafa-Ghn/uykusuz.git && cd uykusuz && ./scripts/install.sh
 open "$HOME/Applications/Uykusuz.app"
 ```
 

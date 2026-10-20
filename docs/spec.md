@@ -1323,7 +1323,7 @@ Uykusuz/
 ## Install
 
 ```
-git clone https://github.com/Mustafa-Ghn/insomnia-tr.git && cd insomnia-tr
+git clone https://github.com/Mustafa-Ghn/uykusuz.git && cd uykusuz
 ./scripts/install.sh      # asks for sudo once, for the sudoers file
 ```
 

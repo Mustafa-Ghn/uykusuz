@@ -15,7 +15,7 @@ command -v jq >/dev/null || {
   exit 2
 }
 
-REPO=Mustafa-Ghn/insomnia-tr
+REPO=Mustafa-Ghn/uykusuz
 OWNER=Mustafa-Ghn
 BOT='github-actions[bot]'
 HEAD_SHA=1111111111111111111111111111111111111111
@@ -145,7 +145,7 @@ pr_json() {
 # greptile_body <score> <reviewed sha>: Greptile's block as it writes it.
 greptile_body() {
   printf '<h3>Greptile Summary</h3>\n\n<!-- greptile_confidence_score:%s -->\n\n' "$1"
-  printf '<sub>Last reviewed commit: ["Gate"](https://github.com/Mustafa-Ghn/insomnia-tr/commit/%s)</sub>\n' "$2"
+  printf '<sub>Last reviewed commit: ["Gate"](https://github.com/Mustafa-Ghn/uykusuz/commit/%s)</sub>\n' "$2"
 }
 
 # edit <time> <editor> <description>: one description edit as GraphQL lists
