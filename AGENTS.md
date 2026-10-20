@@ -55,6 +55,8 @@ açıkça başka bir şey isterse onun isteği geçerlidir.
   kullanıcının anlayacağı Türkçe maddeler. Gerekirse `### Eklenenler`,
   `### Değişenler` ve `### Düzeltilenler` alt başlıklarını kullan; boş kalan
   alt başlığı yazma.
+- Her madde tek satırdır (satırı bölme): GitHub sürüm notlarında satır
+  sonları olduğu gibi görünür.
 - GitHub sürümünün notları bu maddelerle aynıdır.
 
 ## Aynı anda çalışan oturumlar
