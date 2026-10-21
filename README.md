@@ -205,7 +205,7 @@ Ayarlar penceresi göze sağ tıklayınca açılan menüden (⌘,) açılır:
 | Pil ve ısı | Düşük Güç Modu ve oturum sonu eşikleri, ısı kuralları |
 | Claude, kod modu ve ekran | Claude Code hook'ları, otomatik oturum, yanıt beklerken bitirme ve bekleme süresi, kod modu, boşta siyah ekran süreleri |
 | Sen yokken özeti | Kapak açılınca özet penceresi, Claude API anahtarı, özeti yazan model, son 2 saati şimdi özetle |
-| Ağ yedekleme | iPhone kişisel erişim noktası, tmux dürtmesi |
+| Ağ yedekleme | iPhone kişisel erişim noktası, bilinen Wi-Fi ağına geri dönüş, tmux dürtmesi |
 | Uygulama | Girişte aç, yapılandırma klasörü, kurulu sürüm |
 
 ## Claude ile otomatik oturum
@@ -399,6 +399,17 @@ parolayı yeniden girin. Hotspot ayarlıyken Ayarlar, "Erişim noktalarına kat�
 için sor" seçeneğinin Otomatik olup olmadığını denetler; değilse turuncu bir
 uyarıyla Wi-Fi ayarlarını açan bir düğme gösterir ve oturum başlarken bunu
 günlüğe yazar.
+
+Hotspot'tayken dükkana ya da eve dönünce Uykusuz Wi-Fi'ye kendisi geri döner
+(Ayarlar'daki **Bilinen Wi-Fi ağına geri dön**, varsayılan olarak açık). Oturum
+sürerken 2 dakikada bir çevreyi tarar. Daha önce bağlandığınız ve parolası olan
+bir ağ yeterince güçlüyse yalnızca hotspot'tan ayrılır; macOS o ağa kendi kayıtlı
+parolasıyla bağlanır. Uykusuz ağ seçmez, Wi-Fi parolalarını görmez ve daha önce
+bağlanmadığınız bir ağa hiçbir zaman yönelmez. Çevrede bilinen parolasız bir ağ
+varsa hotspot'tan ayrılmaz; macOS yine de parolasız bir ağa bağlanırsa Uykusuz
+oradan ayrılıp hotspot'a döner. Başarısız bir denemeden sonra 10 dakika bekler.
+macOS'un parolasız ağlara hiç kendiliğinden katılmasını istemiyorsanız bu ağları
+Sistem Ayarları > Wi-Fi > Bilinen Ağlar'dan unutun ya da Otomatik Katıl'ı kapatın.
 
 Ağ 90 saniye boyunca kesik kalırsa Uykusuz, bir kodlama ajanının çalıştığı bir
 tmux bölmesine `continue` da yazabilir. Yalnızca Ayarlar'da listelediğiniz ve

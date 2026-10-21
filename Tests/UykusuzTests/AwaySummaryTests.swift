@@ -498,3 +498,96 @@ final class HotspotJoinModeTests: XCTestCase {
         _ = HotspotJoinMode.read()
     }
 }
+
+final class WiFiReturnPolicyTests: XCTestCase {
+    private typealias P = WiFiReturnPolicy
+
+    func testLeavesOnlyForAStrongKnownNetworkWithAPassword() {
+        let known = [P.Known(ssid: "Ev", open: false), P.Known(ssid: "Dükkan", open: false), P.Known(ssid: "iPhone", open: false)]
+        XCTAssertEqual(P.decide(hotspot: "iPhone", seen: [.init(ssid: "Ev", rssi: -60, open: false)], known: known), .leave("Ev"))
+        XCTAssertEqual(P.decide(hotspot: "iPhone", seen: [.init(ssid: "Ev", rssi: -80, open: false)], known: known),
+                       .stay("çevrede yeterince güçlü, bilinen ve parolalı bir ağ yok"), "too weak")
+        XCTAssertEqual(P.decide(hotspot: "iPhone", seen: [.init(ssid: "Komşu", rssi: -40, open: false)], known: known),
+                       .stay("çevrede yeterince güçlü, bilinen ve parolalı bir ağ yok"), "never a network not joined before")
+        XCTAssertEqual(P.decide(hotspot: "iPhone", seen: [.init(ssid: "iPhone", rssi: -30, open: false)], known: known),
+                       .stay("çevrede yeterince güçlü, bilinen ve parolalı bir ağ yok"), "the hotspot itself")
+        XCTAssertEqual(P.decide(hotspot: "iPhone", seen: [.init(ssid: "Ev", rssi: -65, open: false), .init(ssid: "Dükkan", rssi: -50, open: false)], known: known),
+                       .leave("Dükkan"), "the strongest")
+    }
+
+    func testStaysWhileAKnownNetworkWithoutAPasswordIsAround() {
+        let known = [P.Known(ssid: "Ev", open: false), P.Known(ssid: "Kafe Misafir", open: true)]
+        XCTAssertEqual(P.decide(hotspot: "iPhone", seen: [.init(ssid: "Ev", rssi: -50, open: false), .init(ssid: "Kafe Misafir", rssi: -85, open: true)], known: known),
+                       .stay("bilinen parolasız bir ağ çevrede (Kafe Misafir)"), "macOS might pick it, however weak")
+        XCTAssertEqual(P.decide(hotspot: "iPhone", seen: [.init(ssid: "Ev", rssi: -50, open: true)], known: known),
+                       .stay("bilinen parolasız bir ağ çevrede (Ev)"), "a network seen open under a known secured name")
+    }
+}
+
+@MainActor
+final class WiFiReturnTests: XCTestCase {
+    final class Radio: WiFiRadio, @unchecked Sendable {
+        private let lock = NSLock()
+        var ssids: [String?] = []
+        var open: Bool? = false
+        var seen: [WiFiReturnPolicy.Seen] = []
+        var knownNetworks: [WiFiReturnPolicy.Known] = []
+        private(set) var scans = 0
+        private(set) var disassociations = 0
+        func currentSSID() -> String? { lock.withLock { ssids.count > 1 ? ssids.removeFirst() : ssids.first ?? nil } }
+        func currentIsOpen() -> Bool? { lock.withLock { open } }
+        func scan() throws -> [WiFiReturnPolicy.Seen] { lock.withLock { scans += 1; return seen } }
+        func known() -> [WiFiReturnPolicy.Known] { lock.withLock { knownNetworks } }
+        func disassociate() { lock.withLock { disassociations += 1 } }
+    }
+
+    private var config = Config()
+    private var now = Date(timeIntervalSince1970: 2_000_000_000)
+    private var rejoins = 0
+
+    private func make(_ radio: Radio) -> WiFiReturn {
+        config.hotspotSSID = "iPhone"
+        return WiFiReturn(config: { [unowned self] in self.config }, radio: radio, clock: { [unowned self] in self.now }) { [unowned self] in
+            self.rejoins += 1
+        }
+    }
+
+    func testLeavesTheHotspotForHomeAndThenWaits() async {
+        let radio = Radio()
+        radio.ssids = ["iPhone", "Ev"]
+        radio.seen = [.init(ssid: "Ev", rssi: -55, open: false)]
+        radio.knownNetworks = [.init(ssid: "Ev", open: false)]
+        let back = make(radio)
+        await back.check(settle: .zero)
+        XCTAssertEqual(radio.disassociations, 1)
+        XCTAssertEqual(rejoins, 0, "now on a known network with a password")
+
+        radio.ssids = ["iPhone"]
+        now = now.addingTimeInterval(60)
+        await back.check(settle: .zero)
+        XCTAssertEqual(radio.scans, 1, "no new try within the cooldown")
+    }
+
+    func testANetworkWithoutAPasswordIsLeftForTheHotspot() async {
+        let radio = Radio()
+        radio.ssids = ["iPhone", "Otel Misafir"]
+        radio.open = true
+        radio.seen = [.init(ssid: "Ev", rssi: -55, open: false)]
+        radio.knownNetworks = [.init(ssid: "Ev", open: false)]
+        await make(radio).check(settle: .zero)
+        XCTAssertEqual(radio.disassociations, 2, "left the hotspot, then the open network")
+        XCTAssertEqual(rejoins, 1)
+    }
+
+    func testNothingOffTheHotspotOrWithTheSettingOff() async {
+        let radio = Radio()
+        radio.ssids = ["Ev"]
+        let back = make(radio)
+        await back.check(settle: .zero)
+        XCTAssertEqual(radio.scans, 0, "not on the hotspot")
+        radio.ssids = ["iPhone"]
+        config.returnToKnownWiFi = false
+        await back.check(settle: .zero)
+        XCTAssertEqual(radio.scans, 0, "turned off")
+    }
+}

@@ -4,6 +4,13 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.6.0 — 2026-10-21
+
+### Eklenenler
+
+- **Bilinen Wi-Fi ağına geri dönüş.** Oturum sürerken hotspot'tayken Uykusuz 2 dakikada bir çevreyi tarar; daha önce bağlandığınız ve parolası olan bir ağ yeterince güçlüyse hotspot'tan ayrılır ve macOS o ağa kendi kayıtlı parolasıyla bağlanır. Uykusuz ağ seçmez, Wi-Fi parolalarını görmez ve daha önce bağlanmadığınız bir ağa yönelmez.
+- **Parolasız ağa düşmeme.** Çevrede bilinen parolasız bir ağ varsa hotspot'tan ayrılmaz; macOS yine de parolasız bir ağa bağlanırsa Uykusuz oradan ayrılıp hotspot'a döner. Başarısız bir denemeden sonra 10 dakika bekler. Ayarlar > Ağ yedekleme'deki "Bilinen Wi-Fi ağına geri dön" ile kapatılır.
+
 ## 0.5.1 — 2026-10-21
 
 ### Eklenenler

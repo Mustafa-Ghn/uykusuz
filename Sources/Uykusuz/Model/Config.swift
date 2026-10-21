@@ -105,6 +105,9 @@ struct Config: Codable, Equatable, Sendable {
     /// when a Claude API key is saved; otherwise it is made here from counts.
     var awaySummary: Bool = true
     var summaryModel: String = AnthropicSummaryClient.defaultModel
+    /// During a session on the hotspot, leave it for a known Wi-Fi network
+    /// that needs a password (`WiFiReturn`).
+    var returnToKnownWiFi: Bool = true
     /// Automatic sessions are paused until this moment: the user chose a
     /// pause after ending one, or from the menu, and none starts before it
     /// (`AutoSessionPolicy`). nil: not paused. Saved, so a relaunch keeps it.
@@ -224,6 +227,7 @@ struct Config: Codable, Equatable, Sendable {
         idleBlackoutAfter = try c.decodeIfPresent(TimeInterval.self, forKey: .idleBlackoutAfter) ?? d.idleBlackoutAfter
         keyboardOffAfter = try c.decodeIfPresent(TimeInterval.self, forKey: .keyboardOffAfter) ?? d.keyboardOffAfter
         autoPausedUntil = try c.decodeIfPresent(Date.self, forKey: .autoPausedUntil)
+        returnToKnownWiFi = try c.decodeIfPresent(Bool.self, forKey: .returnToKnownWiFi) ?? d.returnToKnownWiFi
         awaySummary = try c.decodeIfPresent(Bool.self, forKey: .awaySummary) ?? d.awaySummary
         summaryModel = try c.decodeIfPresent(String.self, forKey: .summaryModel) ?? d.summaryModel
         endWhileWaiting = try c.decodeIfPresent(Bool.self, forKey: .endWhileWaiting) ?? d.endWhileWaiting
