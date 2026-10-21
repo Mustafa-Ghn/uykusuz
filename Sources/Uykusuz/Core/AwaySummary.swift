@@ -3,8 +3,10 @@ import Observation
 
 /// "While you were away" (fork addition): when the lid opens after being
 /// closed for `minimumAway`, what Claude Code did in between is told in one
-/// or two Turkish sentences, as a notification and, if Settings says so,
-/// aloud. With a Claude API key saved, Claude writes the sentences
+/// or two Turkish sentences, in a small window at the top right
+/// (`SummaryPanel`) that reads them aloud only when asked: the user may
+/// have opened the lid somewhere quiet, or for something else. With a
+/// Claude API key saved, Claude writes the sentences
 /// (`AnthropicSummaryClient`); without one, or when the request fails, they
 /// are put together here from counts (`ClaudeDigest.localSummary`), and
 /// nothing leaves the Mac.
@@ -16,46 +18,43 @@ import Observation
 final class AwaySummary {
     static let minimumAway: TimeInterval = 3 * 60
     static let title = "Sen yokken Claude"
+    static let nothingToTell = "Bu sürede Claude'un yaptığı bir iş yok."
 
     @ObservationIgnored private let config: @MainActor () -> Config
-    @ObservationIgnored private let notifier: any Notifying
-    @ObservationIgnored private let speech: any SpeechSynthesizing
+    @ObservationIgnored private let present: @MainActor (_ text: String, _ told: Date) async -> Void
+    @ObservationIgnored private let dismiss: @MainActor () -> Void
     @ObservationIgnored let keyStore: any AnthropicKeyStoring
     @ObservationIgnored private let digest: @MainActor (Date, Date) -> ClaudeDigest?
     @ObservationIgnored private let writer: @MainActor (_ key: String, _ model: String) -> any SummaryWriting
     @ObservationIgnored private let clock: @MainActor () -> Date
-    /// After a lid open, the wait before the summary is read aloud: the
-    /// open puts back the sound a lid close muted (`LidActions`), and a
-    /// sentence spoken before that is heard by nobody.
-    @ObservationIgnored private let speechDelayAfterOpen: Duration
     @ObservationIgnored private var lid: LidObserver?
     @ObservationIgnored private var closedAt: Date?
 
     /// The last summary, or why there was none, for Settings.
     private(set) var lastResult: String?
+    /// The last summary told and when, for the menu's "Son özeti göster".
+    private(set) var last: (text: String, told: Date)?
     private(set) var isSummarizing = false
 
     init(
         config: @escaping @MainActor () -> Config,
-        notifier: any Notifying,
+        present: @escaping @MainActor (String, Date) async -> Void,
+        dismiss: @escaping @MainActor () -> Void = {},
         paths: Paths = .fromEnvironment(),
         keyStore: any AnthropicKeyStoring = KeychainAnthropicKeyStore(),
-        speech: any SpeechSynthesizing = SaySpeech(),
         digest: (@MainActor (Date, Date) -> ClaudeDigest?)? = nil,
         writer: (@MainActor (String, String) -> any SummaryWriting)? = nil,
-        clock: @escaping @MainActor () -> Date = { Date() },
-        speechDelayAfterOpen: Duration = .seconds(3)
+        clock: @escaping @MainActor () -> Date = { Date() }
     ) {
         self.config = config
-        self.notifier = notifier
-        self.speech = speech
+        self.present = present
+        self.dismiss = dismiss
         self.keyStore = keyStore
         self.digest = digest ?? { from, to in
             ClaudeDigest.build(from: from, to: to) { AwaySummary.status(ofSession: $0, paths: paths, now: to) }
         }
         self.writer = writer ?? { key, model in AnthropicSummaryClient(key: key, model: model) }
         self.clock = clock
-        self.speechDelayAfterOpen = speechDelayAfterOpen
     }
 
     /// Starts watching the lid, for the life of the app.
@@ -67,32 +66,40 @@ final class AwaySummary {
         lid = observer
     }
 
-    /// Internal so tests drive it.
+    /// Internal so tests drive it. A lid close takes a summary that is up
+    /// down, so it is never read aloud into a closed Mac.
     func lidChanged(closed: Bool) {
         let now = clock()
         if closed {
             closedAt = now
+            dismiss()
             return
         }
         guard let since = closedAt else { return }
         closedAt = nil
         guard config().awaySummary, now.timeIntervalSince(since) >= Self.minimumAway else { return }
-        Task { await summarize(from: since, to: now, away: true, sayIfNothing: false, speechDelay: speechDelayAfterOpen) }
+        Task { await summarize(from: since, to: now, away: true, sayIfNothing: false) }
+    }
+
+    /// Puts the last summary up again.
+    func showLast() async {
+        guard let last else { return }
+        await present(last.text, last.told)
     }
 
     /// Tells what Claude did between `from` and `to`. `away`: the span is
     /// the lid closed, not one asked for. `sayIfNothing`: the Settings
     /// button, which reports a quiet stretch as well. Returns the text told.
     @discardableResult
-    func summarize(from: Date, to: Date, away: Bool, sayIfNothing: Bool, speechDelay: Duration = .zero) async -> String? {
+    func summarize(from: Date, to: Date, away: Bool, sayIfNothing: Bool) async -> String? {
         guard !isSummarizing else { return nil }
         isSummarizing = true
         defer { isSummarizing = false }
         guard var digest = digest(from, to) else {
             Log.info("away summary: nothing Claude did to tell")
             if sayIfNothing {
-                lastResult = "Bu sürede Claude'un yaptığı bir iş yok."
-                notifier.post(title: Self.title, body: "Bu sürede Claude'un yaptığı bir iş yok.")
+                lastResult = Self.nothingToTell
+                await present(Self.nothingToTell, clock())
             }
             return nil
         }
@@ -117,13 +124,11 @@ final class AwaySummary {
         case .none:
             break
         }
+        let told = clock()
         Log.info("away summary told (\(note))")
-        lastResult = "\(Self.clockText(clock())): \(text) (\(note))"
-        notifier.post(title: Self.title, body: text)
-        if config().awaySummarySpoken {
-            if speechDelay > .zero { try? await Task.sleep(for: speechDelay) }
-            await speech.speak(text)
-        }
+        lastResult = "\(Self.clockText(told)): \(text) (\(note))"
+        last = (text, told)
+        await present(text, told)
         return text
     }
 

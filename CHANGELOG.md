@@ -4,6 +4,17 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.5.0 — 2026-10-21
+
+### Değişenler
+
+- **Özet artık kendiliğinden okunmaz.** Kapak açılınca "Sen yokken" özeti bildirim ve sesli okuma yerine ekranın sağ üstünde küçük bir pencerede görünür; siz ▶ düğmesine basmadan ses çıkmaz. Pencere öndeki uygulamanın odağını almaz; kapak yeniden kapanınca okuma durur ve pencere kapanır.
+
+### Eklenenler
+
+- **Özet oynatıcısı.** Okurken okunan kelime metinde vurgulanır; ❚❚ durdurur, ◀◀ ve ▶▶ beşer kelime geri ve ileri gider, çubuğu sürükleyince okuma o kelimeden sürer.
+- **Son özeti göster.** Göze sağ tıklayınca açılan menüden son özet yeniden açılır.
+
 ## 0.4.0 — 2026-10-21
 
 ### Eklenenler
