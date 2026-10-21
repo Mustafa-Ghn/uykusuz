@@ -37,6 +37,10 @@ struct ClaudeDigest: Equatable, Sendable {
     var from: Date
     var to: Date
     var sessions: [Session]
+    /// The span is the lid closed (the summary at a lid open); false for a
+    /// span asked for (Settings, `--away-digest`), which is told as the
+    /// last minutes instead.
+    var away = true
 
     /// The newest transcript bytes read from each file: enough for any time
     /// away worth a summary, and a bound on a long session's file.
@@ -143,7 +147,8 @@ struct ClaudeDigest: Equatable, Sendable {
 
     /// What the API is given: a plain text account of the sessions.
     var promptText: String {
-        var lines = ["Uzakta kalınan süre: \(Self.minutes(to.timeIntervalSince(from))) dakika."]
+        let span = Self.minutes(to.timeIntervalSince(from))
+        var lines = [away ? "Kullanıcı \(span) dakika uzaktaydı (kapak kapalıydı)." : "Özetlenen süre: son \(span) dakika."]
         for (index, s) in sessions.enumerated() {
             lines.append("")
             lines.append("Oturum \(index + 1): \(s.title)")
@@ -162,10 +167,11 @@ struct ClaudeDigest: Equatable, Sendable {
 
     /// The summary without the API: counts, in at most two sentences.
     var localSummary: String {
-        let away = Self.minutes(to.timeIntervalSince(from))
-        guard let first = sessions.first else { return "Kapak kapalıyken Claude bir şey yapmadı." }
+        let span = Self.minutes(to.timeIntervalSince(from))
+        let lead = away ? "Kapak kapalıyken (\(span) dakika)" : "Son \(span) dakikada"
+        guard let first = sessions.first else { return "\(lead) Claude bir şey yapmadı." }
         let others = sessions.count - 1
-        var sentence = "Kapak kapalıyken (\(away) dakika) Claude \"\(first.title)\" üzerinde çalıştı"
+        var sentence = "\(lead) Claude \"\(first.title)\" üzerinde çalıştı"
         var details: [String] = []
         if !first.editedFiles.isEmpty { details.append("\(first.editedFiles.count) dosya düzenledi") }
         let commands = first.toolCounts["Bash"] ?? 0

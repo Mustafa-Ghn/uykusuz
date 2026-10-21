@@ -77,18 +77,18 @@ final class AwaySummary {
         guard let since = closedAt else { return }
         closedAt = nil
         guard config().awaySummary, now.timeIntervalSince(since) >= Self.minimumAway else { return }
-        Task { await summarize(from: since, to: now, sayIfNothing: false, speechDelay: speechDelayAfterOpen) }
+        Task { await summarize(from: since, to: now, away: true, sayIfNothing: false, speechDelay: speechDelayAfterOpen) }
     }
 
-    /// Tells what Claude did between `from` and `to`. `sayIfNothing`: the
-    /// Settings button, which reports a quiet stretch as well. Returns the
-    /// text told.
+    /// Tells what Claude did between `from` and `to`. `away`: the span is
+    /// the lid closed, not one asked for. `sayIfNothing`: the Settings
+    /// button, which reports a quiet stretch as well. Returns the text told.
     @discardableResult
-    func summarize(from: Date, to: Date, sayIfNothing: Bool, speechDelay: Duration = .zero) async -> String? {
+    func summarize(from: Date, to: Date, away: Bool, sayIfNothing: Bool, speechDelay: Duration = .zero) async -> String? {
         guard !isSummarizing else { return nil }
         isSummarizing = true
         defer { isSummarizing = false }
-        guard let digest = digest(from, to) else {
+        guard var digest = digest(from, to) else {
             Log.info("away summary: nothing Claude did to tell")
             if sayIfNothing {
                 lastResult = "Bu sürede Claude'un yaptığı bir iş yok."
@@ -96,6 +96,7 @@ final class AwaySummary {
             }
             return nil
         }
+        digest.away = away
         var text = digest.localSummary
         var note = "yerel özet; API anahtarı yok"
         switch await keyStore.read() {
@@ -152,10 +153,11 @@ enum AwayDigestCommand {
         guard arguments.first == flag else { return nil }
         let minutes = arguments.dropFirst().first.flatMap(Double.init) ?? 60
         let from = now.addingTimeInterval(-minutes * 60)
-        guard let digest = ClaudeDigest.build(from: from, to: now, status: { AwaySummary.status(ofSession: $0, paths: paths, now: now) }) else {
+        guard var digest = ClaudeDigest.build(from: from, to: now, status: { AwaySummary.status(ofSession: $0, paths: paths, now: now) }) else {
             print("Son \(Int(minutes)) dakikada Claude'un yaptığı bir iş yok.")
             return 0
         }
+        digest.away = false
         print(digest.promptText)
         print("")
         print("Yerel özet: \(digest.localSummary)")

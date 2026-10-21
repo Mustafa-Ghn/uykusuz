@@ -81,6 +81,11 @@ final class ClaudeDigestTests: XCTestCase {
         XCTAssertTrue(prompt.contains("kullanıcıdan onay ya da yanıt bekliyor"), prompt)
         XCTAssertEqual(digest.localSummary,
                        "Kapak kapalıyken (40 dakika) Claude \"Uykusuz özeti\" üzerinde çalıştı: 1 dosya düzenledi, 1 komut çalıştırdı. Bir oturum yanıtınızı bekliyor.")
+        XCTAssertTrue(prompt.hasPrefix("Kullanıcı 40 dakika uzaktaydı (kapak kapalıydı)."), prompt)
+        var asked = digest
+        asked.away = false
+        XCTAssertTrue(asked.localSummary.hasPrefix("Son 40 dakikada Claude \"Uykusuz özeti\" üzerinde çalıştı"), asked.localSummary)
+        XCTAssertTrue(asked.promptText.hasPrefix("Özetlenen süre: son 40 dakika."), asked.promptText)
     }
 
     func testAQuietStretchAndAnOlderTranscriptAreNothing() throws {
@@ -268,7 +273,7 @@ final class AwaySummaryTests: XCTestCase {
     func testWithAKeyClaudeWritesItAndAFailureFallsBackToTheLocalOne() async {
         config.summaryModel = "claude-haiku-5-5"
         var (summary, notifier, _) = make(key: .key("sk-ant-k"))
-        var text = await summary.summarize(from: t0, to: t0.addingTimeInterval(600), sayIfNothing: false)
+        var text = await summary.summarize(from: t0, to: t0.addingTimeInterval(600), away: true, sayIfNothing: false)
         XCTAssertEqual(text, "Claude testleri bitirdi, bir onay bekliyor.")
         XCTAssertEqual(writes.first?.key, "sk-ant-k")
         XCTAssertEqual(writes.first?.model, "claude-haiku-5-5")
@@ -276,12 +281,12 @@ final class AwaySummaryTests: XCTestCase {
         XCTAssertTrue(summary.lastResult?.contains("Claude yazdı") ?? false, summary.lastResult ?? "")
 
         result = .failure(.http(401, "invalid x-api-key"))
-        text = await summary.summarize(from: t0, to: t0.addingTimeInterval(600), sayIfNothing: false)
+        text = await summary.summarize(from: t0, to: t0.addingTimeInterval(600), away: true, sayIfNothing: false)
         XCTAssertEqual(text, digest?.localSummary)
         XCTAssertTrue(summary.lastResult?.contains("API anahtarı geçersiz (401)") ?? false, summary.lastResult ?? "")
 
         (summary, notifier, _) = make(key: .unreadable)
-        text = await summary.summarize(from: t0, to: t0.addingTimeInterval(600), sayIfNothing: false)
+        text = await summary.summarize(from: t0, to: t0.addingTimeInterval(600), away: true, sayIfNothing: false)
         XCTAssertEqual(text, digest?.localSummary)
         XCTAssertTrue(summary.lastResult?.contains("yeniden kaydedin") ?? false, summary.lastResult ?? "")
     }
@@ -289,10 +294,10 @@ final class AwaySummaryTests: XCTestCase {
     func testNothingToTellIsSaidOnlyWhenAsked() async {
         digest = nil
         let (summary, notifier, speech) = make()
-        let quiet = await summary.summarize(from: t0, to: t0.addingTimeInterval(600), sayIfNothing: false)
+        let quiet = await summary.summarize(from: t0, to: t0.addingTimeInterval(600), away: true, sayIfNothing: false)
         XCTAssertNil(quiet)
         XCTAssertTrue(notifier.posts.isEmpty)
-        _ = await summary.summarize(from: t0, to: t0.addingTimeInterval(600), sayIfNothing: true)
+        _ = await summary.summarize(from: t0, to: t0.addingTimeInterval(600), away: false, sayIfNothing: true)
         XCTAssertEqual(notifier.posts.map(\.body), ["Bu sürede Claude'un yaptığı bir iş yok."])
         XCTAssertTrue(speech.spoken.isEmpty)
     }
@@ -300,7 +305,7 @@ final class AwaySummaryTests: XCTestCase {
     func testReadAloudOnlyIfSettingsSaysSo() async {
         config.awaySummarySpoken = false
         let (summary, notifier, speech) = make()
-        _ = await summary.summarize(from: t0, to: t0.addingTimeInterval(600), sayIfNothing: false)
+        _ = await summary.summarize(from: t0, to: t0.addingTimeInterval(600), away: true, sayIfNothing: false)
         XCTAssertEqual(notifier.posts.count, 1)
         XCTAssertTrue(speech.spoken.isEmpty)
     }

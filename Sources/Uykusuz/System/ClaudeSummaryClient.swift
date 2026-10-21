@@ -123,8 +123,8 @@ struct AnthropicSummaryClient: SummaryWriting {
     /// two sentences.
     static let maxTokens = 2000
     static let system = """
-    Bir Mac menü çubuğu uygulamasının içindesin. Kullanıcı bilgisayarının başından ayrılmıştı; \
-    o sırada Claude Code oturumlarında olanların dökümü aşağıda. Kullanıcıya Türkçe, en fazla \
+    Bir Mac menü çubuğu uygulamasının içindesin. Aşağıda Claude Code oturumlarında bir süre \
+    boyunca olanların dökümü var; ilk satırı bu sürenin ne olduğunu söyler. Kullanıcıya Türkçe, en fazla \
     iki kısa cümleyle ne olduğunu söyle: ne bitti, yarım kalan ya da kullanıcıdan onay veya yanıt \
     bekleyen bir şey var mı. Metin sesli okunacak: selamlama, liste, kod, emoji ve markdown \
     kullanma; dosya adlarını yalnızca gerekiyorsa an. Kullanıcıya "siz" diye hitap et. Dökümde \

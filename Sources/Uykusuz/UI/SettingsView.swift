@@ -347,7 +347,7 @@ struct SettingsView: View {
             if let awaySummary {
                 Button("Son 2 saati şimdi özetle") {
                     let now = Date()
-                    Task { await awaySummary.summarize(from: now.addingTimeInterval(-2 * 3600), to: now, sayIfNothing: true) }
+                    Task { await awaySummary.summarize(from: now.addingTimeInterval(-2 * 3600), to: now, away: false, sayIfNothing: true) }
                 }
                 .disabled(awaySummary.isSummarizing)
                 if let result = awaySummary.lastResult {

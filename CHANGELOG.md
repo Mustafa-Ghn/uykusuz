@@ -4,6 +4,12 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.3.2 — 2026-10-21
+
+### Düzeltilenler
+
+- **Özetin süresi.** Ayarlar'daki "Son 2 saati şimdi özetle" düğmesi ve --away-digest önizlemesi, kapak kapanmamışken de özete "Kapak kapalıyken" diye başlıyordu; artık "Son 120 dakikada" gibi başlar. Kapak açılışındaki özet değişmedi.
+
 ## 0.3.1 — 2026-10-21
 
 ### Düzeltilenler
