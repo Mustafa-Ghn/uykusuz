@@ -79,7 +79,9 @@ tıklanınca kutuları kapatmak için yalnızca fare tıklamalarını dinler. Ek
 ve klavye parlaklığı için macOS'in özel DisplayServices ve CoreBrightness
 çerçeveleri sabit sistem yollarından `dlopen` ile yüklenir; bunların dışında
 dışarıdan kod yüklenmez. Sesli uyarılar `/usr/bin/say` ile söylenir; metin
-tek bir argüman olarak, `--` ayıracından sonra verilir.
+tek bir argüman olarak, `--` ayıracından sonra verilir. Ses, Mac'te kurulu
+sesler arasından seçilen en iyi Türkçe sestir; listesi sistemden
+(`AVSpeechSynthesisVoice`) yalnızca okunur.
 
 ## Hotspot parolası
 

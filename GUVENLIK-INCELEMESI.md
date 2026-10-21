@@ -171,7 +171,8 @@ komutu ya da kalıcı bileşen eklenmedi.
   kullanıcının kendi süreçlerinin adları, argümanları ve işlemci süreleri
   okunur.
 - **Sesli uyarı:** `/usr/bin/say` ile konuşur; metin tek bir argüman olarak,
-  `--` ayıracından sonra verilir.
+  `--` ayıracından sonra verilir. Ses, kurulu sesler arasından seçilen en iyi
+  Türkçe sestir (0.4.0); ses listesi yalnızca okunur.
 - **Kod modu ve boşta siyah ekran:** Parlaklığı mevcut ekran ve klavye
   arayüzleriyle değiştirir. Yalnızca son girdiden geçen süre okunur
   (`CGEventSource.secondsSinceLastEventType`); bunun için tuş vuruşları

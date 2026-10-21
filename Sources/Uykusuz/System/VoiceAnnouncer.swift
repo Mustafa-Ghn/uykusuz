@@ -10,18 +10,26 @@ struct NoSpeech: SpeechSynthesizing {
     func speak(_ text: String) async {}
 }
 
-/// `/usr/bin/say` with the Turkish voice, the text passed as one argument
+/// `/usr/bin/say` with a Turkish voice, the text passed as one argument
 /// after `--`, so nothing in it is read as an option. Bounded: a voice that
-/// hangs is killed after `timeout`.
+/// hangs is killed after `timeout`. `voice` nil is the best Turkish voice
+/// installed (`TurkishVoice`, fork change): an enhanced Yelda once the user
+/// has downloaded it, the compact one until then.
 struct SaySpeech: SpeechSynthesizing {
     static let sayPath = "/usr/bin/say"
-    var voice = "Yelda"
+    var voice: String? = nil
     var rate = 170
     var timeout: TimeInterval = 30
 
     func speak(_ text: String) async {
+        let name: String
+        if let voice {
+            name = voice
+        } else {
+            name = await TurkishVoice.current().identifier
+        }
         do {
-            let r = try await Shell.run(Self.sayPath, ["-v", voice, "-r", String(rate), "--", text], timeout: timeout)
+            let r = try await Shell.run(Self.sayPath, ["-v", name, "-r", String(rate), "--", text], timeout: timeout)
             if !r.succeeded {
                 Log.error("say exited \(r.status): \(r.stderr.trimmingCharacters(in: .whitespacesAndNewlines))")
             }

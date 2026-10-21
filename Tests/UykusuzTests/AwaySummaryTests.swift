@@ -426,3 +426,26 @@ final class BashToolWatcherTests: XCTestCase {
         XCTAssertNotNil(BashToolWatcher.liveCPUTime(getpid()))
     }
 }
+
+final class TurkishVoiceTests: XCTestCase {
+    private func voice(_ id: String, _ language: String, _ quality: Int, name: String = "Yelda") -> TurkishVoice.Voice {
+        .init(identifier: id, name: name, language: language, quality: quality)
+    }
+
+    func testTheBestTurkishVoiceWins() {
+        let compact = voice("com.apple.voice.compact.tr-TR.Yelda", "tr-TR", 1)
+        let enhanced = voice("com.apple.voice.enhanced.tr-TR.Yelda", "tr-TR", 2)
+        let english = voice("com.apple.voice.premium.en-US.Zoe", "en-US", 3, name: "Zoe")
+        XCTAssertEqual(TurkishVoice.best(among: [compact, english])?.identifier, compact.identifier, "another language never")
+        XCTAssertEqual(TurkishVoice.best(among: [compact, enhanced, english])?.identifier, enhanced.identifier)
+        XCTAssertEqual(TurkishVoice.best(among: [compact, enhanced])?.label, "Yelda (Gelişmiş)")
+        XCTAssertEqual(TurkishVoice.best(among: [compact])?.label, "Yelda (basit)")
+        XCTAssertNil(TurkishVoice.best(among: [english]))
+        XCTAssertEqual(TurkishVoice.best(among: [voice("x.premium.tr-TR.Yelda", "tr-TR", 3)])?.quality, .premium)
+    }
+
+    func testThisMacHasATurkishVoice() async {
+        let choice = await TurkishVoice.current(fresh: true)
+        XCTAssertFalse(choice.identifier.isEmpty)
+    }
+}

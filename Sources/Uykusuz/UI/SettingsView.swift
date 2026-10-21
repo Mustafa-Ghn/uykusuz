@@ -25,6 +25,8 @@ struct SettingsView: View {
     @State private var wouldFreeze: [String] = []
     /// Whether ~/.claude/settings.json runs this app's hook, and the last
     /// install or removal error.
+    /// The Turkish voice alerts and summaries are spoken in.
+    @State private var voiceChoice: TurkishVoice.Choice?
     @State private var apiKeyDraft = ""
     @State private var apiKeyStatus = "\u{2026}"
     @State private var apiKeySaved = false
@@ -218,6 +220,21 @@ struct SettingsView: View {
             Text("Kapak kapalıyken bildirimler görünmez. Uykusuz sesi bir an açar, uyarıyı Türkçe söyler ve eski ses ayarını geri koyar.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
+            LabeledContent("Ses") {
+                HStack {
+                    Text(voiceChoice?.label ?? "\u{2026}")
+                        .foregroundStyle(.secondary)
+                    Button("Dinle") {
+                        Task { await SaySpeech().speak(Self.voiceSample) }
+                    }
+                }
+            }
+            .task { voiceChoice = await TurkishVoice.current(fresh: true) }
+            if voiceChoice?.quality == .basic {
+                Text("Daha doğal bir ses için Sistem Ayarları > Erişilebilirlik > Seslendirilen İçerik > Sistem sesi bölümünden Türkçe \"Yelda (Gelişmiş)\" sesini indirin. Uykusuz kurulu en iyi Türkçe sesi kendiliğinden kullanır.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
         } header: {
             Text("Kapak kapanınca yapılacaklar")
         } footer: {
@@ -318,6 +335,9 @@ struct SettingsView: View {
                 .foregroundStyle(.secondary)
         }
     }
+
+    /// What "Dinle" says, at the output's current volume.
+    static let voiceSample = "Merhaba, ben Uykusuz. Kapak kapalıyken uyarıları bu sesle söylerim."
 
     private var awaySummarySection: some View {
         Section("Sen yokken özeti") {
