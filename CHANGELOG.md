@@ -4,6 +4,16 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.7.2 — 2026-10-21
+
+### Eklenenler
+
+- **İzin isteklerini otomatik onaylama.** Ayarlar > Claude, kod modu ve ekran bölümündeki "Claude'un izin isteklerini otomatik onayla" açıkken Uykusuz, Claude'un komut çalıştırma, dosya düzenleme ve araç kullanma izinlerini sizin yerinize hemen onaylar; plan ya da auto modunda da onay penceresi sizi bekletmez. Claude'un soruları ve plan onayları size kalır, Claude ayarlarınızdaki deny kuralları yine geçerlidir. Varsayılan olarak kapalıdır ve yeni açılan oturumlarda geçerli olur.
+
+### Değişenler
+
+- **Onay penceresi hook'u.** Uykusuz açılışta, daha önce kurduğunuz Claude Code hook'larından onay penceresi olayınınkini, karar yazabilen yeni komutla yeniler; ayar kapalıyken bu hook da önceki gibi hiçbir şey yazmaz.
+
 ## 0.7.1 — 2026-10-21
 
 ### Düzeltilenler

@@ -70,7 +70,12 @@ hiçbir çıktı vermeyen ve hep başarılı dönen bir komut ekler, dosyanın e
 hâlini yedekler. Komut, uygulama destek klasörüne oturum başına 0600 izinli
 bir işaret dosyası yazar ya da onu siler; Claude bir onay ya da yanıt
 beklerken dosyaya bekleme zamanını yazar. Komut hiçbir çıktı vermediği için
-bir izin isteğine yanıt vermez ve bir aracı değiştirmez. Claude'un başlattığı
+bir izin isteğine yanıt vermez ve bir aracı değiştirmez. Tek istisnayı kullanıcı
+açar: "Claude'un izin isteklerini otomatik onayla" açıkken onay penceresi
+olayının hook'u (çıktısı Claude Code'a giden tek hook) bir soru ya da plan onayı
+olmayan her izin isteğine "onay" yazar. Bu, bypass moduna yakın bir güvenlik
+düzeyidir; Claude Code'un deny kuralları yine uygulanır. Ayar her istekte
+config.json'dan okunur; okunamazsa kapalı sayılır. Claude'un başlattığı
 komutları ve iş yapıp yapmadıklarını algılamak için yalnızca kullanıcının
 kendi süreçlerinin adları, argümanları ve işlemci süreleri okunur. "Sen yokken" özeti `~/.claude/projects` altındaki Claude
 Code kayıtlarını yalnızca okur ve bunlardan yalnızca yukarıda sayılan alanları
