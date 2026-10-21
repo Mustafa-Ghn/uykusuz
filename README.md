@@ -75,7 +75,8 @@ Claude çalışırken bunu kendiliğinden de yapar.
   çalışıyorsa Düşük Güç Modu açılır; bir süre girdi olmazsa ekran tamamen
   kararır ve bir tuşla geri gelir.
 - **Türkçe sesli uyarılar.** Kapak kapalıyken bildirimler görünmediği için pil,
-  ısı ve oturum sonu uyarıları sesli söylenir.
+  ısı ve oturum sonu uyarıları sesli söylenir; Mac'te kurulu en iyi Türkçe ses
+  kullanılır.
 - **Pil ve ısı korumaları.** Pil %30'un altına inince Düşük Güç Modu açılır,
   %20'nin altında oturum biter; Mac aşırı ısınırsa oturum kendiliğinden kapanır.
 - **Güvenli geri alma.** Her değişiklik önce diske kaydedilir. Uygulama çökse
@@ -198,7 +199,7 @@ Ayarlar penceresi göze sağ tıklayınca açılan menüden (⌘,) açılır:
 | Bölüm | İçindekiler |
 | --- | --- |
 | Oturum | Hazır süreler, varsayılan süre, açılışta odaklanan alan, en uzun oturum |
-| Kapak kapanınca yapılacaklar | Ekran ve klavye ışığı, dondurma listesi, diğer tüm uygulamalar, Docker, ses, Düşük Güç Modu, sesli uyarı |
+| Kapak kapanınca yapılacaklar | Ekran ve klavye ışığı, dondurma listesi, diğer tüm uygulamalar, Docker, ses, Düşük Güç Modu, sesli uyarı, kullanılan ses ve Dinle |
 | Ajan uygulamaları | Hiçbir zaman dondurulmayan ya da kısıtlanmayan uygulamalar, App Nap |
 | Pil ve ısı | Düşük Güç Modu ve oturum sonu eşikleri, ısı kuralları |
 | Claude, kod modu ve ekran | Claude Code hook'ları, otomatik oturum, yanıt beklerken bitirme ve bekleme süresi, kod modu, boşta siyah ekran süreleri |
@@ -333,8 +334,13 @@ bunları geri almaya çalışır. Kapak kapalıyken zamanlayıcı geri saymayı 
 - **Düşük Güç Modu açılır.** Bir pil ya da ısı kuralı hâlâ gerektirmiyorsa
   kapak açılınca kapanır.
 - **Uyarılar sesli söylenir.** Kapak kapalıyken bildirimler görünmediği için
-  pil eşiği, ısınma ve oturum sonu Türkçe sesle (Yelda) söylenir: Uykusuz sesi
-  bir an açar, uyarıyı söyler ve eski ses ayarını geri koyar.
+  pil eşiği, ısınma ve oturum sonu Türkçe sesle söylenir: Uykusuz sesi bir an
+  açar, uyarıyı söyler ve eski ses ayarını geri koyar. Mac'te kurulu en iyi
+  Türkçe ses kullanılır: Premium, yoksa Gelişmiş, yoksa macOS ile gelen basit
+  Yelda. Daha doğal bir ses için Sistem Ayarları > Erişilebilirlik >
+  Seslendirilen İçerik > Sistem sesi bölümünden "Yelda (Gelişmiş)" sesini
+  indirin; Uykusuz onu yeniden başlatmadan kullanmaya başlar. Ayarlar'da
+  kullanılan ses görünür ve **Dinle** düğmesi onu çalar.
 - **Çalışan kapsayıcı yoksa Docker Desktop duraklatılır.** Bu seçenek
   varsayılan olarak kapalıdır.
 

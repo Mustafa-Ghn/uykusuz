@@ -4,6 +4,13 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.4.0 — 2026-10-21
+
+### Eklenenler
+
+- **En iyi Türkçe ses.** Sesli uyarılar ve "Sen yokken" özeti artık Mac'te kurulu en iyi Türkçe sesle söylenir: Premium, yoksa Gelişmiş, yoksa macOS ile gelen basit Yelda. Sistem Ayarları > Erişilebilirlik > Seslendirilen İçerik bölümünden "Yelda (Gelişmiş)" indirilince Uykusuz onu yeniden başlatmadan kullanmaya başlar.
+- **Ses satırı ve Dinle.** Ayarlar > Kapak kapanınca yapılacaklar bölümünde kullanılan ses görünür; Dinle düğmesi örnek bir cümleyi o sesle çalar. Yalnızca basit ses kuruluysa Gelişmiş sesin nereden indirileceği yazar.
+
 ## 0.3.2 — 2026-10-21
 
 ### Düzeltilenler
