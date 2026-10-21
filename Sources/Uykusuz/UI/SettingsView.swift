@@ -11,6 +11,10 @@ struct SettingsView: View {
     let loginItem: LoginItem
     /// "While you were away" (fork addition); nil leaves its section out.
     var awaySummary: AwaySummary? = nil
+    /// iMessage when Claude waits (fork addition); nil leaves it out.
+    var waitingAlerts: WaitingAlerts? = nil
+    /// Replies from the phone (fork addition); nil leaves them out.
+    var pushGate: ClaudePushGate? = nil
 
     @State private var newPreset = ""
     @State private var presetError: String?
@@ -35,6 +39,7 @@ struct SettingsView: View {
     @State private var apiKeyBusy = false
     @State private var claudeHooksInstalled = ClaudeHooks.isInstalled()
     @State private var claudeHooksError: String?
+    @State private var phoneRepliesError: String?
 
     var body: some View {
         Form {
@@ -45,6 +50,12 @@ struct SettingsView: View {
             agentModeSection
             if awaySummary != nil {
                 awaySummarySection
+            }
+            if pushGate != nil {
+                phoneRepliesSection
+            }
+            if waitingAlerts != nil {
+                waitingAlertsSection
             }
             networkSection
             appSection
@@ -311,7 +322,7 @@ struct SettingsView: View {
                     .foregroundStyle(.red)
             }
             Toggle("Claude çalışırken otomatik oturum", isOn: bind(\.autoSession))
-            Text("Claude bir görev yürüttüğü sürece oturum kendiliğinden başlar ve uzar; Claude 5 dakika çalışmayınca biter. Bu oturumda menü çubuğunda geri sayım yerine \"Claude\" yazar. Kapak kapansa da Mac uyanık kalır, bu yüzden Mac'i kapalı bir çantaya koymayın. \"Claude\" yazısına tıklayıp bir süre girerseniz oturum sizin olur ve o andan itibaren girdiğiniz süre kadar sürer. Oturumu basılı tutarak bitirirseniz otomatik oturumu duraklatmak için süre seçebilirsiniz; duraklatma sağ tık menüsünden de açılıp kapatılır.")
+            Text("Claude bir görev yürüttüğü sürece oturum kendiliğinden başlar ve uzar; Claude \(Int(manager.config.autoIdleGrace / 60)) dakika çalışmayınca biter. Bu oturumda menü çubuğunda geri sayım yerine \"Claude\" yazar. Kapak kapansa da Mac uyanık kalır, bu yüzden Mac'i kapalı bir çantaya koymayın. \"Claude\" yazısına tıklayıp bir süre girerseniz oturum sizin olur ve o andan itibaren girdiğiniz süre kadar sürer. Oturumu basılı tutarak bitirirseniz otomatik oturumu duraklatmak için süre seçebilirsiniz; duraklatma sağ tık menüsünden de açılıp kapatılır.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Toggle("Claude yanıt beklerken oturumu bitir", isOn: bind(\.endWhileWaiting))
@@ -319,7 +330,9 @@ struct SettingsView: View {
                 LabeledContent("Bekleme süresi", value: "\(Int(manager.config.approvalWaitGrace / 60)) dk")
             }
             .disabled(!manager.config.endWhileWaiting)
-            Text("Claude bir komut için onay, bir soru için yanıt ya da bir plan için onay beklerken bu süre içinde yanıt gelmezse otomatik oturum biter ve Mac uyur; yanıt verince yeniden başlar. Kapak kapalıyken Uykusuz bunu sesle söyler. Onayı telefondan vermek istiyorsanız süreyi uzatın ya da bunu kapatın.")
+            Text(manager.config.phoneReplies && manager.config.phoneReplyWindow > manager.config.approvalWaitGrace
+                 ? "Telefondan yanıt açık olduğu için bekleme \(Int(manager.config.autoWaitGrace / 60)) dakika sürer (Telefondan yanıt bölümündeki süre). Bu süre içinde yanıt gelmezse otomatik oturum biter ve Mac uyur; yanıt verince yeniden başlar. Kapak kapalıyken Uykusuz bunu sesle söyler."
+                 : "Claude bir komut için onay, bir soru için yanıt ya da bir plan için onay beklerken bu süre içinde yanıt gelmezse otomatik oturum biter ve Mac uyur; yanıt verince yeniden başlar. Kapak kapalıyken Uykusuz bunu sesle söyler. Onayı telefondan vermek istiyorsanız Telefondan yanıt'ı açın ya da süreyi uzatın.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Toggle("Kod modu: Claude çalışırken Düşük Güç Modu (kapak açıkken)", isOn: bind(\.codeMode))
@@ -333,6 +346,70 @@ struct SettingsView: View {
                 LabeledContent("Klavye ışığını kapatma süresi", value: "\(Int(manager.config.keyboardOffAfter)) sn")
             }
             Text("Oturum sürerken kapak açıkken ekran koruyucu ve ekran uykusu çalışmaz. Bu süre boyunca girdi olmazsa ekran parlaklığı 0'a iner ve ekran hiç ışık vermez; klavye ışığı da söner. Bir tuşa ya da fareye dokununca ikisi de geri gelir. Bu sırada ekran kendiliğinden kilitlenmez; Mac'in başından kalkarken Ctrl+Cmd+Q ile kilitleyin.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var phoneRepliesSection: some View {
+        Section("Telefondan yanıt") {
+            Toggle("Claude'un telefon bildirimleri yalnızca ben uzaktayken gelsin", isOn: Binding(
+                get: { manager.config.phoneReplies },
+                set: { setPhoneReplies($0) }
+            ))
+            if manager.config.phoneReplies {
+                Stepper(value: bind(\.phoneReplyWindow), in: 5 * 60...3 * 3600, step: 5 * 60) {
+                    LabeledContent("Yanıt için Mac uyanık kalsın", value: "\(Int(manager.config.phoneReplyWindow / 60)) dk")
+                }
+            }
+            if let phoneRepliesError {
+                Text(phoneRepliesError)
+                    .font(.callout)
+                    .foregroundStyle(.red)
+            }
+            Text("Claude uygulamasında Ayarlar > Claude Code > \"Connect new sessions to Remote Control\" açıkken oturumlar iPhone'daki Claude uygulamasında, Code sekmesinde kendi adlarıyla görünür; yanıtı, onayı ya da yeni isteği oradan ilgili oturuma verirsiniz. Claude, onay ya da yanıt beklerken ve bir iş bitince telefona kendisi bildirim gönderir. Bu seçenek açıkken siz Mac'in başındayken bu bildirimler susar; kapak kapalıyken, ekran kilitliyken ya da 2 dakikadır Mac'e dokunulmadıysa gelir. Otomatik oturum da Claude durduktan ya da beklemeye başladıktan sonra yukarıdaki süre kadar sürer, böylece telefondan yanıt verdiğinizde Mac uyanık olur. Açınca ~/.claude/settings.json dosyasına bir satır eklenir; yalnızca bundan sonra açılan oturumlarda geçerlidir.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    /// Puts the presence variable in Claude Code's settings or takes it out,
+    /// then the setting. On stays off when the settings could not take it;
+    /// off goes off either way, so the file is not kept for nothing.
+    private func setPhoneReplies(_ on: Bool) {
+        guard let pushGate, manager.config.phoneReplies != on else { return }
+        do {
+            if on {
+                try ClaudeHooks.installPresence(file: pushGate.file)
+            } else {
+                try ClaudeHooks.removePresence(file: pushGate.file)
+            }
+            phoneRepliesError = nil
+        } catch {
+            phoneRepliesError = "Claude Code ayarları değiştirilemedi: \(error.localizedDescription)"
+            if on { return }
+        }
+        manager.config.phoneReplies = on
+        save()
+        pushGate.tick()
+    }
+
+    private var waitingAlertsSection: some View {
+        Section("Claude sizi beklerken iPhone'a haber ver") {
+            Toggle("iMessage gönder", isOn: bind(\.imessageAlerts))
+            TextField("Alıcı: telefon numarası ya da Apple ID e-postası", text: bind(\.imessageHandle))
+            if let waitingAlerts {
+                HStack {
+                    Button("Deneme mesajı gönder") { Task { await waitingAlerts.sendTest() } }
+                        .disabled(manager.config.imessageHandle.trimmingCharacters(in: .whitespaces).isEmpty || waitingAlerts.isSendingTest)
+                    if let result = waitingAlerts.lastResult {
+                        Text(result)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            Text("Kapak kapalıyken, ekran kilitliyken ya da 2 dakikadır Mac'e dokunulmadıysa, bir Claude Code oturumu onay ya da yanıt beklemeye başlayınca ya da işini bitirip yeni isteğinizi bekleyince Uykusuz bu alıcıya Mesajlar üzerinden iMessage gönderir. API anahtarı kayıtlıysa mesajı Claude yazar, değilse oturumun adı ve Claude'un son mesajının sonu gider. Her oturum için en çok 10 dakikada bir mesaj gönderilir. İlk gönderimde macOS, Uykusuz'un Mesajlar'ı denetlemesine izin vermenizi ister. Kendi numaranıza gönderirseniz mesaj kendinizle olan sohbete düşer; deneme mesajıyla telefonunuzda bildirim gelip gelmediğine bakın. Telefondan yanıt açıksa Claude'un kendi bildirimi de gelir; ikisini birden istemiyorsanız bunu kapatın.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

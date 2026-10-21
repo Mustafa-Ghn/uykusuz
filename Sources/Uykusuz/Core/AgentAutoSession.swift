@@ -11,7 +11,7 @@ import Foundation
 ///   battery the charge is more than `startMargin` above the end floor.
 /// - Extend: our session has less than `extendBelow` left while the agent
 ///   is still at work, by `chunk`.
-/// - End: the agent has not been at work for `idleGrace`, or for
+/// - End: the agent has not been at work for `Inputs.idleGrace`, or for
 ///   `Inputs.waitGrace` while it waits on the user.
 /// - Paused (`Inputs.pausedUntil`, the user's choice): no start before
 ///   then, and our session, if one still runs, ends.
@@ -43,6 +43,8 @@ struct AutoSessionPolicy: Equatable, Sendable {
         /// `waitGrace` rather than `idleGrace`.
         var agentWaiting = false
         var waitGrace: TimeInterval = AutoSessionPolicy.idleGrace
+        /// `Config.autoIdleGrace`.
+        var idleGrace: TimeInterval = AutoSessionPolicy.idleGrace
 
         var paused: Bool { pausedUntil.map { now < $0 } ?? false }
     }
@@ -109,7 +111,7 @@ struct AutoSessionPolicy: Equatable, Sendable {
                 }
                 return nil
             }
-            let grace = i.agentWaiting ? i.waitGrace : Self.idleGrace
+            let grace = i.agentWaiting ? i.waitGrace : i.idleGrace
             if let last = lastActive, i.now.timeIntervalSince(last) < grace { return nil }
             // Kept until the session is gone: an end refused by a busy
             // lock is asked for again on the next step.
@@ -144,6 +146,19 @@ struct AutoSessionPolicy: Equatable, Sendable {
         if i.thermal == .serious || i.thermal == .critical { return false }
         if !i.isCharging, let p = i.batteryPercent, p <= i.endFloor + startMargin { return false }
         return true
+    }
+}
+
+extension Config {
+    /// How long the automatic session stays on once Claude stops working:
+    /// with replies from the phone on, long enough for one.
+    var autoIdleGrace: TimeInterval {
+        phoneReplies ? max(AutoSessionPolicy.idleGrace, phoneReplyWindow) : AutoSessionPolicy.idleGrace
+    }
+
+    /// The same while Claude waits on the user (`endWhileWaiting`).
+    var autoWaitGrace: TimeInterval {
+        phoneReplies ? max(approvalWaitGrace, phoneReplyWindow) : approvalWaitGrace
     }
 }
 
@@ -257,7 +272,8 @@ final class AgentAutoSession {
             endFloor: config.endFloor,
             pausedUntil: manager.config.autoPausedUntil,
             agentWaiting: waiting != nil && endsWhileWaiting,
-            waitGrace: config.approvalWaitGrace
+            waitGrace: config.autoWaitGrace,
+            idleGrace: config.autoIdleGrace
         ))
         switch action {
         case let .start(duration)?:
@@ -276,10 +292,10 @@ final class AgentAutoSession {
             Log.info("auto session: ending, automatic sessions are paused")
             _ = await manager.end(reason: .user)
         case .end? where waiting != nil && endsWhileWaiting:
-            Log.info("auto session: ending, Claude has waited on the user for \(Int(config.approvalWaitGrace / 60)) min")
+            Log.info("auto session: ending, Claude has waited on the user for \(Int(config.autoWaitGrace / 60)) min")
             _ = await manager.end(reason: .agentWaiting)
         case .end?:
-            Log.info("auto session: ending, the agent has been idle for \(Int(AutoSessionPolicy.idleGrace / 60)) min")
+            Log.info("auto session: ending, the agent has been idle for \(Int(config.autoIdleGrace / 60)) min")
             _ = await manager.end(reason: .agentIdle)
         case nil:
             break

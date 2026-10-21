@@ -123,6 +123,47 @@ enum ClaudeHooks {
         return .removed
     }
 
+    // MARK: Presence file
+
+    /// Claude Code skips its phone pushes while the file this variable
+    /// names exists (`ClaudePushGate`).
+    static let presenceVariable = "CLAUDE_CLIENT_PRESENCE_FILE"
+
+    /// The file the settings' `env` names for it, if any.
+    static func presenceFile(settingsURL: URL = defaultSettingsURL) -> String? {
+        ((try? readSettings(settingsURL))?["env"] as? [String: Any])?[presenceVariable] as? String
+    }
+
+    /// Names `file` for the presence variable in the settings' `env`,
+    /// keeping the rest of the file. One the user set to another file is
+    /// left alone.
+    @discardableResult
+    static func installPresence(file: URL, settingsURL: URL = defaultSettingsURL) throws -> Change {
+        var root = try readSettings(settingsURL)
+        var env = root["env"] as? [String: Any] ?? [:]
+        if let current = env[presenceVariable] as? String {
+            guard current != file.path else { return .unchanged }
+            throw SettingsError(message: "\(settingsURL.path) içinde \(presenceVariable) zaten başka bir dosyayı gösteriyor (\(current)); dokunulmadı")
+        }
+        env[presenceVariable] = file.path
+        root["env"] = env
+        try writeSettings(root, to: settingsURL)
+        return .installed
+    }
+
+    /// Takes the presence variable out when it names `file`, and `env`
+    /// with it when nothing else is left there.
+    @discardableResult
+    static func removePresence(file: URL, settingsURL: URL = defaultSettingsURL) throws -> Change {
+        guard FileManager.default.fileExists(atPath: settingsURL.path) else { return .unchanged }
+        var root = try readSettings(settingsURL)
+        guard var env = root["env"] as? [String: Any], env[presenceVariable] as? String == file.path else { return .unchanged }
+        env[presenceVariable] = nil
+        root["env"] = env.isEmpty ? nil : env
+        try writeSettings(root, to: settingsURL)
+        return .removed
+    }
+
     // MARK: Private
 
     private static func isOurHook(_ entry: [String: Any]) -> Bool {
@@ -338,27 +379,41 @@ enum ClaudeActivity {
         maxAge: TimeInterval = markerMaxAge,
         lookup: (Int32) -> ProcessLookup = SignalProcessControl.processTableState
     ) -> [ClaudeTaskMarker] {
+        Array(liveSessions(paths: paths, now: now, maxAge: maxAge, lookup: lookup).values)
+    }
+
+    /// The live markers by session (the marker's file name without
+    /// `.json`, which is the session id made safe for a file name).
+    static func liveSessions(
+        paths: Paths,
+        now: Date,
+        maxAge: TimeInterval = markerMaxAge,
+        lookup: (Int32) -> ProcessLookup = SignalProcessControl.processTableState
+    ) -> [String: ClaudeTaskMarker] {
         let dir = ClaudeHookCommand.markerDirectory(paths)
-        guard let names = try? FileManager.default.contentsOfDirectory(atPath: dir.path) else { return [] }
-        var markers: [ClaudeTaskMarker] = []
+        guard let names = try? FileManager.default.contentsOfDirectory(atPath: dir.path) else { return [:] }
+        var markers: [String: ClaudeTaskMarker] = [:]
         for name in names where name.hasSuffix(".json") {
             let file = dir.appendingPathComponent(name)
             guard let marker = ClaudeHookCommand.readMarker(file) else { continue }
-            var live = now.timeIntervalSince(marker.updatedAt) < maxAge
-            if live, marker.pid > 0 {
-                if case let .present(state) = lookup(marker.pid) {
-                    live = marker.identity == nil || state.identity == marker.identity
-                } else {
-                    live = false
-                }
-            }
-            if live {
-                markers.append(marker)
+            if now.timeIntervalSince(marker.updatedAt) < maxAge, isRunning(marker, lookup: lookup) {
+                markers[String(name.dropLast(".json".count))] = marker
             } else {
                 try? FileManager.default.removeItem(at: file)
             }
         }
         return markers
+    }
+
+    /// Whether the `claude` process a marker was written under still runs;
+    /// a marker that names none counts as running.
+    static func isRunning(
+        _ marker: ClaudeTaskMarker,
+        lookup: (Int32) -> ProcessLookup = SignalProcessControl.processTableState
+    ) -> Bool {
+        guard marker.pid > 0 else { return true }
+        guard case let .present(state) = lookup(marker.pid) else { return false }
+        return marker.identity == nil || state.identity == marker.identity
     }
 
     static func processName(_ pid: Int32) -> String? {

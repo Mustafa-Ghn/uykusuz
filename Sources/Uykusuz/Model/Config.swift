@@ -105,6 +105,18 @@ struct Config: Codable, Equatable, Sendable {
     /// when a Claude API key is saved; otherwise it is made here from counts.
     var awaySummary: Bool = true
     var summaryModel: String = AnthropicSummaryClient.defaultModel
+    /// While the user is away, tell their iPhone by iMessage when a Claude
+    /// session starts to wait on them or finishes (`WaitingAlerts`), to
+    /// `imessageHandle` (a phone number or an Apple ID e-mail).
+    var imessageAlerts: Bool = false
+    var imessageHandle: String = ""
+    /// Replies from the phone, through Claude's Remote Control: Claude's
+    /// own phone pushes come only while the user is away (`ClaudePushGate`),
+    /// and the automatic session stays on `phoneReplyWindow` after Claude
+    /// stops or starts to wait (`autoIdleGrace`, `autoWaitGrace`), so a reply
+    /// sent from the phone finds the Mac awake.
+    var phoneReplies: Bool = false
+    var phoneReplyWindow: TimeInterval = 30 * 60
     /// During a session on the hotspot, leave it for a known Wi-Fi network
     /// that needs a password (`WiFiReturn`).
     var returnToKnownWiFi: Bool = true
@@ -228,6 +240,10 @@ struct Config: Codable, Equatable, Sendable {
         keyboardOffAfter = try c.decodeIfPresent(TimeInterval.self, forKey: .keyboardOffAfter) ?? d.keyboardOffAfter
         autoPausedUntil = try c.decodeIfPresent(Date.self, forKey: .autoPausedUntil)
         returnToKnownWiFi = try c.decodeIfPresent(Bool.self, forKey: .returnToKnownWiFi) ?? d.returnToKnownWiFi
+        imessageAlerts = try c.decodeIfPresent(Bool.self, forKey: .imessageAlerts) ?? d.imessageAlerts
+        imessageHandle = try c.decodeIfPresent(String.self, forKey: .imessageHandle) ?? d.imessageHandle
+        phoneReplies = try c.decodeIfPresent(Bool.self, forKey: .phoneReplies) ?? d.phoneReplies
+        phoneReplyWindow = try c.decodeIfPresent(TimeInterval.self, forKey: .phoneReplyWindow) ?? d.phoneReplyWindow
         awaySummary = try c.decodeIfPresent(Bool.self, forKey: .awaySummary) ?? d.awaySummary
         summaryModel = try c.decodeIfPresent(String.self, forKey: .summaryModel) ?? d.summaryModel
         endWhileWaiting = try c.decodeIfPresent(Bool.self, forKey: .endWhileWaiting) ?? d.endWhileWaiting

@@ -591,3 +591,207 @@ final class WiFiReturnTests: XCTestCase {
         XCTAssertEqual(radio.scans, 0, "turned off")
     }
 }
+
+@MainActor
+final class WaitingAlertsTests: XCTestCase {
+    final class Sender: MessageSending, @unchecked Sendable {
+        private let lock = NSLock()
+        private var _sent: [(text: String, handle: String)] = []
+        var sent: [(text: String, handle: String)] { lock.withLock { _sent } }
+        var fail = false
+        func send(_ text: String, to handle: String) async throws {
+            if fail { throw MessageSendError(message: "izin yok") }
+            lock.withLock { _sent.append((text, handle)) }
+        }
+    }
+
+    private var config = Config()
+    private var current: [String: ClaudeTaskMarker] = [:]
+    private var open = true
+    private var isAway = true
+    private var now = Date(timeIntervalSince1970: 2_000_000_000)
+    private let sender = Sender()
+
+    private func make() -> WaitingAlerts {
+        config.imessageAlerts = true
+        config.imessageHandle = "+905550000000"
+        return WaitingAlerts(
+            config: { [unowned self] in self.config },
+            sessions: { [unowned self] in self.current },
+            stillOpen: { [unowned self] _ in self.open },
+            away: { [unowned self] in self.isAway },
+            compose: { id, event in "\(id) \(event == .waiting ? "bekliyor" : "bitti")" },
+            sender: sender,
+            clock: { [unowned self] in self.now }
+        )
+    }
+
+    private func working(updated: TimeInterval = 0) -> ClaudeTaskMarker {
+        ClaudeTaskMarker(pid: 0, identity: nil, event: "PostToolUse", updatedAt: now.addingTimeInterval(-updated))
+    }
+
+    private func waiting() -> ClaudeTaskMarker {
+        ClaudeTaskMarker(pid: 0, identity: nil, event: "Notification", updatedAt: now, waitingSince: now)
+    }
+
+    private func advance(_ seconds: TimeInterval) { now = now.addingTimeInterval(seconds) }
+
+    func testAWaitThatLastsWhileAwayIsSentOnce() async {
+        let alerts = make()
+        current = ["s1": working()]
+        await alerts.tick()
+        current = ["s1": waiting()]
+        await alerts.tick()
+        XCTAssertTrue(sender.sent.isEmpty, "not yet settled")
+        advance(WaitingAlerts.settle)
+        await alerts.tick()
+        XCTAssertEqual(sender.sent.map(\.text), ["s1 bekliyor"])
+        XCTAssertEqual(sender.sent.first?.handle, "+905550000000")
+        advance(60)
+        await alerts.tick()
+        XCTAssertEqual(sender.sent.count, 1, "the same wait once")
+    }
+
+    func testAFinishIsSentButNotOneThatWorkResumedAfter() async {
+        let alerts = make()
+        current = ["s1": working(), "s2": working()]
+        await alerts.tick()
+        current = ["s2": working()]
+        await alerts.tick()
+        advance(10)
+        current = ["s1": working(), "s2": working()]
+        await alerts.tick()
+        advance(WaitingAlerts.settle)
+        await alerts.tick()
+        XCTAssertTrue(sender.sent.isEmpty, "a turn ended and the next began at once")
+        current = ["s1": working()]
+        await alerts.tick()
+        advance(WaitingAlerts.settle)
+        await alerts.tick()
+        XCTAssertEqual(sender.sent.map(\.text), ["s2 bitti"])
+    }
+
+    func testAMarkerThatGoesAwayWithoutAStopIsNoFinish() async {
+        let alerts = make()
+        current = ["stale": working(updated: ClaudeActivity.markerMaxAge - 5)]
+        await alerts.tick()
+        advance(10)
+        current = [:]
+        await alerts.tick()
+        advance(WaitingAlerts.settle)
+        await alerts.tick()
+        XCTAssertTrue(sender.sent.isEmpty, "a marker that went stale: an interrupted turn")
+
+        current = ["closed": working()]
+        await alerts.tick()
+        open = false
+        current = [:]
+        await alerts.tick()
+        advance(WaitingAlerts.settle)
+        await alerts.tick()
+        XCTAssertTrue(sender.sent.isEmpty, "Claude was closed")
+
+        open = true
+        current = ["waited": waiting()]
+        await alerts.tick()
+        advance(WaitingAlerts.settle)
+        await alerts.tick()
+        XCTAssertEqual(sender.sent.map(\.text), ["waited bekliyor"])
+        advance(WaitingAlerts.perSessionGap)
+        current = [:]
+        await alerts.tick()
+        advance(WaitingAlerts.settle)
+        await alerts.tick()
+        XCTAssertEqual(sender.sent.count, 1, "a wait that ended unanswered is not a finish")
+    }
+
+    func testAWaitSeenAtTheMacIsToldIfTheUserLeavesSoon() async {
+        let alerts = make()
+        isAway = false
+        current = ["s1": waiting(), "s2": waiting()]
+        await alerts.tick()
+        advance(WaitingAlerts.settle)
+        await alerts.tick()
+        XCTAssertTrue(sender.sent.isEmpty, "at the Mac")
+        advance(60)
+        isAway = true
+        await alerts.tick()
+        XCTAssertEqual(Set(sender.sent.map(\.text)), ["s1 bekliyor", "s2 bekliyor"], "left within \(Int(WaitingAlerts.pendingLimit / 60)) min")
+
+        current = ["s3": waiting()]
+        isAway = false
+        await alerts.tick()
+        advance(WaitingAlerts.pendingLimit)
+        await alerts.tick()
+        isAway = true
+        advance(60)
+        await alerts.tick()
+        XCTAssertEqual(sender.sent.count, 2, "left later: the wait was on the screen long enough")
+    }
+
+    func testNothingWhileAtTheMacOrTurnedOffAndAGapPerSession() async {
+        let alerts = make()
+        current = ["s1": working()]
+        await alerts.tick()
+        isAway = false
+        current = ["s1": waiting()]
+        await alerts.tick()
+        advance(WaitingAlerts.settle)
+        await alerts.tick()
+        XCTAssertTrue(sender.sent.isEmpty, "at the Mac: the session is on the screen")
+
+        isAway = true
+        current = ["s1": working()]
+        await alerts.tick()
+        current = ["s1": waiting()]
+        await alerts.tick()
+        advance(WaitingAlerts.settle)
+        await alerts.tick()
+        XCTAssertEqual(sender.sent.count, 1)
+        current = ["s1": working()]
+        await alerts.tick()
+        current = ["s1": waiting()]
+        await alerts.tick()
+        advance(WaitingAlerts.settle)
+        await alerts.tick()
+        XCTAssertEqual(sender.sent.count, 1, "at most one per session in \(Int(WaitingAlerts.perSessionGap / 60)) min")
+
+        config.imessageAlerts = false
+        current = ["s2": working()]
+        await alerts.tick()
+        current = ["s2": waiting()]
+        await alerts.tick()
+        advance(WaitingAlerts.settle)
+        await alerts.tick()
+        XCTAssertEqual(sender.sent.count, 1, "turned off")
+    }
+
+    func testTheTestMessageAndAFailureAreReported() async {
+        let alerts = make()
+        await alerts.sendTest()
+        XCTAssertEqual(sender.sent.map(\.text), [WaitingAlerts.testText])
+        XCTAssertTrue(alerts.lastResult?.hasSuffix("gönderildi") ?? false, alerts.lastResult ?? "")
+        sender.fail = true
+        await alerts.sendTest()
+        XCTAssertTrue(alerts.lastResult?.contains("gönderilemedi: izin yok") ?? false, alerts.lastResult ?? "")
+    }
+
+    func testTheLocalTextAndTheScriptArguments() {
+        let session = ClaudeDigest.Session(id: "s", title: "Uykusuz", lastTexts: ["Testler geçti; push için onayınızı bekliyorum."], lastActivity: Date())
+        XCTAssertEqual(WaitingAlerts.localText(event: .waiting, session: session),
+                       "Uykusuz · Uykusuz: Claude sizi bekliyor; onay ya da yanıt istiyor. Son mesajı: Testler geçti; push için onayınızı bekliyorum.")
+        XCTAssertEqual(WaitingAlerts.localText(event: .finished, session: nil),
+                       "Uykusuz: Claude işini bitirdi ve yeni isteğinizi bekliyor.")
+        let args = IMessageSender.arguments(text: "\" & do shell script \"x", handle: "+90555")
+        XCTAssertEqual(Array(args.suffix(2)), ["\" & do shell script \"x", "+90555"], "the text is an argument, never script")
+        XCTAssertEqual(args.filter { $0 == "-e" }.count, IMessageSender.script.count)
+        XCTAssertTrue(IMessageSender.explain("execution error: Not authorized to send Apple events to Messages. (-1743)").contains("Otomasyon"))
+    }
+
+    func testAClientWithItsOwnInstructions() throws {
+        let client = AnthropicSummaryClient(key: "k", model: "claude-haiku-5-5", system: WaitingAlerts.system)
+        let body = try XCTUnwrap(JSONSerialization.jsonObject(with: XCTUnwrap(client.request(text: "Olay: x").httpBody)) as? [String: Any])
+        XCTAssertEqual(body["system"] as? String, WaitingAlerts.system)
+        XCTAssertEqual((body["messages"] as? [[String: Any]])?.first?["content"] as? String, "Olay: x")
+    }
+}

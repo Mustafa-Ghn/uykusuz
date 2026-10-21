@@ -4,6 +4,17 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.7.0 — 2026-10-21
+
+### Eklenenler
+
+- **Telefondan yanıt.** Claude uygulamasının Remote Control'ü açıkken oturumlar iPhone'daki Claude uygulamasında kendi adlarıyla görünür; yanıt ya da onay doğrudan ilgili oturuma gider. Ayarlar > Telefondan yanıt açıkken Claude'un telefon bildirimleri yalnızca siz uzaktayken (kapak kapalı, ekran kilitli ya da 2 dakikadır dokunulmamış) gelir.
+- **Yanıt için uyanık kalma.** Telefondan yanıt açıkken otomatik oturum, Claude durduktan ya da beklemeye başladıktan sonra seçilen süre (varsayılan 30 dakika) kadar sürer; böylece telefondan verilen yanıt Mac'i uyanık bulur.
+- **Claude sizi beklerken iPhone'a haber.** Kapak kapalıyken, ekran kilitliyken ya da 2 dakikadır Mac'e dokunulmadıysa, bir Claude Code oturumu onay ya da yanıt beklemeye başlayınca veya işini bitirip yeni isteğinizi bekleyince Uykusuz, Ayarlar'da yazdığınız telefon numarasına ya da Apple ID e-postasına Mac'teki Mesajlar üzerinden bir iMessage gönderir. Varsayılan olarak kapalıdır; Ayarlar > Claude sizi beklerken iPhone'a haber ver bölümünden açılır.
+- **Mesajı Claude yazar.** Her mesaj Claude'un kenar çubuğundaki oturum adıyla başlar. Claude API anahtarı kayıtlıysa gerisi Claude'un ne yaptığını ve sizden ne beklediğini en çok iki cümleyle anlatır; anahtar yoksa ya da istek başarısız olursa Claude'un son mesajının sonu gider.
+- **Gereksiz mesaj yok.** Bekleme ya da bitiş 45 saniye sürmeden, Mac'in başındayken ya da aynı oturum için 10 dakika dolmadan mesaj gitmez; durdurulan bir tur, kapatılan bir oturum ve yanıtlanmadan kalan bir bekleme bitiş sayılmaz. Siz başındayken başlayan bir bekleme, 10 dakika içinde Mac'ten uzaklaşırsanız yine bildirilir.
+- **Deneme mesajı.** Ayarlar'daki düğme bir deneme mesajı gönderir; macOS'un Mesajlar izni sorusu da ilk gönderimde çıkar.
+
 ## 0.6.0 — 2026-10-21
 
 ### Eklenenler
