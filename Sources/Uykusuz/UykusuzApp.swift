@@ -30,6 +30,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// window it is told in.
     let awaySummary: AwaySummary
     let summaryPanel = SummaryPanel()
+    /// "Claude is waiting for you" to the iPhone by iMessage (fork addition).
+    let waitingAlerts: WaitingAlerts
+    /// Claude's own phone pushes only while the user is away (fork addition).
+    let pushGate: ClaudePushGate
     private var statusItem: StatusItemController?
     private var settingsWindow: SettingsWindow?
     private var terminating = false
@@ -44,6 +48,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             present: { text, told in await panel.show(text, told: told) },
             dismiss: { panel.close() }
         )
+        let keys = awaySummary.keyStore
+        let paths = Paths.fromEnvironment()
+        waitingAlerts = WaitingAlerts(
+            config: { [manager] in manager.config },
+            sessions: { ClaudeActivity.liveSessions(paths: paths, now: Date()) },
+            away: { WaitingAlerts.liveAway() },
+            compose: { [manager] session, event in
+                await WaitingAlerts.liveCompose(session: session, event: event, keyStore: keys, model: manager.config.summaryModel, paths: paths)
+            }
+        )
+        pushGate = ClaudePushGate(file: ClaudePushGate.file(in: paths)) { [manager] in manager.config.phoneReplies }
         secrets = KeychainHotspotSecretStore(keychain: KeychainStore()) {
             manager.config.hotspotSSID
         }
@@ -84,14 +99,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 Log.error("could not save config after the launch at login check: \(error.localizedDescription)")
             }
         }
-        let settings = SettingsWindow { [manager, secrets, locationPermission, loginItem, awaySummary] in
+        let settings = SettingsWindow { [manager, secrets, locationPermission, loginItem, awaySummary, waitingAlerts, pushGate] in
             AnyView(
                 SettingsView(
                     manager: manager,
                     secrets: secrets,
                     locationPermission: locationPermission,
                     loginItem: loginItem,
-                    awaySummary: awaySummary
+                    awaySummary: awaySummary,
+                    waitingAlerts: waitingAlerts,
+                    pushGate: pushGate
                 )
             )
         }
@@ -110,9 +127,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         autoSession.onAgentWaiting = { [weak services = manager.services, manager] in
             let c = manager.config
-            services?.announceAgentWaiting(endsAfter: c.autoSession && c.endWhileWaiting ? c.approvalWaitGrace : nil)
+            services?.announceAgentWaiting(endsAfter: c.autoSession && c.endWhileWaiting ? c.autoWaitGrace : nil)
         }
         awaySummary.start()
+        waitingAlerts.start()
+        pushGate.start()
         // Hooks an earlier build installed lack the events added since.
         do {
             let added = try ClaudeHooks.upgradeIfInstalled()
@@ -146,6 +165,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Task {
             let outcome = await manager.end(reason: .quit)
             if outcome.letsQuitGo {
+                pushGate.stop()
                 sender.reply(toApplicationShouldTerminate: true)
             } else {
                 Log.error("quit deferred: recovery still pending (\(outcome)); staying to retry")

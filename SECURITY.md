@@ -22,14 +22,18 @@ değildir: aynı kullanıcıyla çalışan diğer süreçler de bu komutları
 çalıştırabilir. Bu dört komut dışında root olarak çalışan bir şey yoktur.
 
 **Ağ.** Uykusuz güncelleme denetlemez, kullanım verisi ya da çökme raporu
-göndermez. Tek ağ isteği isteğe bağlı "Sen yokken" özetidir: yalnızca
-kullanıcı Ayarlar'da bir Claude API anahtarı kaydettiyse, kapak açıldığında ya
-da Ayarlar'daki düğmeyle `https://api.anthropic.com/v1/messages` adresine tek
-bir HTTPS isteği gönderilir. İstekte oturum başlıkları, araç sayıları,
+göndermez. Ağ istekleri yalnızca isteğe bağlı "Sen yokken" özeti ve iPhone'a
+giden mesajdır. `https://api.anthropic.com/v1/messages` adresine yalnızca
+kullanıcı Ayarlar'da bir Claude API anahtarı kaydettiyse gidilir: kapak
+açıldığında ya da Ayarlar'daki düğmeyle özet için, kullanıcı uzaktayken bir
+Claude oturumu onu beklemeye başlayınca da iPhone'a gidecek mesaj için birer
+HTTPS isteği gönderilir. İstekte oturum başlıkları, araç sayıları,
 düzenlenen dosyaların adları, Claude'un komut açıklamaları ve son mesajlarının
 sonu bulunur; dosya içerikleri, komut satırları ve komut çıktıları bulunmaz.
 Anahtar giriş Anahtar Zinciri'nde tutulur; config.json'a ve günlüğe yazılmaz.
-Anahtar kayıtlı değilse özet yerelde yazılır ve hiçbir istek yapılmaz.
+Anahtar kayıtlı değilse özet ve mesaj yerelde yazılır ve hiçbir istek
+yapılmaz. iMessage'ı Uykusuz değil Mac'teki Mesajlar uygulaması gönderir
+(aşağıdaki "iPhone'a iMessage").
 `NWPathMonitor` yalnızca Wi-Fi bağlantısının durumunu izler.
 
 **Yerel veriler.** Uygulama korumalı alanda (sandbox) çalışmaz; yerel
@@ -82,6 +86,29 @@ dışarıdan kod yüklenmez. Sesli uyarılar `/usr/bin/say` ile söylenir; metin
 tek bir argüman olarak, `--` ayıracından sonra verilir. Ses, Mac'te kurulu
 sesler arasından seçilen en iyi Türkçe sestir; listesi sistemden
 (`AVSpeechSynthesisVoice`) yalnızca okunur.
+
+## iPhone'a iMessage
+
+"Claude sizi beklerken iPhone'a haber ver" açıksa Uykusuz, kullanıcı Mac'ten
+uzaktayken bir Claude oturumu onay ya da yanıt beklemeye başlayınca veya işini
+bitirince Ayarlar'da yazılan alıcıya Mesajlar üzerinden iMessage gönderir. Mesaj
+`osascript` ile Mesajlar'ın kendi `send` komutuyla gider; metin ve alıcı betiğe
+gömülmez, argüman olarak verilir. Uykusuz ekranı ya da klavyeyi denetlemez ve
+Erişilebilirlik izni istemez; macOS ilk gönderimde Mesajlar'ı denetleme iznini
+sorar. Mesajda oturumun adı ve Claude'un ne yaptığına dair bir iki cümle bulunur;
+API anahtarı kayıtlıysa bu cümleleri Claude yazar (yukarıdaki "Ağ").
+
+## Telefondan yanıt
+
+"Telefondan yanıt" açılınca Uykusuz, `~/.claude/settings.json` dosyasının `env`
+bölümüne `CLAUDE_CLIENT_PRESENCE_FILE` satırını ekler (dosyanın eski hâli ilk
+değişiklikte `settings.json.uykusuz-yedek` olarak saklanır; başka bir dosyayı
+gösteren bir satır varsa dokunulmaz) ve uygulama destek klasöründe 0600 izinli,
+boş bir dosyayı kullanıcı Mac'in başındayken tutar. Claude Code bu dosya
+dururken telefon bildirimi göndermez. Kapatınca satır silinir; Uykusuz kapanınca
+dosya da silinir. Bunun için ağ isteği yapılmaz. Telefondan yanıtlar Claude'un
+Remote Control özelliğiyle doğrudan oturuma gider; Uykusuz onları okumaz ya da
+aktarmaz.
 
 ## Bilinen Wi-Fi ağına geri dönüş
 

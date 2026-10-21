@@ -454,9 +454,12 @@ final class AutoSessionDisplayTests: XCTestCase {
             StatusMenu.items(sessionActive: active, sleepHeld: active, autoSession: auto, machine: nil, actions: nil,
                              throttledBrowsers: [], error: nil).map(\.title)
         }
-        XCTAssertEqual(titles(auto: true).prefix(2).last, StatusMenu.autoSessionLine)
-        XCTAssertFalse(titles(auto: false).contains(StatusMenu.autoSessionLine))
-        XCTAssertFalse(titles(auto: true, active: false).contains(StatusMenu.autoSessionLine))
+        XCTAssertEqual(titles(auto: true).prefix(2).last, StatusMenu.autoSessionLine())
+        XCTAssertFalse(titles(auto: false).contains(StatusMenu.autoSessionLine()))
+        XCTAssertFalse(titles(auto: true, active: false).contains(StatusMenu.autoSessionLine()))
+        XCTAssertEqual(StatusMenu.items(sessionActive: true, sleepHeld: true, autoSession: true, autoIdleGrace: 30 * 60, machine: nil,
+                                        actions: nil, throttledBrowsers: [], error: nil).map(\.title).prefix(2).last,
+                       "Claude çalıştıkça açık; Claude durunca 30 dk sonra biter", "replies from the phone keep it on longer")
     }
 }
 

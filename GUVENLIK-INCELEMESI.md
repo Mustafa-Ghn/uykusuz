@@ -158,8 +158,9 @@ farklı olur.
 ## Sonraki değişiklikler
 
 İncelenen commit'ten sonra eklenen özellikler, aşağıdaki isteğe bağlı "Sen
-yokken" özeti dışında yereldir ve ağ isteği yapmaz. Yeni bir yetki, `sudo`
-komutu ya da kalıcı bileşen eklenmedi.
+yokken" özeti ve iPhone'a iMessage dışında yereldir ve ağ isteği yapmaz. Yeni
+bir `sudo` komutu ya da kalıcı bileşen eklenmedi; tek yeni izin, iMessage için
+macOS'un sorduğu Otomasyon (Mesajlar) iznidir.
 
 - **Otomatik oturum:** Güç kilitlerini IOKit üzerinden yalnızca okur
   (`IOPMCopyAssertionsByProcess`).
@@ -202,6 +203,21 @@ komutu ya da kalıcı bileşen eklenmedi.
   olmadıklarını okur; Wi-Fi parolalarını okumaz ve hiçbir ağa kendisi katılmaz.
   Yalnızca hotspot bağlantısını keser (`disassociate`); parolasız bir ağa
   düşülürse oradan da ayrılıp hotspot'a döner.
+- **iPhone'a iMessage (0.7.0):** İsteğe bağlıdır ve varsayılan olarak kapalıdır.
+  Kullanıcı uzaktayken bekleyen ya da biten bir Claude oturumu için Mesajlar'a
+  `osascript` ile `send` komutu gönderilir; metin ve alıcı argüman olarak verilir,
+  betiğe gömülmez. Erişilebilirlik izni ya da tuş taklidi yoktur; macOS ilk
+  gönderimde Otomasyon (Mesajlar) iznini sorar. Info.plist'e bunun için
+  `NSAppleEventsUsageDescription` eklendi. Anahtar kayıtlıysa mesajı yazmak
+  için "Sen yokken" özetindeki alanlar, yalnızca o oturum için, aynı yolla
+  `api.anthropic.com`'a gönderilir.
+- **Telefondan yanıt (0.7.0):** İsteğe bağlıdır ve varsayılan olarak kapalıdır.
+  Açılınca `~/.claude/settings.json` dosyasının `env` bölümüne Claude Code'un
+  `CLAUDE_CLIENT_PRESENCE_FILE` satırı eklenir (dosyanın eski hâli yedeklenir;
+  başka bir dosyayı gösteren satıra dokunulmaz) ve kullanıcı Mac'in başındayken
+  uygulama destek klasöründe 0600 izinli boş bir dosya tutulur. Kapatınca satır,
+  uygulama kapanınca dosya silinir. Ağ isteği yoktur; telefondan gelen yanıtları
+  Uykusuz değil Claude'un Remote Control özelliği taşır.
 - **Güncelleme denetimi:** Kaldırıldı; incelenen sürümün tek ağ isteği buydu.
 
 ## Kötü amaçlı olmayan zayıf noktalar

@@ -739,6 +739,7 @@ final class StatusItemController: NSObject {
             sleepHeld: manager.state.sleepDisabledByUs,
             autoSession: manager.isAutoSession,
             autoSessionOn: manager.config.autoSession,
+            autoIdleGrace: manager.config.autoIdleGrace,
             autoPausedUntil: manager.config.autoPausedUntil,
             hasSummary: hasSummary,
             machine: StatusLines.machine(

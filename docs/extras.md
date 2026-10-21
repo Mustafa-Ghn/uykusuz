@@ -111,10 +111,12 @@ garantisi değildir.
 Yapılandırma `~/Library/Application Support/Uykusuz/config.json` dosyasında
 tutulur. Uygulamanın denetimleri için Ayarlar'ı kullanın; tam yapılandırmayı
 ve varsayılanları [Config.swift](../Sources/Uykusuz/Model/Config.swift)
-tanımlar. Uygulamanın tek ağ isteği isteğe bağlı "Sen yokken" özetidir:
-yalnızca Ayarlar'da bir Claude API anahtarı kaydettiyseniz `api.anthropic.com`'a
-gider ve yalnızca oturum başlıklarını, araç sayılarını, düzenlenen dosyaların
-adlarını, Claude'un komut açıklamalarını ve son mesajlarının sonunu içerir.
+tanımlar. Uygulamanın ağ istekleri yalnızca isteğe bağlı "Sen yokken" özeti ve
+iPhone'a giden mesajdır: `api.anthropic.com`'a yalnızca Ayarlar'da bir Claude
+API anahtarı kaydettiyseniz gidilir ve istek yalnızca oturum başlıklarını, araç
+sayılarını, düzenlenen dosyaların adlarını, Claude'un komut açıklamalarını ve
+son mesajlarının sonunu içerir. iPhone'a giden iMessage'ı Mac'teki Mesajlar
+uygulaması gönderir; Uykusuz yalnızca Mesajlar'a metni ve alıcıyı verir.
 Anahtar giriş Anahtar Zinciri'nde tutulur; config.json'a ve günlüğe yazılmaz
 (ayrıntılar: [Sen yokken özeti](../README.md#sen-yokken-özeti)). Yerel günlükler SSID'leri, süreç meta verilerini ve tmux hedeflerini
 içerebilir. Herkese açık olarak paylaşmadan önce onları gözden geçirin.
@@ -143,7 +145,7 @@ yazar. Bağlantıyı siz kurduğunuz için işaret ettiği dosyayı kırpmak siz
 kalmıştır.
 
 Uykusuz güncelleme denetlemez, kullanım verisi ya da çökme raporu göndermez;
-tek ağ isteği yukarıdaki isteğe bağlı "Sen yokken" özetidir. Hotspot'a bağlanma
+ağ istekleri yukarıdaki isteğe bağlı "Sen yokken" özeti ve iPhone'a giden mesajdır. Hotspot'a bağlanma
 ve Wi-Fi durumunu izleme yerel işlemlerdir; dışarıya veri gitmez.
 
 `UYKUSUZ_HOME`, test amacıyla uygulama destek dosyalarının, günlüklerin ve

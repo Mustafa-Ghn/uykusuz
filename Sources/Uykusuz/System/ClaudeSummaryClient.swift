@@ -134,6 +134,8 @@ struct AnthropicSummaryClient: SummaryWriting {
 
     let key: String
     let model: String
+    /// The instructions; the away summary's unless another use gives its own.
+    var system: String = AnthropicSummaryClient.system
     var send: @Sendable (URLRequest) async throws -> (Data, URLResponse) = { request in
         try await AnthropicSummaryClient.session.data(for: request)
     }
@@ -148,6 +150,10 @@ struct AnthropicSummaryClient: SummaryWriting {
     }()
 
     func request(for digest: ClaudeDigest) throws -> URLRequest {
+        try request(text: digest.promptText)
+    }
+
+    func request(text: String) throws -> URLRequest {
         var request = URLRequest(url: Self.endpoint)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "content-type")
@@ -157,18 +163,22 @@ struct AnthropicSummaryClient: SummaryWriting {
             "model": model,
             "max_tokens": Self.maxTokens,
             "output_config": ["effort": "low"],
-            "system": Self.system,
-            "messages": [["role": "user", "content": digest.promptText]],
+            "system": system,
+            "messages": [["role": "user", "content": text]],
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         return request
     }
 
     func summarize(_ digest: ClaudeDigest) async throws -> String {
+        try await summarize(text: digest.promptText)
+    }
+
+    func summarize(text: String) async throws -> String {
         let data: Data
         let response: URLResponse
         do {
-            (data, response) = try await send(request(for: digest))
+            (data, response) = try await send(request(text: text))
         } catch {
             throw SummaryError.transport(error.localizedDescription)
         }

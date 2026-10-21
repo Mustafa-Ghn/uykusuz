@@ -69,6 +69,12 @@ Claude çalışırken bunu kendiliğinden de yapar.
   pencerede bir iki cümleyle anlatılır; ▶ ile dinlersiniz, okunan kelime
   vurgulanır ve çubukla ileri geri gidersiniz; bir Claude API anahtarı
   kaydederseniz özeti Claude yazar.
+- **Telefondan yanıt.** Claude oturumlarını iPhone'daki Claude uygulamasından
+  yanıtlar ve onaylarsınız; Uykusuz, Claude'un telefon bildirimlerini yalnızca
+  siz uzaktayken gönderir ve yanıtınız gelene kadar Mac'i uyanık tutar.
+- **Claude sizi beklerken iPhone'a haber.** Kapak kapalıyken, ekran kilitliyken
+  ya da Mac'e bir süredir dokunulmadıysa, bir Claude oturumu onay ya da yanıt
+  beklemeye başlayınca veya işini bitirince Uykusuz telefonunuza iMessage gönderir.
 - **Kapak eylemleri.** Kapak kapanınca ekran ve klavye ışığı söner, seçili
   uygulamalar dondurulur, ses kapanır ve Düşük Güç Modu açılır; kapağı açmak
   hepsini geri almaya çalışır.
@@ -205,6 +211,8 @@ Ayarlar penceresi göze sağ tıklayınca açılan menüden (⌘,) açılır:
 | Pil ve ısı | Düşük Güç Modu ve oturum sonu eşikleri, ısı kuralları |
 | Claude, kod modu ve ekran | Claude Code hook'ları, otomatik oturum, yanıt beklerken bitirme ve bekleme süresi, kod modu, boşta siyah ekran süreleri |
 | Sen yokken özeti | Kapak açılınca özet penceresi, Claude API anahtarı, özeti yazan model, son 2 saati şimdi özetle |
+| Telefondan yanıt | Claude'un telefon bildirimleri yalnızca uzaktayken, yanıt için Mac'in uyanık kalacağı süre |
+| Claude sizi beklerken iPhone'a haber ver | iMessage gönder, alıcı (telefon numarası ya da Apple ID e-postası), deneme mesajı |
 | Ağ yedekleme | iPhone kişisel erişim noktası, bilinen Wi-Fi ağına geri dönüş, tmux dürtmesi |
 | Uygulama | Girişte aç, yapılandırma klasörü, kurulu sürüm |
 
@@ -218,7 +226,9 @@ Claude Code bir görev yürüttüğü sürece Uykusuz kendiliğinden bir oturum 
 menü çubuğunda geri sayım yerine **Claude** yazar. Oturum Claude çalıştıkça
 sürer (arka planda 2 saatlik dilimlerle uzar) ve Claude 5 dakika çalışmayınca
 biter; Mac normal uykusuna döner. Sağ tık menüsü de "Claude çalıştıkça açık;
-Claude durunca 5 dk sonra biter" satırını gösterir.
+Claude durunca 5 dk sonra biter" satırını gösterir. [Telefondan
+yanıt](#telefondan-yanıt) açıkken bu süre, orada seçilen süredir (varsayılan
+30 dakika).
 
 - **Oturumu devralma.** "Claude" yazısına tıklayıp bir süre girerseniz oturum
   sizin olur: girdiğiniz süre o andan itibaren sayılır ve geri sayım görünür.
@@ -243,8 +253,9 @@ Claude durunca 5 dk sonra biter" satırını gösterir.
   (varsayılan 5 dakika) içinde yanıt gelmezse otomatik oturum biter ve Mac
   uyur; yanıt verince oturum yeniden başlar. Kapak kapalıysa Uykusuz bunu sesle
   söyler: "Claude sizi bekliyor. 5 dakika içinde yanıt vermezseniz oturum
-  biter ve Mac uyur." Onayı telefondan vermek istiyorsanız Ayarlar'dan süreyi uzatın
-  ya da **Claude yanıt beklerken oturumu bitir**'i kapatın.
+  biter ve Mac uyur." Onayı telefondan vermek için [Telefondan
+  yanıt](#telefondan-yanıt)'ı açın; bekleme o zaman orada seçilen süre kadar
+  (varsayılan 30 dakika) sürer.
 - **Güvenlik payı.** Mac ısınıyorsa ya da pil gücündeyken pil, bitiş eşiğinin
   (varsayılan %20) en çok 5 puan üstündeyse otomatik oturum başlamaz.
 - **Elle başlatılan oturumlar.** Kendi başlattığınız oturumlar geri sayımla
@@ -271,6 +282,70 @@ hook'lara eksik olayları ekler. Hook'lar
 `settings.json.uykusuz-yedek` olarak saklanır; aynı düğme (ya da
 `--remove-claude-hooks`) onları kaldırır. Hook'lar kurulu değilken Claude
 masaüstü uygulaması açık olduğu sürece çalışıyor sayılır.
+
+### Telefondan yanıt
+
+Claude oturumlarını telefondan yanıtlamanın yolu Claude'un kendi **Remote
+Control** özelliğidir. Claude uygulamasında Ayarlar > Claude Code > **Connect new
+sessions to Remote Control** açıkken her yeni oturum, iPhone'daki Claude
+uygulamasında Code sekmesinde kendi adıyla görünür. Yazdığınız mesaj, verdiğiniz
+onay ya da bir sorunun yanıtı yalnızca açtığınız oturuma gider; birden çok oturum
+birbirine karışmaz. Claude da onay ya da yanıt beklerken ve bir iş bitince
+telefona kendisi bildirim gönderir (Claude Code ayarlarında "Push when actions
+required" ve "Push when Claude decides").
+
+Ayarlar > Telefondan yanıt bölümündeki **Claude'un telefon bildirimleri yalnızca
+ben uzaktayken gelsin** seçeneği iki şey yapar:
+
+- **Bildirimler yalnızca uzaktayken.** Siz Mac'in başındayken Claude'un telefon
+  bildirimleri susar; kapak kapalıyken, ekran kilitliyken ya da 2 dakikadır Mac'e
+  dokunulmadıysa gelir. Uykusuz bunun için Claude Code'un
+  `CLAUDE_CLIENT_PRESENCE_FILE` ayarını `~/.claude/settings.json` dosyasına ekler
+  (dosyanın eski hâli ilk değişiklikte `settings.json.uykusuz-yedek` olarak
+  saklanır) ve siz Mac'in başındayken bu ayarın gösterdiği boş dosyayı tutar.
+  Seçenek yalnızca açıldıktan sonra başlayan oturumlarda geçerlidir. Kapatınca
+  satır silinir; Uykusuz kapanınca dosya da silinir ve bildirimler her zamanki
+  gibi gelir.
+- **Yanıt için uyanık kalma.** Otomatik oturum, Claude durduktan ya da beklemeye
+  başladıktan sonra seçilen süre (varsayılan 30 dakika) kadar sürer. Böylece
+  kapak kapalıyken telefondan verdiğiniz yanıt Mac'i uyanık bulur. Süre dolunca
+  oturum biter ve Mac uyur; Claude Code, Mac uyanınca Remote Control'e
+  kendiliğinden yeniden bağlanır.
+
+Remote Control Claude'un özelliğidir: açıkken oturumun yazışması cihazlar arası
+eşitleme için Anthropic sunucularında tutulur. Uykusuz bu yazışmayı okumaz ve
+yanıtları aktarmaz; yalnızca bildirimlerin ne zaman gideceğini ve Mac'in ne kadar
+uyanık kalacağını belirler.
+
+### Claude sizi beklerken iPhone'a haber
+
+Ayarlar > Claude sizi beklerken iPhone'a haber ver bölümünde **iMessage gönder**'i
+açıp alıcıya telefon numaranızı ya da Apple ID e-postanızı yazın. Kapak
+kapalıyken, ekran kilitliyken ya da 2 dakikadır Mac'e dokunulmadıysa, bir Claude Code oturumu onay
+ya da yanıt beklemeye başlayınca (bir komut izni, bir soru, bir plan onayı) ya
+da işini bitirip yeni isteğinizi bekleyince Uykusuz bu alıcıya Mac'teki Mesajlar
+uygulaması üzerinden bir iMessage gönderir. Böylece Mac'e dönüp kaldığınız yerden
+devam edebilirsiniz. [Telefondan yanıt](#telefondan-yanıt) açıksa Claude'un kendi
+bildirimi de gelir; ikisini birden istemiyorsanız iMessage'ı kapatın.
+
+- **Mesajın içeriği.** Her mesaj, Claude uygulamasının kenar çubuğunda görünen
+  oturum adıyla başlar; böylece birden çok oturum varken hangisinin beklediği
+  bellidir. API anahtarı kayıtlıysa gerisini Claude yazar: Claude'un ne yaptığı
+  ve sizden ne beklediği, en çok iki cümle. Anahtar yoksa ya da istek başarısız
+  olursa Claude'un son mesajının sonu gider.
+- **Ne zaman.** Bekleme ya da bitiş 45 saniye sürmeli; hemen yeni bir tura
+  geçen oturum için mesaj gitmez. Mac'in başındaysanız mesaj gitmez; ama Claude
+  siz başındayken beklemeye başladıysa ve 10 dakika içinde kapağı kapatır ya da
+  Mac'ten uzaklaşırsanız mesaj yine gider. Durdurduğunuz bir tur, kapatılan bir
+  oturum ve yanıtlanmadan kalan bir bekleme "bitti" diye bildirilmez. Her oturum
+  için en çok 10 dakikada bir mesaj gönderilir.
+- **İzin.** Uykusuz mesajı Mesajlar'ın kendi AppleScript komutuyla gönderir;
+  ekranı ya da klavyeyi denetlemez. İlk gönderimde macOS, Uykusuz'un Mesajlar'ı
+  denetlemesine izin vermenizi ister. **Deneme mesajı gönder** düğmesiyle hem
+  izni verip hem telefonunuza bildirim gelip gelmediğini görebilirsiniz; kendi
+  numaranıza gönderilen mesaj kendinizle olan sohbete düşer. Uygulama her
+  kurulumda yeniden imzalandığı için macOS bu izni yeni bir kurulumdan sonra
+  yeniden sorabilir; kurulumdan sonra bir deneme mesajı gönderin.
 
 ### Kod modu ve boşta siyah ekran
 
@@ -449,9 +524,11 @@ Sembolik bağlantılara ve erişim denetim listelerine (ACL'ler, hesap başına 
 izin girdileri) dokunmaz; bu yüzden başka bir hesap bunlardan biri aracılığıyla
 yine de erişebilir. Günlükler Wi-Fi adları, süreç ayrıntıları ve tmux hedefleri
 içerebilir; bu yüzden bir günlüğü paylaşmadan önce gözden geçirin. Uykusuz'un
-tek ağ isteği isteğe bağlı "Sen yokken" özetidir: yalnızca bir Claude API
-anahtarı kaydettiyseniz `api.anthropic.com`'a gider (bkz.
-[Sen yokken özeti](#sen-yokken-özeti)).
+ağ istekleri yalnızca isteğe bağlı iki özelliktedir: Claude API anahtarı
+kaydettiyseniz "Sen yokken" özeti ve iPhone'a gidecek mesaj için
+`api.anthropic.com`'a gidilir (bkz. [Sen yokken özeti](#sen-yokken-özeti));
+iMessage'ı Mac'teki Mesajlar uygulaması gönderir (bkz.
+[Claude sizi beklerken iPhone'a haber](#claude-sizi-beklerken-iphonea-haber)).
 [docs/extras.md](docs/extras.md#yapılandırma-ve-gizlilik) ayrıntıları içerir.
 
 </details>

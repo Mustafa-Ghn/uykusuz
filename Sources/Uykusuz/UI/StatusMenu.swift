@@ -38,7 +38,9 @@ enum StatusMenu {
     static let settingsTitle = "Ayarlar\u{2026}"
     /// The line under the sleep line while the automatic session runs (fork
     /// addition), in place of the deadline the status item does not show.
-    static let autoSessionLine = "Claude çalıştıkça açık; Claude durunca \(Int(AutoSessionPolicy.idleGrace / 60)) dk sonra biter"
+    static func autoSessionLine(idleGrace: TimeInterval = AutoSessionPolicy.idleGrace) -> String {
+        "Claude çalıştıkça açık; Claude durunca \(Int(idleGrace / 60)) dk sonra biter"
+    }
     static let showSummaryTitle = "Son özeti göster"
     static let pauseTitle = "Otomatik oturumu duraklat"
     static let resumeTitle = "Otomatik oturumu sürdür"
@@ -122,6 +124,7 @@ enum StatusMenu {
         sleepHeld: Bool,
         autoSession: Bool = false,
         autoSessionOn: Bool = false,
+        autoIdleGrace: TimeInterval = AutoSessionPolicy.idleGrace,
         autoPausedUntil: Date? = nil,
         now: Date = Date(),
         hasSummary: Bool = false,
@@ -141,7 +144,7 @@ enum StatusMenu {
             out.append(Item(title: held.text, kind: held.isWarning ? .warning : .info))
         }
         if sessionActive, autoSession {
-            out.append(Item(title: autoSessionLine, kind: .info))
+            out.append(Item(title: autoSessionLine(idleGrace: autoIdleGrace), kind: .info))
         }
         if autoSessionOn {
             if let until = autoPausedUntil, now < until {
