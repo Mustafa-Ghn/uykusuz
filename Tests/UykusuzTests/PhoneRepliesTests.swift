@@ -88,6 +88,10 @@ final class ClaudePushGateTests: XCTestCase {
         flags.away = false
         gate.tick()
         XCTAssertTrue(exists())
+        gate.userLeft()
+        XCTAssertFalse(exists(), "a lock or a lid close takes it away at once, before the idle time says so")
+        gate.tick()
+        XCTAssertTrue(exists())
         gate.stop()
         XCTAssertFalse(exists(), "quitting leaves nothing that would hold the pushes")
     }

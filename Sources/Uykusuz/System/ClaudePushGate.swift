@@ -1,3 +1,4 @@
+import AppKit
 import CoreGraphics
 import Foundation
 
@@ -46,6 +47,8 @@ final class ClaudePushGate {
     private let enabled: @MainActor () -> Bool
     private let away: @MainActor () -> Bool
     private var timer: Timer?
+    private var lid: LidObserver?
+    private var observers: [(center: NotificationCenter, token: any NSObjectProtocol)] = []
 
     init(
         file: URL,
@@ -69,6 +72,7 @@ final class ClaudePushGate {
         }
         RunLoop.main.add(t, forMode: .common)
         timer = t
+        watchForChanges()
     }
 
     /// Stops and takes the file away: with Uykusuz gone, nothing would
@@ -76,12 +80,55 @@ final class ClaudePushGate {
     func stop() {
         timer?.invalidate()
         timer = nil
+        lid?.stop()
+        lid = nil
+        for (center, token) in observers { center.removeObserver(token) }
+        observers.removeAll()
         setPresent(false)
     }
 
     /// One look. Internal so tests drive it.
     func tick() {
         setPresent(enabled() && !away())
+    }
+
+    /// The user just left (locked the screen, closed the lid): no file,
+    /// whatever the idle time still says.
+    func userLeft() {
+        setPresent(false)
+    }
+
+    /// Locking the screen, closing the lid, the screens going dark and a
+    /// switch to another user change presence at once: acted on now rather
+    /// than on the next tick, so a question Claude asks the moment the user
+    /// locks the screen and walks off still reaches the phone, and one
+    /// asked as they come back does not.
+    private func watchForChanges() {
+        let observer = LidObserver()
+        observer.onChange = { [weak self] closed in
+            if closed { self?.userLeft() } else { self?.tick() }
+        }
+        observer.start()
+        lid = observer
+        let distributed = DistributedNotificationCenter.default()
+        let workspace = NSWorkspace.shared.notificationCenter
+        let events: [(center: NotificationCenter, name: Notification.Name, leaving: Bool)] = [
+            (distributed, Notification.Name("com.apple.screenIsLocked"), true),
+            (distributed, Notification.Name("com.apple.screenIsUnlocked"), false),
+            (workspace, NSWorkspace.screensDidSleepNotification, true),
+            (workspace, NSWorkspace.screensDidWakeNotification, false),
+            (workspace, NSWorkspace.sessionDidResignActiveNotification, true),
+            (workspace, NSWorkspace.sessionDidBecomeActiveNotification, false),
+        ]
+        for event in events {
+            let leaving = event.leaving
+            let token = event.center.addObserver(forName: event.name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    if leaving { self?.userLeft() } else { self?.tick() }
+                }
+            }
+            observers.append((event.center, token))
+        }
     }
 
     private func setPresent(_ present: Bool) {

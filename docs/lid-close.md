@@ -18,6 +18,9 @@ kapalıyken başlatılan bir oturumda da.
 Ekran adımı, uyku koruması macOS'in bunu yapmasını engellediği için vardır:
 uyku kapalıyken kapağı kapatmak paneli ya da tuşları artık kendiliğinden
 kapatmaz. Uykusuz ikisini de sıfıra ayarlar ve kapak açılınca geri yükler.
+Klavye ışığı kapanırken zaten kapalıysa (macOS onu gün ışığında kapatır)
+Uykusuz ona dokunmaz ve açılışta bir şey geri yazmaz: kapalı düzeyi geri
+yazmak ışığı kapalıya sabitler ve akşam kendiliğinden yanmasını engellerdi.
 İkisi de macOS'in özel (private) çerçeveleri üzerinden çalışır. Ekran
 çağrıları yalnızca üzerinde ölçüldükleri macOS ana sürümlerinde (26 ve 27)
 çalışır. Klavye çağrıları, macOS sürümü ne olursa olsun, yalnızca özel klavye

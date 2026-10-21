@@ -4,6 +4,13 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.7.1 — 2026-10-21
+
+### Düzeltilenler
+
+- **Akşam klavye ışığı.** Kapak kapanırken klavye ışığı zaten kapalıysa (macOS onu gün ışığında kendisi kapatır) Uykusuz artık ona dokunmaz ve kapak açılınca kapalı düzeyi geri yazmaz. Önceden bu, ışığı kapalıya sabitliyordu ve akşam klavyeyi kullanmaya başlayınca ışık yanmıyordu.
+- **Kilidi anında algılama.** Telefondan yanıt açıkken Uykusuz, ekranı kilitlediğiniz, kapağı kapattığınız ya da ekranlar karardığı anda Claude'un telefon bildirimlerini açar; döndüğünüzde de hemen susturur. Önceden bu 5 saniyeyi bulabiliyordu ve kilitler kilitlemez gelen bir soru telefona düşmeyebiliyordu.
+
 ## 0.7.0 — 2026-10-21
 
 ### Eklenenler
