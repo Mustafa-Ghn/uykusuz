@@ -282,7 +282,7 @@ struct SettingsView: View {
                 }
             }
             Text(claudeHooksInstalled
-                 ? "Claude yalnızca bir görev yürütürken çalışıyor sayılır: bir istek başlayıp Claude yanıtını bitirene kadar ya da Claude'un başlattığı bir komut (arka planda bile) çalışırken."
+                 ? "Claude yalnızca bir görev yürütürken çalışıyor sayılır: bir istek başlayıp Claude yanıtını bitirene kadar ya da Claude'un başlattığı bir komut (arka planda bile) iş yaptığı sürece. Açık bırakılıp boşta bekleyen bir komut, örneğin bir veritabanı bağlantı aracı ya da geliştirme sunucusu, son 5 dakikada işlemci kullanmadıysa sayılmaz."
                  : "Hook'lar kurulu değilken Claude uygulaması açık olduğu sürece çalışıyor sayılır. Kurulum ~/.claude/settings.json dosyasına hook ekler; dosyanın eski hâli settings.json.uykusuz-yedek olarak saklanır.")
                 .font(.callout)
                 .foregroundStyle(.secondary)

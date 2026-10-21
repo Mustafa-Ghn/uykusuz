@@ -257,7 +257,10 @@ Ayarlar > Claude, kod modu ve ekran bölümündeki **Kur** düğmesi (ya da
 `~/Applications/Uykusuz.app/Contents/MacOS/Uykusuz --install-claude-hooks`)
 Claude Code hook'larını kurar. Kuruluyken Claude yalnızca bir görev yürütürken
 çalışıyor sayılır: bir istek başlayıp Claude yanıtını bitirene kadar ya da
-Claude'un başlattığı bir komut (arka planda bile) çalışırken. Hook'lar ayrıca
+Claude'un başlattığı bir komut (arka planda bile) iş yaptığı sürece. Açık
+bırakılıp boşta bekleyen bir komut, örneğin bir veritabanı bağlantı aracı ya da
+geliştirme sunucusu, son 5 dakikada işlemci kullanmadıysa sayılmaz; derleme ve
+test gibi işler sayılır. Hook'lar ayrıca
 Claude'un bir onay penceresi açtığını, soru sorduğunu ya da plan onayı
 beklediğini bildirir; hiçbir çıktı vermedikleri için bir izne yanıt vermez ve
 bir aracı değiştirmezler. Uykusuz açılışta, daha eski bir sürümün kurduğu

@@ -281,9 +281,10 @@ enum ClaudeHookCommand {
 }
 
 /// Whether Claude is running a task (fork addition): a session marker
-/// from the hooks, or a command Claude Code's Bash tool started still
-/// running, in the foreground or the background, so a long build Claude is
-/// waiting for counts too.
+/// from the hooks, or a command Claude Code's Bash tool started doing work
+/// (`BashToolWatcher`), in the foreground or the background, so a long
+/// build Claude is waiting for counts too, and a server it left running
+/// does not.
 enum ClaudeActivity {
     /// A marker no hook has refreshed for this long is stale: Claude may
     /// have been interrupted, which skips the Stop hook.
@@ -305,16 +306,16 @@ enum ClaudeActivity {
         }
     }
 
-    /// `bashRunning` is injected for tests, which run under a Bash tool
-    /// command of their own.
+    /// `commandWorking`: a command Claude started is doing work
+    /// (`BashToolWatcher`, which keeps readings between calls).
     static func state(
         paths: Paths,
         now: Date = Date(),
         lookup: (Int32) -> ProcessLookup = SignalProcessControl.processTableState,
-        bashRunning: () -> Bool = bashToolRunning
+        commandWorking: () -> Bool
     ) -> State {
         let markers = liveMarkers(paths: paths, now: now, lookup: lookup)
-        if markers.contains(where: { $0.waitingSince == nil }) || bashRunning() { return .working }
+        if markers.contains(where: { $0.waitingSince == nil }) || commandWorking() { return .working }
         if let since = markers.compactMap(\.waitingSince).min() { return .waiting(since: since) }
         return .idle
     }
@@ -358,14 +359,6 @@ enum ClaudeActivity {
             }
         }
         return markers
-    }
-
-    /// A shell whose arguments carry `bashToolMarker`.
-    static func bashToolRunning() -> Bool {
-        let shells: Set<String> = ["zsh", "bash", "sh", "fish"]
-        return processes().contains { pid, name in
-            shells.contains(name) && (arguments(pid)?.contains(bashToolMarker) ?? false)
-        }
     }
 
     static func processName(_ pid: Int32) -> String? {

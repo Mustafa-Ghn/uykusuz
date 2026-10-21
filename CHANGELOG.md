@@ -4,6 +4,12 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.3.1 — 2026-10-21
+
+### Düzeltilenler
+
+- **Gece boyu uyanık kalma.** Claude'un arka planda başlatıp açık bıraktığı bir komut (örneğin günlerdir çalışan bir veritabanı bağlantı aracı) Claude çalışıyor sayılıyor ve otomatik oturumu hiç bitirmiyordu; Mac bu yüzden bütün gece uyanık kalabiliyordu. Arka plandaki bir komut artık yalnızca yeni başladıysa ya da son 5 dakikada işlemci kullandıysa sayılır; derleme ve test gibi işler sayılmaya devam eder.
+
 ## 0.3.0 — 2026-10-21
 
 ### Eklenenler

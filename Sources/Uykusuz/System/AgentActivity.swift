@@ -38,16 +38,23 @@ enum AgentActivity {
     }
 
     /// The live reading. With this app's Claude Code hooks installed
-    /// (`ClaudeHooks`), an agent is at work only while Claude runs a task,
-    /// and waits while Claude is stopped for the user (`ClaudeActivity`);
-    /// without them, it is at work while an app in `config.autoSessionAgents`
-    /// holds a sleep assertion.
+    /// (`ClaudeHooks`), an agent is at work only while Claude runs a task or
+    /// a command it started is doing work (`BashToolWatcher`), and waits
+    /// while Claude is stopped for the user (`ClaudeActivity`); without
+    /// them, it is at work while an app in `config.autoSessionAgents` holds
+    /// a sleep assertion.
+    @MainActor
     static func state(config: Config, paths: Paths) -> ClaudeActivity.State {
         if ClaudeHooks.isInstalled() {
-            return ClaudeActivity.state(paths: paths)
+            let now = Date()
+            // Read every tick, so the watcher's CPU readings stay 15 s apart.
+            let commandWorking = bashWatcher.isWorking(now: now)
+            return ClaudeActivity.state(paths: paths, now: now) { commandWorking }
         }
         return isActive(bundleIDs: config.autoSessionAgents) ? .working : .idle
     }
+
+    @MainActor static let bashWatcher = BashToolWatcher()
 
     /// The system's assertions now, against `bundleIDs`.
     static func isActive(bundleIDs: [String]) -> Bool {

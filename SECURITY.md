@@ -67,8 +67,8 @@ hâlini yedekler. Komut, uygulama destek klasörüne oturum başına 0600 izinli
 bir işaret dosyası yazar ya da onu siler; Claude bir onay ya da yanıt
 beklerken dosyaya bekleme zamanını yazar. Komut hiçbir çıktı vermediği için
 bir izin isteğine yanıt vermez ve bir aracı değiştirmez. Claude'un başlattığı
-komutları algılamak için yalnızca kullanıcının kendi süreçlerinin adları ve
-argümanları okunur. "Sen yokken" özeti `~/.claude/projects` altındaki Claude
+komutları ve iş yapıp yapmadıklarını algılamak için yalnızca kullanıcının
+kendi süreçlerinin adları, argümanları ve işlemci süreleri okunur. "Sen yokken" özeti `~/.claude/projects` altındaki Claude
 Code kayıtlarını yalnızca okur ve bunlardan yalnızca yukarıda sayılan alanları
 alır.
 

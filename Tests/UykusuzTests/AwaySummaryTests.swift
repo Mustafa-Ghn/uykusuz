@@ -342,3 +342,82 @@ final class LaunchGuardTests: XCTestCase {
         XCTAssertEqual(argv.last, CommandLine.arguments.last)
     }
 }
+
+@MainActor
+final class BashToolWatcherTests: XCTestCase {
+    private let t0 = Date(timeIntervalSince1970: 2_000_000_000)
+    private var processes: [BashToolWatcher.Process] = []
+    private var cpu: [pid_t: TimeInterval] = [:]
+    private var toolShells: Set<pid_t> = []
+
+    private func watcher() -> BashToolWatcher {
+        BashToolWatcher(
+            read: { [unowned self] in self.processes },
+            isToolShell: { [unowned self] in self.toolShells.contains($0.pid) },
+            cpuTime: { [unowned self] in self.cpu[$0] }
+        )
+    }
+
+    private func process(_ pid: pid_t, parent: pid_t, _ name: String, startedAgo: TimeInterval) -> BashToolWatcher.Process {
+        .init(pid: pid, ppid: parent, name: name, started: t0.addingTimeInterval(-startedAgo))
+    }
+
+    func testAServerLeftRunningIsWorkOnlyWhileItWorks() {
+        processes = [process(10, parent: 1, "zsh", startedAgo: 2 * 86400), process(11, parent: 10, "cloud-sql-proxy", startedAgo: 2 * 86400)]
+        toolShells = [10]
+        cpu = [10: 0.5, 11: 300]
+        let w = watcher()
+        XCTAssertFalse(w.isWorking(now: t0), "days of CPU are a baseline, not work just done")
+        cpu[11] = 300.05
+        XCTAssertFalse(w.isWorking(now: t0.addingTimeInterval(15)), "idle between readings")
+        cpu[11] = 302
+        XCTAssertTrue(w.isWorking(now: t0.addingTimeInterval(30)), "a burst of work")
+        XCTAssertTrue(w.isWorking(now: t0.addingTimeInterval(30 + 240)), "still within the window")
+        XCTAssertFalse(w.isWorking(now: t0.addingTimeInterval(31 + BashToolWatcher.activeWindow)))
+    }
+
+    func testANewCommandCountsUntilItHasHadTimeToWork() {
+        processes = [process(20, parent: 1, "zsh", startedAgo: 60)]
+        toolShells = [20]
+        cpu = [20: 0.01]
+        let w = watcher()
+        XCTAssertTrue(w.isWorking(now: t0))
+        XCTAssertFalse(w.isWorking(now: t0.addingTimeInterval(BashToolWatcher.newGrace)), "five minutes on and idle")
+    }
+
+    func testProcessesStartedSinceTheLastReadingCountWhole() {
+        processes = [process(30, parent: 1, "zsh", startedAgo: 3600), process(31, parent: 30, "make", startedAgo: 3600)]
+        toolShells = [30]
+        cpu = [30: 0, 31: 1]
+        let w = watcher()
+        XCTAssertFalse(w.isWorking(now: t0))
+        processes.append(process(32, parent: 31, "clang", startedAgo: -5))
+        cpu[32] = 0.8
+        XCTAssertTrue(w.isWorking(now: t0.addingTimeInterval(15)), "a compiler that came and is still going")
+    }
+
+    func testNestedToolShellsAreOneCommandAndAReusedPidStartsAgain() {
+        processes = [process(40, parent: 1, "zsh", startedAgo: 3600), process(41, parent: 40, "zsh", startedAgo: 3600), process(42, parent: 41, "sleep", startedAgo: 3600)]
+        toolShells = [40, 41]
+        cpu = [40: 0, 41: 0, 42: 5]
+        let w = watcher()
+        XCTAssertFalse(w.isWorking(now: t0))
+        // pid 42 is now another process, started just now, with 1 s of CPU.
+        processes[2] = process(42, parent: 41, "swift-build", startedAgo: -10)
+        cpu[42] = 1
+        XCTAssertTrue(w.isWorking(now: t0.addingTimeInterval(15)))
+    }
+
+    func testNothingRunningIsNotWork() {
+        processes = [process(50, parent: 1, "zsh", startedAgo: 10)]
+        toolShells = []
+        XCTAssertFalse(watcher().isWorking(now: t0), "a shell that is not a Bash tool command")
+    }
+
+    func testTheLiveReadingsWork() throws {
+        let me = try XCTUnwrap(BashToolWatcher.liveProcesses().first { $0.pid == getpid() })
+        XCTAssertEqual(me.ppid, getppid())
+        XCTAssertLessThan(me.started.timeIntervalSinceNow, 0)
+        XCTAssertNotNil(BashToolWatcher.liveCPUTime(getpid()))
+    }
+}

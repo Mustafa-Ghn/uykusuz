@@ -167,8 +167,9 @@ komutu ya da kalıcı bileşen eklenmedi.
   `~/.claude/settings.json` dosyasına hiçbir çıktı vermeyen ve hep başarılı
   dönen bir komut ekler; dosyanın eski hâli yedeklenir. Komut, uygulama destek
   klasörüne oturum başına 0600 izinli bir işaret dosyası yazar ya da onu
-  siler. Bash komutlarını algılamak için yalnızca kullanıcının kendi
-  süreçlerinin adları ve argümanları okunur.
+  siler. Bash komutlarını ve iş yapıp yapmadıklarını algılamak için yalnızca
+  kullanıcının kendi süreçlerinin adları, argümanları ve işlemci süreleri
+  okunur.
 - **Sesli uyarı:** `/usr/bin/say` ile konuşur; metin tek bir argüman olarak,
   `--` ayıracından sonra verilir.
 - **Kod modu ve boşta siyah ekran:** Parlaklığı mevcut ekran ve klavye
