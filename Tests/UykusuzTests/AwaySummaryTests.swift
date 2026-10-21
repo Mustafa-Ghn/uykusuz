@@ -486,3 +486,15 @@ final class TurkishVoiceTests: XCTestCase {
         XCTAssertFalse(choice.identifier.isEmpty)
     }
 }
+
+final class HotspotJoinModeTests: XCTestCase {
+    func testOnlyTheKnownValueIsAutomatic() {
+        XCTAssertEqual(HotspotJoinMode.from(raw: 3), .automatic)
+        XCTAssertEqual(HotspotJoinMode.from(raw: 1), .notAutomatic(1))
+        XCTAssertEqual(HotspotJoinMode.from(raw: 2), .notAutomatic(2))
+        XCTAssertEqual(HotspotJoinMode.from(raw: nil), .unknown)
+        XCTAssertEqual(HotspotJoinMode.read(osMajorVersion: 27), .unknown, "a macOS the call was not measured on")
+        // The live call on this Mac answers without crashing, whatever it says.
+        _ = HotspotJoinMode.read()
+    }
+}

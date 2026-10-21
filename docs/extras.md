@@ -9,6 +9,10 @@ join hotspots) → Otomatik** ayarını yapın, ardından hotspot ağ adını (S
 parolasını Uykusuz'un Ayarlar penceresine girin. Parola giriş anahtar
 zincirinde `uykusuz-hotspot` hizmet adıyla saklanır. Uykusuz, parolayı süreç
 argümanlarına koymadan o ağı bulmak ve ona katılmak için CoreWLAN kullanır.
+Hotspot ayarlıyken Ayarlar bu macOS seçeneğini okur (Wi-Fi ayar ekranının
+kullandığı CoreWiFi'den, yalnızca okuyarak) ve Otomatik değilse uyarır; oturum
+başlarken de günlüğe yazar. Seçenek yalnızca denendiği macOS sürümünde (26)
+okunur; başka bir sürümde hiçbir şey gösterilmez.
 
 Anahtar Zinciri öğesinin erişim listesinde yalnızca onu kaydeden Uykusuz
 derlemesi bulunur ve Uykusuz öğeyi Anahtar Zinciri istemleri kapalıyken okur;

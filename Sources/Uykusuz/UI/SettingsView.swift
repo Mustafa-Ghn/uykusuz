@@ -25,6 +25,8 @@ struct SettingsView: View {
     @State private var wouldFreeze: [String] = []
     /// Whether ~/.claude/settings.json runs this app's hook, and the last
     /// install or removal error.
+    /// macOS's "Ask to join hotspots", which the failover wants on Otomatik.
+    @State private var hotspotJoinMode: HotspotJoinMode?
     /// The Turkish voice alerts and summaries are spoken in.
     @State private var voiceChoice: TurkishVoice.Choice?
     @State private var apiKeyDraft = ""
@@ -445,6 +447,9 @@ struct SettingsView: View {
             if let notice = hotspot.notice {
                 Text(notice).font(.caption).foregroundStyle(.orange)
             }
+            if !HotspotSSID.normalized(manager.config.hotspotSSID).isEmpty {
+                hotspotJoinModeRow
+            }
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
                     Text("Konum: \(locationPermission.statusDescription)")
@@ -610,6 +615,38 @@ struct SettingsView: View {
 
     /// Saves, or clears for an empty field. The button shows "Saving..."
     /// until the keychain answers; one save at a time.
+    /// Whether macOS joins hotspots on its own; read when the section
+    /// shows, when Uykusuz becomes active (back from System Settings) and
+    /// after a hotspot save.
+    @ViewBuilder
+    private var hotspotJoinModeRow: some View {
+        Group {
+            switch hotspotJoinMode {
+            case .automatic?:
+                Label("Sistem Ayarları > Wi-Fi > \"Erişim noktalarına katılmak için sor\": Otomatik", systemImage: "checkmark.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            case .notAutomatic?:
+                VStack(alignment: .leading, spacing: 4) {
+                    Label("Sistem Ayarları > Wi-Fi > \"Erişim noktalarına katılmak için sor\" Otomatik değil. Bu ayar Otomatik olmadan Uykusuz Wi-Fi koptuğunda iPhone'a geçemeyebilir.", systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                    Button("Wi-Fi ayarlarını aç") { NSWorkspace.shared.open(HotspotJoinMode.wifiSettingsURL) }
+                }
+            case .unknown?, nil:
+                EmptyView()
+            }
+        }
+        .task(id: manager.config.hotspotSSID) { await recheckHotspotJoinMode() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            Task { await recheckHotspotJoinMode() }
+        }
+    }
+
+    private func recheckHotspotJoinMode() async {
+        hotspotJoinMode = await Task.detached(priority: .utility) { HotspotJoinMode.read() }.value
+    }
+
     private func savePassword() {
         guard hotspot.startSave() else { return }
         if !HotspotSSID.normalized(manager.config.hotspotSSID).isEmpty {
@@ -623,6 +660,7 @@ struct SettingsView: View {
             // save left it.
             Self.passwordStored(outcome, configuredSSID: manager.config.hotspotSSID, services: manager.services)
             if let recheck { recheckPassword(recheck) }
+            await recheckHotspotJoinMode()
         }
     }
 

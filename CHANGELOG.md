@@ -4,6 +4,12 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.5.1 — 2026-10-21
+
+### Eklenenler
+
+- **Hotspot katılma ayarı denetimi.** Hotspot ayarlıyken Ayarlar > Ağ yedekleme, macOS'taki "Erişim noktalarına katılmak için sor" seçeneğinin Otomatik olup olmadığını gösterir; Otomatik değilse turuncu bir uyarı ve Wi-Fi ayarlarını açan bir düğme çıkar. Denetim hotspot parolası kaydedilince ve Uykusuz'a geri dönülünce yinelenir; oturum başlarken de günlüğe yazılır.
+
 ## 0.5.0 — 2026-10-21
 
 ### Değişenler

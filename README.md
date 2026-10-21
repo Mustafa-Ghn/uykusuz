@@ -395,7 +395,10 @@ Otomatik yapın, ardından hotspot adını ve parolasını Uykusuz'un Ayarlar
 penceresine girin. Parola giriş anahtar zincirinizde saklanır. macOS, Wi-Fi
 ağ adlarını okumak için Konum Servisleri iznini şart koştuğundan Uykusuz bu
 izni ister. Konumunuzu hiçbir zaman okumaz. Uykusuz'u yeniden kurduktan sonra
-parolayı yeniden girin.
+parolayı yeniden girin. Hotspot ayarlıyken Ayarlar, "Erişim noktalarına katılmak
+için sor" seçeneğinin Otomatik olup olmadığını denetler; değilse turuncu bir
+uyarıyla Wi-Fi ayarlarını açan bir düğme gösterir ve oturum başlarken bunu
+günlüğe yazar.
 
 Ağ 90 saniye boyunca kesik kalırsa Uykusuz, bir kodlama ajanının çalıştığı bir
 tmux bölmesine `continue` da yazabilir. Yalnızca Ayarlar'da listelediğiniz ve
