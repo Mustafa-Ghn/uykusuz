@@ -99,6 +99,10 @@ struct Config: Codable, Equatable, Sendable {
     /// work (`AgentAutoSession`).
     var endWhileWaiting: Bool = true
     var approvalWaitGrace: TimeInterval = 5 * 60
+    /// Approve Claude Code's permission requests for the user, except a
+    /// question or a plan to approve: the `PermissionRequest` hook prints
+    /// the approval (`ClaudeHookCommand.decision`).
+    var autoApprovePermissions: Bool = false
     /// "While you were away": when the lid opens after a while, what Claude
     /// did is told in a small window that reads it aloud on request
     /// (`AwaySummary`, `SummaryPanel`). Claude writes it with `summaryModel`
@@ -248,6 +252,7 @@ struct Config: Codable, Equatable, Sendable {
         summaryModel = try c.decodeIfPresent(String.self, forKey: .summaryModel) ?? d.summaryModel
         endWhileWaiting = try c.decodeIfPresent(Bool.self, forKey: .endWhileWaiting) ?? d.endWhileWaiting
         approvalWaitGrace = try c.decodeIfPresent(TimeInterval.self, forKey: .approvalWaitGrace) ?? d.approvalWaitGrace
+        autoApprovePermissions = try c.decodeIfPresent(Bool.self, forKey: .autoApprovePermissions) ?? d.autoApprovePermissions
         launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? d.launchAtLogin
         launchAtLoginInstall = try c.decodeIfPresent(String.self, forKey: .launchAtLoginInstall)
     }

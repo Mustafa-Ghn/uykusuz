@@ -321,6 +321,11 @@ struct SettingsView: View {
                     .font(.callout)
                     .foregroundStyle(.red)
             }
+            Toggle("Claude'un izin isteklerini otomatik onayla", isOn: bind(\.autoApprovePermissions))
+                .disabled(!claudeHooksInstalled)
+            Text("Açıkken Uykusuz, Claude'un komut çalıştırma, dosya düzenleme ve araç kullanma izinlerini sizin yerinize hemen onaylar; plan modunda da sizi bekletmez. Claude'un soruları ve plan onayları size kalır; Claude ayarlarınızdaki deny kuralları yine geçerlidir. Bu, bypass moduna yakın bir güvenlik düzeyidir: Claude'un okuduğu bir içerik onu zararlı bir komuta yönlendirirse o komut da onaylanır. Hook'ların kurulu olması gerekir; yeni açılan oturumlarda geçerli olur.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
             Toggle("Claude çalışırken otomatik oturum", isOn: bind(\.autoSession))
             Text("Claude bir görev yürüttüğü sürece oturum kendiliğinden başlar ve uzar; Claude \(Int(manager.config.autoIdleGrace / 60)) dakika çalışmayınca biter. Bu oturumda menü çubuğunda geri sayım yerine \"Claude\" yazar. Kapak kapansa da Mac uyanık kalır, bu yüzden Mac'i kapalı bir çantaya koymayın. \"Claude\" yazısına tıklayıp bir süre girerseniz oturum sizin olur ve o andan itibaren girdiğiniz süre kadar sürer. Oturumu basılı tutarak bitirirseniz otomatik oturumu duraklatmak için süre seçebilirsiniz; duraklatma sağ tık menüsünden de açılıp kapatılır.")
                 .font(.callout)

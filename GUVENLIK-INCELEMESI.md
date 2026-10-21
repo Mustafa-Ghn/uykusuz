@@ -218,6 +218,16 @@ macOS'un sorduğu Otomasyon (Mesajlar) iznidir.
   uygulama destek klasöründe 0600 izinli boş bir dosya tutulur. Kapatınca satır,
   uygulama kapanınca dosya silinir. Ağ isteği yoktur; telefondan gelen yanıtları
   Uykusuz değil Claude'un Remote Control özelliği taşır.
+- **İzin isteklerini otomatik onaylama (0.7.2):** İsteğe bağlıdır ve varsayılan
+  olarak kapalıdır. Açıkken `PermissionRequest` hook'u, bir soru
+  (`AskUserQuestion`) ya da plan onayı (`ExitPlanMode`) olmayan her izin
+  isteğine Claude Code'un okuduğu `"behavior": "allow"` kararını yazar. Bu hook
+  bunun için çıktısı atılmadan kurulur (`2>/dev/null || true`); diğer olayların
+  hook'ları sessiz kalır. Ayar her istekte config.json'dan okunur; dosya
+  okunamazsa ya da Uykusuz yoksa çıktı olmaz ve karar kullanıcıya kalır.
+  Claude Code'un deny ve ask kuralları onaylanan bir çağrıya yine uygulanır.
+  Etkisi bypass moduna yakındır: Claude'u yönlendiren bir içerik zararlı bir
+  komutu onaylatabilir.
 - **Güncelleme denetimi:** Kaldırıldı; incelenen sürümün tek ağ isteği buydu.
 
 ## Kötü amaçlı olmayan zayıf noktalar

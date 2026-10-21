@@ -751,7 +751,7 @@ final class ClaudeHooksSettingsTests: XCTestCase {
         for event in ClaudeHooks.events {
             let groups = try XCTUnwrap(hooks[event] as? [[String: Any]], event)
             let commands = groups.flatMap { ($0["hooks"] as? [[String: Any]] ?? []).compactMap { $0["command"] as? String } }
-            XCTAssertTrue(commands.contains(ClaudeHooks.command), event)
+            XCTAssertTrue(commands.contains(ClaudeHooks.command(for: event)), event)
         }
         let stopCommands = (hooks["Stop"] as? [[String: Any]] ?? []).flatMap { ($0["hooks"] as? [[String: Any]] ?? []).compactMap { $0["command"] as? String } }
         XCTAssertTrue(stopCommands.contains("say done"), "an existing hook stays")
@@ -810,6 +810,28 @@ final class ClaudeHooksSettingsTests: XCTestCase {
     func testTheCommandIsSilentAndNeverFails() {
         XCTAssertTrue(ClaudeHooks.command.contains(">/dev/null 2>&1 || true"), ClaudeHooks.command)
         XCTAssertTrue(ClaudeHooks.command.contains("Uykusuz.app/Contents/MacOS/Uykusuz\" --claude-hook"))
+        XCTAssertTrue(ClaudeHooks.answeringCommand.hasSuffix("--claude-hook 2>/dev/null || true"), "the permission hook's answer reaches Claude Code")
+        XCTAssertEqual(ClaudeHooks.command(for: "PermissionRequest"), ClaudeHooks.answeringCommand)
+        XCTAssertEqual(ClaudeHooks.command(for: "UserPromptSubmit"), ClaudeHooks.command, "a prompt hook's output would join the prompt")
+    }
+
+    func testAnEarlierPermissionHookIsReplacedByTheAnsweringOne() throws {
+        let settings = dir.appendingPathComponent("settings.json")
+        let earlier: [String: Any] = ["hooks": Dictionary(uniqueKeysWithValues: ClaudeHooks.events.map { event in
+            (event, [["hooks": [["type": "command", "command": ClaudeHooks.command]]]])
+        }).merging(["PermissionRequest": [
+            ["hooks": [["type": "command", "command": ClaudeHooks.command], ["type": "command", "command": "say izin"]]],
+        ]]) { $1 }]
+        try JSONSerialization.data(withJSONObject: earlier).write(to: settings)
+        XCTAssertEqual(ClaudeHooks.missingEvents(settingsURL: settings), ["PermissionRequest"])
+
+        XCTAssertEqual(try ClaudeHooks.upgradeIfInstalled(settingsURL: settings), ["PermissionRequest"])
+        XCTAssertEqual(ClaudeHooks.missingEvents(settingsURL: settings), [])
+        let hooks = try XCTUnwrap(try json(settings)["hooks"] as? [String: Any])
+        let commands = (hooks["PermissionRequest"] as? [[String: Any]] ?? []).flatMap { ($0["hooks"] as? [[String: Any]] ?? []).compactMap { $0["command"] as? String } }
+        XCTAssertEqual(commands.filter { $0.contains(ClaudeHooks.flag) }, [ClaudeHooks.answeringCommand], "one hook of ours, the answering one")
+        XCTAssertTrue(commands.contains("say izin"), "the user's own hook stays")
+        XCTAssertEqual(try ClaudeHooks.upgradeIfInstalled(settingsURL: settings), [])
     }
 }
 
@@ -840,6 +862,47 @@ final class ClaudeHookCommandTests: XCTestCase {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(ClaudeTaskMarker.self, from: Data(contentsOf: file))
+    }
+
+    private func permission(_ tool: String, autoApprove: Bool) -> [String] {
+        var printed: [String] = []
+        let input = Data(#"{"session_id":"abc-123","hook_event_name":"PermissionRequest","tool_name":"\#(tool)","permission_mode":"plan"}"#.utf8)
+        _ = ClaudeHookCommand.run(["--claude-hook"], readInput: { input }, paths: paths, now: t0,
+                                  claudeProcess: { (4242, self.identity) }, autoApprove: { _ in autoApprove }, write: { printed.append($0) })
+        return printed
+    }
+
+    func testAutomaticApprovalAnswersAToolRequestButNeverAQuestionOrAPlan() throws {
+        XCTAssertEqual(permission("Bash", autoApprove: true), [ClaudeHookCommand.approval])
+        XCTAssertNil(try marker()?.waitingSince, "approved here: not waiting on the user")
+        let answer = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(ClaudeHookCommand.approval.utf8)) as? [String: Any])
+        let specific = try XCTUnwrap(answer["hookSpecificOutput"] as? [String: Any])
+        XCTAssertEqual(specific["hookEventName"] as? String, "PermissionRequest")
+        XCTAssertEqual((specific["decision"] as? [String: Any])?["behavior"] as? String, "allow")
+
+        XCTAssertEqual(permission("AskUserQuestion", autoApprove: true), [], "a question stays the user's")
+        XCTAssertNotNil(try marker()?.waitingSince)
+        XCTAssertEqual(permission("ExitPlanMode", autoApprove: true), [], "a plan stays the user's")
+        XCTAssertEqual(permission("Bash", autoApprove: false), [], "off: the user decides")
+        XCTAssertNotNil(try marker()?.waitingSince)
+    }
+
+    func testOnlyAPermissionRequestIsEverAnswered() throws {
+        for (event, extra) in [("UserPromptSubmit", ""), ("PreToolUse", #","tool_name":"Bash""#), ("Notification", #","notification_type":"permission_prompt""#), ("Stop", "")] {
+            var printed: [String] = []
+            let input = Data(#"{"session_id":"abc-123","hook_event_name":"\#(event)"\#(extra)}"#.utf8)
+            _ = ClaudeHookCommand.run(["--claude-hook"], readInput: { input }, paths: paths, now: t0,
+                                      claudeProcess: { (4242, self.identity) }, autoApprove: { _ in true }, write: { printed.append($0) })
+            XCTAssertEqual(printed, [], event)
+        }
+    }
+
+    func testTheSettingIsReadFromTheConfigFile() throws {
+        XCTAssertFalse(ClaudeHookCommand.liveAutoApprove(paths), "no config: off")
+        var config = Config()
+        config.autoApprovePermissions = true
+        try Store(paths: paths).saveConfig(config)
+        XCTAssertTrue(ClaudeHookCommand.liveAutoApprove(paths))
     }
 
     func testATaskWritesTheMarkerToolUseRefreshesItAndStopRemovesIt() throws {

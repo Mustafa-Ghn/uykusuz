@@ -209,7 +209,7 @@ Ayarlar penceresi göze sağ tıklayınca açılan menüden (⌘,) açılır:
 | Kapak kapanınca yapılacaklar | Ekran ve klavye ışığı, dondurma listesi, diğer tüm uygulamalar, Docker, ses, Düşük Güç Modu, sesli uyarı, kullanılan ses ve Dinle |
 | Ajan uygulamaları | Hiçbir zaman dondurulmayan ya da kısıtlanmayan uygulamalar, App Nap |
 | Pil ve ısı | Düşük Güç Modu ve oturum sonu eşikleri, ısı kuralları |
-| Claude, kod modu ve ekran | Claude Code hook'ları, otomatik oturum, yanıt beklerken bitirme ve bekleme süresi, kod modu, boşta siyah ekran süreleri |
+| Claude, kod modu ve ekran | Claude Code hook'ları, izin isteklerini otomatik onaylama, otomatik oturum, yanıt beklerken bitirme ve bekleme süresi, kod modu, boşta siyah ekran süreleri |
 | Sen yokken özeti | Kapak açılınca özet penceresi, Claude API anahtarı, özeti yazan model, son 2 saati şimdi özetle |
 | Telefondan yanıt | Claude'un telefon bildirimleri yalnızca uzaktayken, yanıt için Mac'in uyanık kalacağı süre |
 | Claude sizi beklerken iPhone'a haber ver | iMessage gönder, alıcı (telefon numarası ya da Apple ID e-postası), deneme mesajı |
@@ -275,13 +275,26 @@ bırakılıp boşta bekleyen bir komut, örneğin bir veritabanı bağlantı ara
 geliştirme sunucusu, son 5 dakikada işlemci kullanmadıysa sayılmaz; derleme ve
 test gibi işler sayılır. Hook'lar ayrıca
 Claude'un bir onay penceresi açtığını, soru sorduğunu ya da plan onayı
-beklediğini bildirir; hiçbir çıktı vermedikleri için bir izne yanıt vermez ve
-bir aracı değiştirmezler. Uykusuz açılışta, daha eski bir sürümün kurduğu
-hook'lara eksik olayları ekler. Hook'lar
+beklediğini bildirir. Hiçbir çıktı vermezler, bu yüzden bir izne yanıt vermez ve
+bir aracı değiştirmezler; tek istisna aşağıdaki otomatik onaydır. Uykusuz
+açılışta, daha eski bir sürümün kurduğu hook'lara eksik olayları ekler ve
+komutu değişmiş olanı yeniler. Hook'lar
 `~/.claude/settings.json` dosyasına eklenir ve dosyanın eski hâli
 `settings.json.uykusuz-yedek` olarak saklanır; aynı düğme (ya da
 `--remove-claude-hooks`) onları kaldırır. Hook'lar kurulu değilken Claude
 masaüstü uygulaması açık olduğu sürece çalışıyor sayılır.
+
+**İzin isteklerini otomatik onaylama.** Ayarlar > Claude, kod modu ve ekran
+bölümündeki **Claude'un izin isteklerini otomatik onayla** açıkken Uykusuz,
+Claude'un komut çalıştırma, dosya düzenleme ve araç kullanma izinlerini sizin
+yerinize hemen onaylar; plan ya da auto modunda da onay penceresi sizi
+bekletmez. Claude'un soruları ve plan onayları size kalır; Claude ayarlarınızdaki
+deny kuralları yine geçerlidir. Bunu, onay penceresi açılırken çalışan hook
+yapar: ayar açıksa Claude Code'a "onay" yanıtı yazar, kapalıysa hiçbir şey
+yazmaz ve karar size kalır. Bu, bypass moduna yakın bir güvenlik düzeyidir:
+Claude'un okuduğu bir içerik onu zararlı bir komuta yönlendirirse o komut da
+onaylanır. Ayar varsayılan olarak kapalıdır, hook'ların kurulu olmasını ister ve
+yeni açılan oturumlarda geçerli olur.
 
 ### Telefondan yanıt
 

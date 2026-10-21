@@ -13,7 +13,9 @@ import Foundation
 /// an API error ended, `SessionEnd`). The command runs this app's executable
 /// in `--claude-hook` mode (`ClaudeHookCommand`), which keeps one marker
 /// file per Claude Code session under the app support folder while a task
-/// runs. `ClaudeActivity` reads them.
+/// runs. `ClaudeActivity` reads them. With automatic approval on, the
+/// `PermissionRequest` hook also answers a permission request
+/// (`ClaudeHookCommand.decision`).
 enum ClaudeHooks {
     static let flag = "--claude-hook"
     static let events = [
@@ -30,9 +32,18 @@ enum ClaudeHooks {
     /// prompt) and always succeeds, so a missing or broken Uykusuz never
     /// blocks or changes what Claude Code does.
     static let command = #""$HOME/Applications/Uykusuz.app/Contents/MacOS/Uykusuz" --claude-hook >/dev/null 2>&1 || true"#
+    /// For `PermissionRequest`: its output is kept, so the hook can approve
+    /// the request when the user turned automatic approval on. It prints
+    /// nothing otherwise, and a missing or broken Uykusuz still never
+    /// blocks Claude Code: no output is no decision.
+    static let answeringCommand = #""$HOME/Applications/Uykusuz.app/Contents/MacOS/Uykusuz" --claude-hook 2>/dev/null || true"#
     static let timeout = 10
     /// Where the first install keeps the file as it was.
     static let backupSuffix = ".uykusuz-yedek"
+
+    static func command(for event: String) -> String {
+        event == "PermissionRequest" ? answeringCommand : command
+    }
 
     static var defaultSettingsURL: URL {
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude/settings.json")
@@ -54,7 +65,8 @@ enum ClaudeHooks {
     }
 
     /// Adds the hook to each of `events`, keeping everything else in the
-    /// file. Before the first change the file is copied, as it was, to
+    /// file, and replaces one an earlier build installed with another
+    /// command. Before the first change the file is copied, as it was, to
     /// `settings.json.uykusuz-yedek`.
     @discardableResult
     static func install(settingsURL: URL = defaultSettingsURL) throws -> Change {
@@ -62,13 +74,19 @@ enum ClaudeHooks {
         var hooks = root["hooks"] as? [String: Any] ?? [:]
         var changed = false
         for event in events {
+            let wanted = command(for: event)
             var groups = hooks[event] as? [[String: Any]] ?? []
-            guard !groups.contains(where: containsOurHook) else { continue }
-            var group: [String: Any] = ["hooks": [["type": "command", "command": command, "timeout": timeout]]]
-            if let matcher = matchers[event] { group["matcher"] = matcher }
-            groups.append(group)
-            hooks[event] = groups
-            changed = true
+            if groups.contains(where: { hasOurHook($0, otherThan: wanted) }) {
+                groups = groups.compactMap(strippingOurHook)
+                changed = true
+            }
+            if !groups.contains(where: containsOurHook) {
+                var group: [String: Any] = ["hooks": [["type": "command", "command": wanted, "timeout": timeout]]]
+                if let matcher = matchers[event] { group["matcher"] = matcher }
+                groups.append(group)
+                changed = true
+            }
+            hooks[event] = groups.isEmpty ? nil : groups
         }
         guard changed else { return .unchanged }
         root["hooks"] = hooks
@@ -76,10 +94,16 @@ enum ClaudeHooks {
         return .installed
     }
 
-    /// Events in `events` that do not run this app's hook.
+    /// Events in `events` that do not run this app's hook, or run it with
+    /// an earlier build's command.
     static func missingEvents(settingsURL: URL = defaultSettingsURL) -> [String] {
         let hooks = (try? readSettings(settingsURL))?["hooks"] as? [String: Any] ?? [:]
-        return events.filter { !((hooks[$0] as? [[String: Any]])?.contains(where: containsOurHook) ?? false) }
+        return events.filter { event in
+            let groups = hooks[event] as? [[String: Any]] ?? []
+            return !groups.contains { group in
+                (group["hooks"] as? [[String: Any]])?.contains { ($0["command"] as? String) == command(for: event) } ?? false
+            }
+        }
     }
 
     /// With this app's hooks installed, adds the events an earlier build did
@@ -103,17 +127,8 @@ enum ClaudeHooks {
         for (event, value) in hooks {
             guard var groups = value as? [[String: Any]] else { continue }
             let before = groups.count
-            groups = groups.compactMap { group in
-                guard var entries = group["hooks"] as? [[String: Any]] else { return group }
-                let kept = entries.filter { !isOurHook($0) }
-                guard kept.count != entries.count else { return group }
-                changed = true
-                entries = kept
-                if entries.isEmpty { return nil }
-                var g = group
-                g["hooks"] = entries
-                return g
-            }
+            if groups.contains(where: containsOurHook) { changed = true }
+            groups = groups.compactMap(strippingOurHook)
             if groups.count != before { changed = true }
             hooks[event] = groups.isEmpty ? nil : groups
         }
@@ -174,6 +189,22 @@ enum ClaudeHooks {
         (group["hooks"] as? [[String: Any]])?.contains(where: isOurHook) ?? false
     }
 
+    /// This app's hook, with a command other than `wanted`.
+    private static func hasOurHook(_ group: [String: Any], otherThan wanted: String) -> Bool {
+        (group["hooks"] as? [[String: Any]])?.contains { isOurHook($0) && ($0["command"] as? String) != wanted } ?? false
+    }
+
+    /// The group without this app's hook; nil when nothing else was in it.
+    private static func strippingOurHook(_ group: [String: Any]) -> [String: Any]? {
+        guard let entries = group["hooks"] as? [[String: Any]] else { return group }
+        let kept = entries.filter { !isOurHook($0) }
+        guard kept.count != entries.count else { return group }
+        if kept.isEmpty { return nil }
+        var g = group
+        g["hooks"] = kept
+        return g
+    }
+
     private static func readSettings(_ url: URL) throws -> [String: Any] {
         guard FileManager.default.fileExists(atPath: url.path) else { return [:] }
         let data = try Data(contentsOf: url)
@@ -213,14 +244,36 @@ struct ClaudeTaskMarker: Codable, Equatable, Sendable {
 /// the event as JSON on stdin. A task start or a tool use writes the
 /// session's marker; Claude stopping for the user marks it waiting, and the
 /// next sign of work clears that; Claude finishing or the session ending
-/// removes it. Always exits 0 and prints nothing, so it never answers a
-/// permission request or changes a tool call.
+/// removes it. Always exits 0 and prints nothing, so it changes no tool
+/// call, with one exception the user turns on: with automatic approval on
+/// (`Config.autoApprovePermissions`), a permission request that is not a
+/// question or a plan to approve gets an approval on stdout, and the
+/// session goes on as at work rather than waiting.
 enum ClaudeHookCommand {
     struct Input: Decodable {
         let session_id: String?
         let hook_event_name: String?
         let notification_type: String?
         let tool_name: String?
+    }
+
+    /// The approval Claude Code reads from a `PermissionRequest` hook.
+    static let approval = #"{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"}}}"#
+
+    /// What the hook prints for `input`: the approval for a permission
+    /// request when `autoApprove` is on, except a question or a plan to
+    /// approve, which stay the user's; nil (nothing) otherwise. Claude Code
+    /// still applies the user's deny and ask rules to an approved call.
+    static func decision(for input: Input, autoApprove: Bool) -> String? {
+        guard autoApprove, input.hook_event_name == "PermissionRequest",
+              let tool = input.tool_name, !waitingTools.contains(tool) else { return nil }
+        return approval
+    }
+
+    /// The setting, read from config.json on each request; off when the
+    /// file cannot be read.
+    static func liveAutoApprove(_ paths: Paths) -> Bool {
+        (try? Store(paths: paths).loadConfig())?.autoApprovePermissions ?? false
     }
 
     enum Kind: Equatable, Sendable {
@@ -260,15 +313,23 @@ enum ClaudeHookCommand {
         readInput: () -> Data = { FileHandle.standardInput.readDataToEndOfFile() },
         paths: Paths = .fromEnvironment(),
         now: Date = Date(),
-        claudeProcess: () -> (pid: Int32, identity: ProcessIdentity?)? = ClaudeHookCommand.findClaudeProcess
+        claudeProcess: () -> (pid: Int32, identity: ProcessIdentity?)? = ClaudeHookCommand.findClaudeProcess,
+        autoApprove: (Paths) -> Bool = ClaudeHookCommand.liveAutoApprove,
+        write: (String) -> Void = { print($0) }
     ) -> Int32? {
         guard arguments.first == ClaudeHooks.flag else { return nil }
         guard let input = try? JSONDecoder().decode(Input.self, from: readInput()),
-              let event = input.hook_event_name,
-              let name = markerName(input.session_id) else { return 0 }
+              let event = input.hook_event_name else { return 0 }
+        var effect = kind(of: input)
+        if event == "PermissionRequest", let answer = decision(for: input, autoApprove: autoApprove(paths)) {
+            write(answer)
+            // Approved here: Claude goes on, nothing waits on the user.
+            effect = .busy
+        }
+        guard let name = markerName(input.session_id) else { return 0 }
         let dir = markerDirectory(paths)
         let file = dir.appendingPathComponent(name)
-        switch kind(of: input) {
+        switch effect {
         case let kind? where kind != .idle:
             // A wait keeps the moment it began across the events that
             // repeat it (a dialog's request, then its notification).
