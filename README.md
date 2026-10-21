@@ -65,8 +65,9 @@ Claude çalışırken bunu kendiliğinden de yapar.
 - **Claude ile otomatik oturum.** Claude Code bir görev yürüttüğü sürece oturum
   kendiliğinden açılır, uzar ve Claude durunca kapanır; Claude sizden yanıt
   beklerken bir süre sonra kapanır ve istediğinizde belli bir süre duraklatılır.
-- **Sen yokken özeti.** Kapak açılınca Claude'un siz yokken yaptıkları bir
-  bildirimde bir iki cümleyle anlatılır ve sesli okunur; bir Claude API anahtarı
+- **Sen yokken özeti.** Kapak açılınca Claude'un siz yokken yaptıkları küçük bir
+  pencerede bir iki cümleyle anlatılır; ▶ ile dinlersiniz, okunan kelime
+  vurgulanır ve çubukla ileri geri gidersiniz; bir Claude API anahtarı
   kaydederseniz özeti Claude yazar.
 - **Kapak eylemleri.** Kapak kapanınca ekran ve klavye ışığı söner, seçili
   uygulamalar dondurulur, ses kapanır ve Düşük Güç Modu açılır; kapağı açmak
@@ -203,7 +204,7 @@ Ayarlar penceresi göze sağ tıklayınca açılan menüden (⌘,) açılır:
 | Ajan uygulamaları | Hiçbir zaman dondurulmayan ya da kısıtlanmayan uygulamalar, App Nap |
 | Pil ve ısı | Düşük Güç Modu ve oturum sonu eşikleri, ısı kuralları |
 | Claude, kod modu ve ekran | Claude Code hook'ları, otomatik oturum, yanıt beklerken bitirme ve bekleme süresi, kod modu, boşta siyah ekran süreleri |
-| Sen yokken özeti | Kapak açılınca özet, sesli okuma, Claude API anahtarı, özeti yazan model, son 2 saati şimdi özetle |
+| Sen yokken özeti | Kapak açılınca özet penceresi, Claude API anahtarı, özeti yazan model, son 2 saati şimdi özetle |
 | Ağ yedekleme | iPhone kişisel erişim noktası, tmux dürtmesi |
 | Uygulama | Girişte aç, yapılandırma klasörü, kurulu sürüm |
 
@@ -285,10 +286,18 @@ masaüstü uygulaması açık olduğu sürece çalışıyor sayılır.
 ### Sen yokken özeti
 
 Kapak en az 3 dakika kapalı kaldıysa, açılınca Claude Code oturumlarında o
-sırada olanlar bir bildirimde bir iki cümleyle anlatılır ve (Ayarlar'da
-açıksa) sesli okunur. Oturumun hâlâ sürmesi gerekmez; Uykusuz kapağı her zaman
-izler. Ayarlar > Sen yokken özeti bölümündeki **Son 2 saati şimdi özetle**
-düğmesi özeti hemen dener.
+sırada olanlar ekranın sağ üstündeki küçük bir pencerede bir iki cümleyle
+anlatılır. Oturumun hâlâ sürmesi gerekmez; Uykusuz kapağı her zaman izler.
+Ayarlar > Sen yokken özeti bölümündeki **Son 2 saati şimdi özetle** düğmesi
+özeti hemen dener; göze sağ tıklayınca açılan menüdeki **Son özeti göster** son
+özeti yeniden açar.
+
+- **Pencere.** Siz ▶ düğmesine basmadan ses çıkmaz:
+  kapağı sessiz bir yerde ya da başka bir iş için açmış olabilirsiniz. Okurken
+  okunan kelime metinde vurgulanır; ❚❚ durdurur, ◀◀ ve ▶▶ beşer kelime geri ve
+  ileri gider, çubuğu sürükleyince okuma o kelimeden sürer. Pencere öndeki
+  uygulamanın odağını almaz; kapak yeniden kapanınca okuma durur ve pencere
+  kapanır. Ses, sesli uyarılardaki gibi Mac'te kurulu en iyi Türkçe sestir.
 
 - **Anahtarsız.** Claude API anahtarı kayıtlı değilse özet bu Mac'te sayılarla
   yazılır (hangi oturum, kaç dosya, kaç komut, şu anki durum) ve hiçbir yere

@@ -100,11 +100,10 @@ struct Config: Codable, Equatable, Sendable {
     var endWhileWaiting: Bool = true
     var approvalWaitGrace: TimeInterval = 5 * 60
     /// "While you were away": when the lid opens after a while, what Claude
-    /// did is told in a notification (`AwaySummary`), and read aloud if
-    /// `awaySummarySpoken`. Claude writes it with `summaryModel` when a
-    /// Claude API key is saved; otherwise it is made here from counts.
+    /// did is told in a small window that reads it aloud on request
+    /// (`AwaySummary`, `SummaryPanel`). Claude writes it with `summaryModel`
+    /// when a Claude API key is saved; otherwise it is made here from counts.
     var awaySummary: Bool = true
-    var awaySummarySpoken: Bool = true
     var summaryModel: String = AnthropicSummaryClient.defaultModel
     /// Automatic sessions are paused until this moment: the user chose a
     /// pause after ending one, or from the menu, and none starts before it
@@ -226,7 +225,6 @@ struct Config: Codable, Equatable, Sendable {
         keyboardOffAfter = try c.decodeIfPresent(TimeInterval.self, forKey: .keyboardOffAfter) ?? d.keyboardOffAfter
         autoPausedUntil = try c.decodeIfPresent(Date.self, forKey: .autoPausedUntil)
         awaySummary = try c.decodeIfPresent(Bool.self, forKey: .awaySummary) ?? d.awaySummary
-        awaySummarySpoken = try c.decodeIfPresent(Bool.self, forKey: .awaySummarySpoken) ?? d.awaySummarySpoken
         summaryModel = try c.decodeIfPresent(String.self, forKey: .summaryModel) ?? d.summaryModel
         endWhileWaiting = try c.decodeIfPresent(Bool.self, forKey: .endWhileWaiting) ?? d.endWhileWaiting
         approvalWaitGrace = try c.decodeIfPresent(TimeInterval.self, forKey: .approvalWaitGrace) ?? d.approvalWaitGrace

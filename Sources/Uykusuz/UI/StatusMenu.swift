@@ -27,6 +27,8 @@ enum StatusMenu {
             case pauseAuto
             /// End the automatic session pause.
             case resumeAuto
+            /// Put the last away summary up again.
+            case showSummary
         }
 
         let title: String
@@ -37,6 +39,7 @@ enum StatusMenu {
     /// The line under the sleep line while the automatic session runs (fork
     /// addition), in place of the deadline the status item does not show.
     static let autoSessionLine = "Claude çalıştıkça açık; Claude durunca \(Int(AutoSessionPolicy.idleGrace / 60)) dk sonra biter"
+    static let showSummaryTitle = "Son özeti göster"
     static let pauseTitle = "Otomatik oturumu duraklat"
     static let resumeTitle = "Otomatik oturumu sürdür"
 
@@ -121,6 +124,7 @@ enum StatusMenu {
         autoSessionOn: Bool = false,
         autoPausedUntil: Date? = nil,
         now: Date = Date(),
+        hasSummary: Bool = false,
         machine: String?,
         actions: String?,
         throttledBrowsers: [ThrottledBrowser],
@@ -146,6 +150,9 @@ enum StatusMenu {
             } else {
                 out.append(Item(title: pauseTitle, kind: .pauseAuto))
             }
+        }
+        if hasSummary {
+            out.append(Item(title: showSummaryTitle, kind: .showSummary))
         }
         if let machine = present(machine) {
             out.append(Item(title: machine, kind: .info))
@@ -214,7 +221,8 @@ enum StatusMenu {
         relaunchBrowser: Selector,
         stopWaitingForOutput: Selector,
         pauseChoice: Selector? = nil,
-        resumeAuto: Selector? = nil
+        resumeAuto: Selector? = nil,
+        showSummary: Selector? = nil
     ) -> NSMenu {
         let menu = NSMenu()
         menu.autoenablesItems = false
@@ -254,6 +262,9 @@ enum StatusMenu {
             case .resumeAuto:
                 guard let resumeAuto else { continue }
                 menu.addItem(action(title: item.title, selector: resumeAuto, key: "", target: target))
+            case .showSummary:
+                guard let showSummary else { continue }
+                menu.addItem(action(title: item.title, selector: showSummary, key: "", target: target))
             }
         }
         return menu

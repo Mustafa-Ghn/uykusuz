@@ -180,13 +180,6 @@ final class AnthropicSummaryClientTests: XCTestCase {
 
 @MainActor
 final class AwaySummaryTests: XCTestCase {
-    final class Speech: SpeechSynthesizing, @unchecked Sendable {
-        private let lock = NSLock()
-        private var _spoken: [String] = []
-        var spoken: [String] { lock.withLock { _spoken } }
-        func speak(_ text: String) async { lock.withLock { _spoken.append(text) } }
-    }
-
     struct Writer: SummaryWriting {
         var result: Result<String, SummaryError>
         func summarize(_ digest: ClaudeDigest) async throws -> String { try result.get() }
@@ -198,6 +191,8 @@ final class AwaySummaryTests: XCTestCase {
     private var asked: [(Date, Date)] = []
     private var digest: ClaudeDigest?
     private var writes: [(key: String, model: String)] = []
+    private var shown: [(text: String, told: Date)] = []
+    private var dismissed = 0
     private var result: Result<String, SummaryError> = .success("Claude testleri bitirdi, bir onay bekliyor.")
 
     override func setUp() async throws {
@@ -205,17 +200,17 @@ final class AwaySummaryTests: XCTestCase {
         config = Config()
         asked = []
         writes = []
+        shown = []
+        dismissed = 0
         digest = ClaudeDigest(from: t0, to: t0, sessions: [ClaudeDigest.Session(id: "s", title: "Proje", toolCounts: ["Bash": 2], lastActivity: t0)])
     }
 
-    private func make(key: AnthropicKeyRead = .none) -> (AwaySummary, RecordingNotifier, Speech) {
-        let notifier = RecordingNotifier()
-        let speech = Speech()
-        let summary = AwaySummary(
+    private func make(key: AnthropicKeyRead = .none) -> AwaySummary {
+        AwaySummary(
             config: { [unowned self] in self.config },
-            notifier: notifier,
+            present: { [unowned self] text, told in self.shown.append((text, told)) },
+            dismiss: { [unowned self] in self.dismissed += 1 },
             keyStore: InMemoryAnthropicKeyStore(key),
-            speech: speech,
             digest: { [unowned self] from, to in
                 self.asked.append((from, to))
                 return self.digest
@@ -224,10 +219,8 @@ final class AwaySummaryTests: XCTestCase {
                 self.writes.append((key, model))
                 return Writer(result: self.result)
             },
-            clock: { [unowned self] in self.now },
-            speechDelayAfterOpen: .zero
+            clock: { [unowned self] in self.now }
         )
-        return (summary, notifier, speech)
     }
 
     private func eventually(_ condition: () -> Bool) async -> Bool {
@@ -239,24 +232,23 @@ final class AwaySummaryTests: XCTestCase {
         return condition()
     }
 
-    func testTheLidOpeningAfterAWhileTellsTheLocalSummaryWithoutAKey() async {
-        let (summary, notifier, speech) = make()
+    func testTheLidOpeningAfterAWhilePutsTheSummaryUpWithoutSpeaking() async {
+        let summary = make()
         summary.lidChanged(closed: true)
+        XCTAssertEqual(dismissed, 1, "a summary that is up comes down when the lid closes")
         now = t0.addingTimeInterval(10 * 60)
         summary.lidChanged(closed: false)
-        let told = await eventually { !notifier.posts.isEmpty }
+        let told = await eventually { !self.shown.isEmpty }
         XCTAssertTrue(told)
         XCTAssertEqual(asked.first?.0, t0)
         XCTAssertEqual(asked.first?.1, t0.addingTimeInterval(10 * 60))
-        XCTAssertEqual(notifier.posts.first?.title, AwaySummary.title)
-        XCTAssertEqual(notifier.posts.first?.body, digest?.localSummary)
+        XCTAssertEqual(shown.first?.text, digest?.localSummary)
         XCTAssertTrue(writes.isEmpty, "no key, no request")
-        let spoke = await eventually { speech.spoken == [self.digest!.localSummary] }
-        XCTAssertTrue(spoke)
+        XCTAssertEqual(summary.last?.text, digest?.localSummary)
     }
 
     func testAShortCloseTheFeatureOffOrAnOpenWithNoCloseTellNothing() async throws {
-        let (summary, notifier, _) = make()
+        let summary = make()
         summary.lidChanged(closed: false)
         summary.lidChanged(closed: true)
         now = t0.addingTimeInterval(AwaySummary.minimumAway - 1)
@@ -267,17 +259,17 @@ final class AwaySummaryTests: XCTestCase {
         summary.lidChanged(closed: false)
         try await Task.sleep(for: .milliseconds(100))
         XCTAssertTrue(asked.isEmpty)
-        XCTAssertTrue(notifier.posts.isEmpty)
+        XCTAssertTrue(shown.isEmpty)
     }
 
     func testWithAKeyClaudeWritesItAndAFailureFallsBackToTheLocalOne() async {
         config.summaryModel = "claude-haiku-5-5"
-        var (summary, notifier, _) = make(key: .key("sk-ant-k"))
+        var summary = make(key: .key("sk-ant-k"))
         var text = await summary.summarize(from: t0, to: t0.addingTimeInterval(600), away: true, sayIfNothing: false)
         XCTAssertEqual(text, "Claude testleri bitirdi, bir onay bekliyor.")
         XCTAssertEqual(writes.first?.key, "sk-ant-k")
         XCTAssertEqual(writes.first?.model, "claude-haiku-5-5")
-        XCTAssertEqual(notifier.posts.last?.body, text)
+        XCTAssertEqual(shown.last?.text, text)
         XCTAssertTrue(summary.lastResult?.contains("Claude yazdı") ?? false, summary.lastResult ?? "")
 
         result = .failure(.http(401, "invalid x-api-key"))
@@ -285,29 +277,31 @@ final class AwaySummaryTests: XCTestCase {
         XCTAssertEqual(text, digest?.localSummary)
         XCTAssertTrue(summary.lastResult?.contains("API anahtarı geçersiz (401)") ?? false, summary.lastResult ?? "")
 
-        (summary, notifier, _) = make(key: .unreadable)
+        summary = make(key: .unreadable)
         text = await summary.summarize(from: t0, to: t0.addingTimeInterval(600), away: true, sayIfNothing: false)
         XCTAssertEqual(text, digest?.localSummary)
         XCTAssertTrue(summary.lastResult?.contains("yeniden kaydedin") ?? false, summary.lastResult ?? "")
     }
 
-    func testNothingToTellIsSaidOnlyWhenAsked() async {
+    func testNothingToTellIsShownOnlyWhenAsked() async {
         digest = nil
-        let (summary, notifier, speech) = make()
+        let summary = make()
         let quiet = await summary.summarize(from: t0, to: t0.addingTimeInterval(600), away: true, sayIfNothing: false)
         XCTAssertNil(quiet)
-        XCTAssertTrue(notifier.posts.isEmpty)
+        XCTAssertTrue(shown.isEmpty)
         _ = await summary.summarize(from: t0, to: t0.addingTimeInterval(600), away: false, sayIfNothing: true)
-        XCTAssertEqual(notifier.posts.map(\.body), ["Bu sürede Claude'un yaptığı bir iş yok."])
-        XCTAssertTrue(speech.spoken.isEmpty)
+        XCTAssertEqual(shown.map(\.text), [AwaySummary.nothingToTell])
+        XCTAssertNil(summary.last, "nothing to put up again")
     }
 
-    func testReadAloudOnlyIfSettingsSaysSo() async {
-        config.awaySummarySpoken = false
-        let (summary, notifier, speech) = make()
+    func testTheLastSummaryCanBePutUpAgain() async {
+        let summary = make()
+        await summary.showLast()
+        XCTAssertTrue(shown.isEmpty, "none yet")
         _ = await summary.summarize(from: t0, to: t0.addingTimeInterval(600), away: true, sayIfNothing: false)
-        XCTAssertEqual(notifier.posts.count, 1)
-        XCTAssertTrue(speech.spoken.isEmpty)
+        await summary.showLast()
+        XCTAssertEqual(shown.count, 2)
+        XCTAssertEqual(shown.last?.text, digest?.localSummary)
     }
 
     func testASessionsStateComesFromItsMarker() throws {
@@ -326,6 +320,49 @@ final class AwaySummaryTests: XCTestCase {
         XCTAssertEqual(AwaySummary.status(ofSession: "b", paths: paths, now: t0.addingTimeInterval(60)), .working)
         XCTAssertEqual(AwaySummary.status(ofSession: "gone", paths: paths, now: t0.addingTimeInterval(60)), .done)
         XCTAssertEqual(AwaySummary.status(ofSession: "b", paths: paths, now: t0.addingTimeInterval(ClaudeActivity.markerMaxAge + 1)), .done, "stale")
+    }
+}
+
+final class SummaryPlayerTests: XCTestCase {
+    func testWordsAndWhereABarPositionLands() {
+        let text = "Claude testleri bitirdi, bir onay bekliyor."
+        let words = SummaryPlayer.words(in: text)
+        XCTAssertEqual(words.map { (text as NSString).substring(with: $0) }, ["Claude", "testleri", "bitirdi", "bir", "onay", "bekliyor"])
+        XCTAssertEqual(SummaryPlayer.wordIndex(atFraction: 0, count: words.count), 0)
+        XCTAssertEqual(SummaryPlayer.wordIndex(atFraction: 1, count: words.count), 5)
+        XCTAssertEqual(SummaryPlayer.wordIndex(atFraction: 0.5, count: words.count), 3)
+        XCTAssertEqual(SummaryPlayer.wordIndex(atFraction: 7, count: words.count), 5, "clamped")
+        XCTAssertEqual(SummaryPlayer.wordIndex(atFraction: 0.5, count: 0), 0)
+        // A report from an utterance started at "bir" (offset 25): "onay" is 4 into it.
+        let onay = (text as NSString).range(of: "onay")
+        XCTAssertEqual(SummaryPlayer.wordIndex(containing: onay.location, in: words), 4)
+        XCTAssertEqual(SummaryPlayer.wordIndex(containing: (text as NSString).range(of: ",").location, in: words), 2, "punctuation belongs to the word before")
+    }
+
+    @MainActor
+    func testMovesStayInsideTheTextAndHighlightTheWord() {
+        let player = SummaryPlayer(text: "Bir iki üç dört beş altı yedi", voiceIdentifier: nil)
+        XCTAssertNil(player.currentWord)
+        XCTAssertEqual(player.progress, 0)
+        player.back()
+        XCTAssertEqual(player.currentWord, 0)
+        player.forward()
+        XCTAssertEqual(player.currentWord, 5)
+        player.forward()
+        XCTAssertEqual(player.currentWord, 6, "the last word")
+        player.seek(to: 0.5)
+        XCTAssertEqual(player.currentWord, 3)
+        XCTAssertFalse(player.isPlaying, "moving does not start the reading")
+        let marked = player.highlighted.runs.filter { $0.backgroundColor != nil }.map { String(player.highlighted[$0.range].characters) }
+        XCTAssertEqual(marked, ["dört"])
+    }
+
+    func testTheMenuOffersTheLastSummary() {
+        func titles(_ has: Bool) -> [String] {
+            StatusMenu.items(sessionActive: false, sleepHeld: false, hasSummary: has, machine: nil, actions: nil, throttledBrowsers: [], error: nil).map(\.title)
+        }
+        XCTAssertTrue(titles(true).contains(StatusMenu.showSummaryTitle))
+        XCTAssertFalse(titles(false).contains(StatusMenu.showSummaryTitle))
     }
 }
 

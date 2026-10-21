@@ -26,8 +26,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Starts, extends and ends sessions while an agent is at work (fork
     /// addition).
     let autoSession: AgentAutoSession
-    /// "While you were away" when the lid opens (fork addition).
+    /// "While you were away" when the lid opens (fork addition), and the
+    /// window it is told in.
     let awaySummary: AwaySummary
+    let summaryPanel = SummaryPanel()
     private var statusItem: StatusItemController?
     private var settingsWindow: SettingsWindow?
     private var terminating = false
@@ -36,7 +38,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let manager = SessionManager.live()
         self.manager = manager
         autoSession = AgentAutoSession(manager: manager)
-        awaySummary = AwaySummary(config: { [manager] in manager.config }, notifier: manager.services?.notifier ?? Notifier())
+        let panel = summaryPanel
+        awaySummary = AwaySummary(
+            config: { [manager] in manager.config },
+            present: { text, told in await panel.show(text, told: told) },
+            dismiss: { panel.close() }
+        )
         secrets = KeychainHotspotSecretStore(keychain: KeychainStore()) {
             manager.config.hotspotSSID
         }
@@ -89,9 +96,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             )
         }
         settingsWindow = settings
-        statusItem = StatusItemController(manager: manager, status: status) { [weak settings] in
-            settings?.show()
-        }
+        statusItem = StatusItemController(
+            manager: manager,
+            status: status,
+            showSettings: { [weak settings] in settings?.show() },
+            lastSummary: { [awaySummary] in
+                guard awaySummary.last != nil else { return nil }
+                return { Task { await awaySummary.showLast() } }
+            }
+        )
         autoSession.onAgentActivityChange = { [weak services = manager.services] active in
             services?.setAgentActive(active)
         }
