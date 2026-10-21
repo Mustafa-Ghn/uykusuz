@@ -403,7 +403,9 @@ Oturum sırasında kapağı kapatmak aşağıdakilerin her birini yapar; kapağ�
 bunları geri almaya çalışır. Kapak kapalıyken zamanlayıcı geri saymayı sürdürür.
 
 - **Ekran ve klavye ışığı kapanır.** Uykusuz önce parlaklıklarını kaydeder.
-  Uyku kapalıyken macOS bunu artık kendiliğinden yapmaz.
+  Uyku kapalıyken macOS bunu artık kendiliğinden yapmaz. Klavye ışığı zaten
+  kapalıysa (macOS onu gün ışığında kendisi kapatır) Uykusuz ona dokunmaz;
+  böylece akşam klavyeyi kullanmaya başlayınca macOS ışığı yine kendisi açar.
 - **Uygulamalar dondurulur.** Dondurma, bir uygulamanın süreçlerine `SIGSTOP`
   gönderir; süreçler kapak açılınca `SIGCONT` gönderilene kadar duraklar.
   Dondurma listesi WhatsApp, Word, Excel ve ParaView ile başlar. "Diğer tüm

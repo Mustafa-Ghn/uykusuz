@@ -289,7 +289,7 @@ final class LidActions {
                 } else {
                     value = nil
                 }
-                if let value {
+                if let value, value > 0 {
                     try manager.journal { s in
                         // As for the display above.
                         if s.savedKeyboardBrightness == nil || (s.keyboardRestoreRefused && value > 0) {
@@ -303,6 +303,11 @@ final class LidActions {
                     } catch {
                         Log.error("keyboard backlight off failed: \(error.localizedDescription)")
                     }
+                } else if value != nil {
+                    // Off already (macOS turns it off in daylight): nothing to
+                    // put back, and a 0 written back on open would pin it off,
+                    // so it could not come on by itself in the evening.
+                    Log.info("keyboard backlight already off; leaving it to macOS")
                 } else {
                     Log.info("keyboard backlight suppressed by display sleep and no trusted sample; leaving it to macOS")
                 }
