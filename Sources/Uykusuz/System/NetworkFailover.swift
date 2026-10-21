@@ -845,6 +845,16 @@ final class NetworkFailover {
         m.start(queue: .main)
         monitor = m
         Log.info("network failover started (wifi \(wifiInterface ?? "unresolved"))")
+        // Fork addition: say in the log when macOS will not join hotspots on
+        // its own, the first thing to look at after a failover that did not
+        // happen.
+        if !HotspotSSID.normalized(configProvider().hotspotSSID).isEmpty {
+            Task.detached(priority: .utility) {
+                if case let .notAutomatic(raw) = HotspotJoinMode.read() {
+                    Log.error("network failover: macOS 'Ask to join hotspots' is not Automatic (\(raw)); the hotspot may not be found")
+                }
+            }
+        }
     }
 
     func stop() {
