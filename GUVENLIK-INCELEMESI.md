@@ -197,6 +197,11 @@ komutu ya da kalıcı bileşen eklenmedi.
   çerezsiz tek bir HTTPS isteğiyle `api.anthropic.com`'a gönderilir. Anahtar
   giriş Anahtar Zinciri'nde, okunması istem açmayan bir kayıtta tutulur;
   config.json'a ve günlüğe yazılmaz.
+- **Bilinen Wi-Fi ağına geri dönüş (0.6.0):** Oturum sürerken hotspot'tayken
+  CoreWLAN ile tarar ve bilinen ağ listesinden yalnızca adları ve parolalı olup
+  olmadıklarını okur; Wi-Fi parolalarını okumaz ve hiçbir ağa kendisi katılmaz.
+  Yalnızca hotspot bağlantısını keser (`disassociate`); parolasız bir ağa
+  düşülürse oradan da ayrılıp hotspot'a döner.
 - **Güncelleme denetimi:** Kaldırıldı; incelenen sürümün tek ağ isteği buydu.
 
 ## Kötü amaçlı olmayan zayıf noktalar

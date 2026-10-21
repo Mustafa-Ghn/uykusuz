@@ -98,6 +98,8 @@ final class AppServices {
     private var lidActions: LidActions?
     private var floors: FloorRuleDriver?
     private var network: NetworkFailover?
+    /// Back from the hotspot to a known secured Wi-Fi network (fork addition).
+    private var wifiReturn: WiFiReturn?
     private var networkTask: Task<Void, Never>?
     private var lidTasks: [Task<Void, Never>] = []
     private var floorTasks: [Task<Void, Never>] = []
@@ -217,6 +219,11 @@ final class AppServices {
         net.onRecovered = { [weak self] gap in self?.status.lastGap = gap }
         net.onPasswordReport = { [weak self] report in self?.status.hotspotPasswordReport = report }
         network = net
+        let back = WiFiReturn(config: { [weak manager] in manager?.config ?? Config() }) { [weak net] in
+            await net?.joinHotspot()
+        }
+        back.start()
+        wifiReturn = back
         networkTask = Task { [weak self, weak net] in
             guard let self, let net else { return }
             await net.start()
@@ -255,6 +262,8 @@ final class AppServices {
         cancelBrowserTasks()
         network?.stop()
         network = nil
+        wifiReturn?.stop()
+        wifiReturn = nil
         status.hotspotPasswordReport = nil
         lidActions = nil
         floors = nil

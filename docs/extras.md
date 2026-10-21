@@ -14,6 +14,15 @@ kullandığı CoreWiFi'den, yalnızca okuyarak) ve Otomatik değilse uyarır; ot
 başlarken de günlüğe yazar. Seçenek yalnızca denendiği macOS sürümünde (26)
 okunur; başka bir sürümde hiçbir şey gösterilmez.
 
+Hotspot'tayken bilinen bir Wi-Fi ağı yeniden çekince Uykusuz hotspot'tan ayrılır
+(**Bilinen Wi-Fi ağına geri dön**). Oturum sürerken 2 dakikada bir CoreWLAN ile
+tarar ve macOS'un bilinen ağ listesinden yalnızca ağ adlarını ve parolalı olup
+olmadıklarını okur. Bilinen, parolalı ve en az -72 dBm çeken bir ağ varsa ve
+çevrede bilinen parolasız bir ağ yoksa bağlantıyı keser; bağlanmayı macOS kendi
+kayıtlı parolasıyla yapar. 30 saniye sonra parolasız bir ağdaysa oradan ayrılıp
+hotspot'a yeniden katılır; hiçbir ağda değilse kesinti yönetimi hotspot'u geri
+getirir. Bir dönüşten sonra 10 dakika yeniden denemez.
+
 Anahtar Zinciri öğesinin erişim listesinde yalnızca onu kaydeden Uykusuz
 derlemesi bulunur ve Uykusuz öğeyi Anahtar Zinciri istemleri kapalıyken okur;
 böylece bir kesinti sırasında yapılan bir katılma hiçbir zaman bir iletişim

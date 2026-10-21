@@ -450,6 +450,10 @@ struct SettingsView: View {
             if !HotspotSSID.normalized(manager.config.hotspotSSID).isEmpty {
                 hotspotJoinModeRow
             }
+            Toggle("Bilinen Wi-Fi ağına geri dön", isOn: bind(\.returnToKnownWiFi))
+            Text("Oturum sürerken hotspot'tayken Uykusuz 2 dakikada bir çevreyi tarar. Daha önce bağlandığınız ve parolası olan bir ağ yeterince güçlüyse hotspot'tan ayrılır; macOS o ağa kendi kayıtlı parolasıyla bağlanır. Çevrede bilinen parolasız bir ağ varsa ayrılmaz. macOS yine de parolasız bir ağa bağlanırsa Uykusuz oradan ayrılıp hotspot'a döner. Uykusuz ağ seçmez ve Wi-Fi parolalarını görmez.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
                     Text("Konum: \(locationPermission.statusDescription)")

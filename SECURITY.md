@@ -83,6 +83,15 @@ tek bir argüman olarak, `--` ayıracından sonra verilir. Ses, Mac'te kurulu
 sesler arasından seçilen en iyi Türkçe sestir; listesi sistemden
 (`AVSpeechSynthesisVoice`) yalnızca okunur.
 
+## Bilinen Wi-Fi ağına geri dönüş
+
+Oturum sürerken Mac hotspot'tayken Uykusuz Wi-Fi'yi tarar ve macOS'un bilinen ağ
+listesinden yalnızca ağ adlarını ve parolalı olup olmadıklarını okur; Wi-Fi
+parolalarını okumaz. Yalnızca bilinen ve parolalı bir ağ çevredeyken (ve
+bilinen parolasız bir ağ yokken) hotspot bağlantısını keser; hangi ağa
+katılacağına macOS karar verir. Mac parolasız bir ağa geçerse Uykusuz oradan
+ayrılır ve hotspot'a döner.
+
 ## Hotspot parolası
 
 Hotspot parolası giriş Anahtar Zinciri'nde genel bir parola kaydıdır
