@@ -609,4 +609,5 @@ yetkileri, kalıcı bileşenleri ve tuttuğu veriler
 
 ## Lisans
 
-[MIT](LICENSE)
+[MIT](LICENSE). Uykusuz, Krish Garg'ın MIT lisanslı Insomnia projesi üzerine
+geliştirildi.
