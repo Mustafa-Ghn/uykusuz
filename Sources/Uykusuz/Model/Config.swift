@@ -93,6 +93,9 @@ struct Config: Codable, Equatable, Sendable {
     var idleBlackout: Bool = true
     var idleBlackoutAfter: TimeInterval = 60
     var keyboardOffAfter: TimeInterval = 30
+    /// Lock the session when the screen has been black this long with no
+    /// input (`IdleBlackout`); 0 never does.
+    var lockAfterBlackout: TimeInterval = 15 * 60
     /// While Claude is stopped for the user (a permission prompt, a question,
     /// a plan to approve) it counts as not at work, so the automatic session
     /// ends once it has waited `approvalWaitGrace`; off, a wait counts as
@@ -242,6 +245,7 @@ struct Config: Codable, Equatable, Sendable {
         idleBlackout = try c.decodeIfPresent(Bool.self, forKey: .idleBlackout) ?? d.idleBlackout
         idleBlackoutAfter = try c.decodeIfPresent(TimeInterval.self, forKey: .idleBlackoutAfter) ?? d.idleBlackoutAfter
         keyboardOffAfter = try c.decodeIfPresent(TimeInterval.self, forKey: .keyboardOffAfter) ?? d.keyboardOffAfter
+        lockAfterBlackout = try c.decodeIfPresent(TimeInterval.self, forKey: .lockAfterBlackout) ?? d.lockAfterBlackout
         autoPausedUntil = try c.decodeIfPresent(Date.self, forKey: .autoPausedUntil)
         returnToKnownWiFi = try c.decodeIfPresent(Bool.self, forKey: .returnToKnownWiFi) ?? d.returnToKnownWiFi
         imessageAlerts = try c.decodeIfPresent(Bool.self, forKey: .imessageAlerts) ?? d.imessageAlerts

@@ -4,6 +4,12 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.7.3 — 2026-10-22
+
+### Eklenenler
+
+- **Kararmış ekranı kilitleme.** Oturum sürerken kapak açıkken ekran karardıktan sonra 15 dakika dönmezseniz Uykusuz oturumu kilitler. Ekran koruyucu açılmaz ve ekran karanlık kalır; döndüğünüzde kilit ekranı gelir. Claude ve oturum çalışmayı sürdürür. Süre Ayarlar > Claude, kod modu ve ekran bölümündeki "Karardıktan sonra kilitle" ile değişir; 0 kilitlemeyi kapatır.
+
 ## 0.7.2 — 2026-10-21
 
 ### Eklenenler

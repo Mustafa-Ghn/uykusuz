@@ -218,6 +218,11 @@ macOS'un sorduğu Otomasyon (Mesajlar) iznidir.
   uygulama destek klasöründe 0600 izinli boş bir dosya tutulur. Kapatınca satır,
   uygulama kapanınca dosya silinir. Ağ isteği yoktur; telefondan gelen yanıtları
   Uykusuz değil Claude'un Remote Control özelliği taşır.
+- **Kararmış ekranı kilitleme (0.7.3):** Boşta siyah ekran, ekran karardıktan
+  sonra Ayarlar'daki süre boyunca girdi olmazsa oturumu özel login
+  çerçevesindeki `SACLockScreenImmediate` ile kilitler; Denetim Merkezi'ndeki
+  Ekranı Kilitle de bu çağrıyı kullanır. Çerçeve sabit sistem yolundan `dlopen`
+  ile yüklenir; ekran koruyucu başlatılmaz, tuş taklidi yapılmaz.
 - **İzin isteklerini otomatik onaylama (0.7.2):** İsteğe bağlıdır ve varsayılan
   olarak kapalıdır. Açıkken `PermissionRequest` hook'u, bir soru
   (`AskUserQuestion`) ya da plan onayı (`ExitPlanMode`) olmayan her izin
@@ -250,8 +255,11 @@ macOS'un sorduğu Otomasyon (Mesajlar) iznidir.
   harcayabilir. Anahtarı harcama sınırı olan ayrı bir çalışma alanında
   oluşturun; Console kuruluşunda ödeme yöntemi yoksa en çok o ayın kredisi
   harcanır.
-- **Boşta siyah ekranda kilit:** Ekran karardığında kendiliğinden
-  kilitlenmez; Mac'in başından kalkarken Ctrl+Cmd+Q ile kilitleyin.
+- **Boşta siyah ekranda kilit:** Uykusuz'un ekran kilidi, macOS'in ekran
+  uykusunda yaptığı kilitlemeyi engeller. Bunun yerine Uykusuz ekran karardıktan
+  sonra Ayarlar'daki süre (varsayılan 15 dakika) boyunca girdi olmazsa oturumu
+  kilitler; o süre dolmadan Mac kilitsiz kalır. Süre 0 yapılırsa hiç kilitlenmez;
+  o zaman Mac'in başından kalkarken Ctrl+Cmd+Q ile kilitleyin.
 
 ## Depo ayarları
 

@@ -485,6 +485,55 @@ final class IdleBlackoutTests: XCTestCase {
         return (blackout, d, k, idle, awake)
     }
 
+    final class Locks: ScreenLocking, @unchecked Sendable {
+        private(set) var count = 0
+        func lock() throws { count += 1 }
+    }
+
+    private func lockingBlackout(after: TimeInterval) -> (IdleBlackout, FakeDisplayDimmer, Idle, Locks, Config) {
+        let d = FakeDisplayDimmer(brightness: 0.7)
+        let idle = Idle()
+        let locks = Locks()
+        let config: Config = {
+            var c = Config()
+            c.lockAfterBlackout = after
+            return c
+        }()
+        let blackout = IdleBlackout(display: d, keyboard: FakeKeyboardBacklight(brightness: 0.5), idleSeconds: { idle.seconds },
+                                    config: { config }, screenLock: locks)
+        blackout.setActive(true, startTimer: false)
+        return (blackout, d, idle, locks, config)
+    }
+
+    func testLocksOnceWhenTheUserStaysAwayPastTheBlackAndAgainAfterComingBack() {
+        let (blackout, d, idle, locks, config) = lockingBlackout(after: 15 * 60)
+        XCTAssertEqual(Config().lockAfterBlackout, 15 * 60, "on by default: the display assertion keeps macOS from locking")
+        idle.seconds = config.idleBlackoutAfter + config.lockAfterBlackout - 1
+        blackout.tick()
+        XCTAssertEqual(d.brightness, 0, "black first")
+        XCTAssertEqual(locks.count, 0)
+        idle.seconds += 1
+        blackout.tick()
+        XCTAssertEqual(locks.count, 1)
+        XCTAssertEqual(d.brightness, 0, "the lock leaves the panel dark")
+        idle.seconds += 60
+        blackout.tick()
+        XCTAssertEqual(locks.count, 1, "once per absence")
+        idle.seconds = 0
+        blackout.tick()
+        XCTAssertEqual(d.brightness, 0.7, "back: the lock screen shows")
+        idle.seconds = config.idleBlackoutAfter + config.lockAfterBlackout
+        blackout.tick()
+        XCTAssertEqual(locks.count, 2, "a new absence locks again")
+    }
+
+    func testZeroNeverLocks() {
+        let (blackout, _, idle, locks, _) = lockingBlackout(after: 0)
+        idle.seconds = 24 * 3600
+        blackout.tick()
+        XCTAssertEqual(locks.count, 0)
+    }
+
     func testHoldsOffTheScreenSaverThenTurnsTheKeyboardAndTheDisplayOff() {
         let (blackout, d, k, idle, awake) = make()
         XCTAssertTrue(awake.held, "no screen saver or display sleep while on")

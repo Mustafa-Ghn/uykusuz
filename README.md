@@ -209,7 +209,7 @@ Ayarlar penceresi göze sağ tıklayınca açılan menüden (⌘,) açılır:
 | Kapak kapanınca yapılacaklar | Ekran ve klavye ışığı, dondurma listesi, diğer tüm uygulamalar, Docker, ses, Düşük Güç Modu, sesli uyarı, kullanılan ses ve Dinle |
 | Ajan uygulamaları | Hiçbir zaman dondurulmayan ya da kısıtlanmayan uygulamalar, App Nap |
 | Pil ve ısı | Düşük Güç Modu ve oturum sonu eşikleri, ısı kuralları |
-| Claude, kod modu ve ekran | Claude Code hook'ları, izin isteklerini otomatik onaylama, otomatik oturum, yanıt beklerken bitirme ve bekleme süresi, kod modu, boşta siyah ekran süreleri |
+| Claude, kod modu ve ekran | Claude Code hook'ları, izin isteklerini otomatik onaylama, otomatik oturum, yanıt beklerken bitirme ve bekleme süresi, kod modu, boşta siyah ekran süreleri ve kilitleme |
 | Sen yokken özeti | Kapak açılınca özet penceresi, Claude API anahtarı, özeti yazan model, son 2 saati şimdi özetle |
 | Telefondan yanıt | Claude'un telefon bildirimleri yalnızca uzaktayken, yanıt için Mac'in uyanık kalacağı süre |
 | Claude sizi beklerken iPhone'a haber ver | iMessage gönder, alıcı (telefon numarası ya da Apple ID e-postası), deneme mesajı |
@@ -367,9 +367,11 @@ bildirimi de gelir; ikisini birden istemiyorsanız iMessage'ı kapatın.
 - **Boşta siyah ekran.** Oturum sürerken kapak açıkken ekran koruyucu ve ekran
   uykusu çalışmaz. 60 sn girdi olmazsa ekran parlaklığı 0'a iner ve ekran hiç
   ışık vermez; 30 sn olmazsa klavye ışığı söner. Bir tuşa ya da fareye
-  dokununca ikisi de eski seviyesine döner. Bu sırada ekran kendiliğinden
-  kilitlenmez; Mac'in başından kalkarken Ctrl+Cmd+Q ile kilitleyin. Süreler
-  Ayarlar > Claude, kod modu ve ekran bölümünden değişir.
+  dokununca ikisi de eski seviyesine döner. Ekran karardıktan sonra 15 dakika
+  dönmezseniz oturum kilitlenir: ekran koruyucu açılmaz ve ekran karanlık kalır,
+  döndüğünüzde kilit ekranı gelir. Claude ve oturum çalışmayı sürdürür. Süreler
+  Ayarlar > Claude, kod modu ve ekran bölümünden değişir; kilitleme süresi 0
+  yapılırsa ekran kendiliğinden kilitlenmez.
 
 ### Sen yokken özeti
 
