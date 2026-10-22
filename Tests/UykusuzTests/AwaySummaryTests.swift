@@ -193,6 +193,8 @@ final class AwaySummaryTests: XCTestCase {
     private var writes: [(key: String, model: String)] = []
     private var shown: [(text: String, told: Date)] = []
     private var dismissed = 0
+    private var screenLocked = false
+    private var idle: TimeInterval = 0
     private var result: Result<String, SummaryError> = .success("Claude testleri bitirdi, bir onay bekliyor.")
 
     override func setUp() async throws {
@@ -202,6 +204,8 @@ final class AwaySummaryTests: XCTestCase {
         writes = []
         shown = []
         dismissed = 0
+        screenLocked = false
+        idle = 0
         digest = ClaudeDigest(from: t0, to: t0, sessions: [ClaudeDigest.Session(id: "s", title: "Proje", toolCounts: ["Bash": 2], lastActivity: t0)])
     }
 
@@ -219,7 +223,9 @@ final class AwaySummaryTests: XCTestCase {
                 self.writes.append((key, model))
                 return Writer(result: self.result)
             },
-            clock: { [unowned self] in self.now }
+            clock: { [unowned self] in self.now },
+            screenIsLocked: { [unowned self] in self.screenLocked },
+            idleSeconds: { [unowned self] in self.idle }
         )
     }
 
@@ -245,6 +251,52 @@ final class AwaySummaryTests: XCTestCase {
         XCTAssertEqual(shown.first?.text, digest?.localSummary)
         XCTAssertTrue(writes.isEmpty, "no key, no request")
         XCTAssertEqual(summary.last?.text, digest?.localSummary)
+    }
+
+    func testAnUnlockAfterTheIdleBlackScreensLockTellsFromTheLastInput() async {
+        let summary = make()
+        now = t0.addingTimeInterval(16 * 60)
+        idle = 16 * 60
+        summary.lockChanged(locked: true)
+        XCTAssertEqual(dismissed, 1)
+        now = t0.addingTimeInterval(40 * 60)
+        summary.lockChanged(locked: false)
+        let told = await eventually { !self.shown.isEmpty }
+        XCTAssertTrue(told)
+        XCTAssertEqual(asked.first?.0, t0, "from when the user last touched the Mac, not from the lock")
+        XCTAssertEqual(asked.first?.1, t0.addingTimeInterval(40 * 60))
+    }
+
+    func testALidOpenedOnTheLockScreenWaitsForTheUnlockAndTellsOnce() async throws {
+        let summary = make()
+        summary.lidChanged(closed: true)
+        now = t0.addingTimeInterval(5)
+        screenLocked = true
+        summary.lockChanged(locked: true)
+        now = t0.addingTimeInterval(20 * 60)
+        summary.lidChanged(closed: false)
+        try await Task.sleep(for: .milliseconds(100))
+        XCTAssertTrue(asked.isEmpty, "behind the lock screen: not yet")
+        now = t0.addingTimeInterval(21 * 60)
+        screenLocked = false
+        summary.lockChanged(locked: false)
+        let told = await eventually { !self.shown.isEmpty }
+        XCTAssertTrue(told)
+        XCTAssertEqual(asked.count, 1, "one absence, one summary")
+        XCTAssertEqual(asked.first?.0, t0, "from the close, the earlier of the two")
+    }
+
+    func testAShortLockOrALockWithTheLidClosedTellsNothing() async throws {
+        let summary = make()
+        summary.lockChanged(locked: true)
+        now = t0.addingTimeInterval(AwaySummary.minimumAway - 1)
+        summary.lockChanged(locked: false)
+        summary.lidChanged(closed: true)
+        summary.lockChanged(locked: true)
+        now = now.addingTimeInterval(3600)
+        summary.lockChanged(locked: false)
+        try await Task.sleep(for: .milliseconds(100))
+        XCTAssertTrue(asked.isEmpty, "unlocked with the lid still closed: not back yet")
     }
 
     func testAShortCloseTheFeatureOffOrAnOpenWithNoCloseTellNothing() async throws {

@@ -428,7 +428,7 @@ struct SettingsView: View {
 
     private var awaySummarySection: some View {
         Section("Sen yokken özeti") {
-            Toggle("Kapak açılınca Claude'un yaptıklarını özetle", isOn: bind(\.awaySummary))
+            Toggle("Kapak ya da kilit açılınca Claude'un yaptıklarını özetle", isOn: bind(\.awaySummary))
             LabeledContent("Claude API anahtarı") {
                 HStack {
                     Text(apiKeyStatus)
@@ -461,7 +461,7 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            Text("Kapak en az 3 dakika kapalı kaldıysa, açılınca ekranın sağ üstünde küçük bir pencerede Claude Code oturumlarında olanlar bir iki cümleyle anlatılır. Siz ▶\u{FE0E} düğmesine basmadan ses çıkmaz; okunan kelime vurgulanır, çubuk ve ileri geri düğmeleriyle istediğiniz yerden dinlersiniz. Son özet göze sağ tıklayınca açılan menüden yeniden açılır. Anahtar kayıtlı değilse özet bu Mac'te sayılarla yazılır ve hiçbir yere gönderilmez. Anahtar kayıtlıysa özeti Claude yazar. İstek yalnızca api.anthropic.com'a gider ve yalnızca oturum başlıklarını, düzenlenen dosyaların adlarını, Claude'un komutlarına yazdığı açıklamaları ve son mesajlarının sonunu içerir; dosya içerikleri, komut satırları ve komut çıktıları gönderilmez. Anahtar giriş Anahtar Zinciri'nde saklanır, config.json'a ve günlüğe yazılmaz. Max ve Team planlarının aylık API kredisini Claude Console'a bağlayın ve anahtarı harcama sınırı olan ayrı bir çalışma alanında oluşturun.")
+            Text("Kapak en az 3 dakika kapalı ya da ekran o kadar kilitli kaldıysa, döndüğünüzde ekranın sağ üstünde küçük bir pencerede Claude Code oturumlarında olanlar bir iki cümleyle anlatılır. Siz ▶\u{FE0E} düğmesine basmadan ses çıkmaz; okunan kelime vurgulanır, çubuk ve ileri geri düğmeleriyle istediğiniz yerden dinlersiniz. Son özet göze sağ tıklayınca açılan menüden yeniden açılır. Anahtar kayıtlı değilse özet bu Mac'te sayılarla yazılır ve hiçbir yere gönderilmez. Anahtar kayıtlıysa özeti Claude yazar. İstek yalnızca api.anthropic.com'a gider ve yalnızca oturum başlıklarını, düzenlenen dosyaların adlarını, Claude'un komutlarına yazdığı açıklamaları ve son mesajlarının sonunu içerir; dosya içerikleri, komut satırları ve komut çıktıları gönderilmez. Anahtar giriş Anahtar Zinciri'nde saklanır, config.json'a ve günlüğe yazılmaz. Max ve Team planlarının aylık API kredisini Claude Console'a bağlayın ve anahtarı harcama sınırı olan ayrı bir çalışma alanında oluşturun.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
