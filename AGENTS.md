@@ -75,7 +75,8 @@ Bu çalışma kopyasında birden fazla oturum aynı anda çalışabilir.
 - Depo gizli (private) kalır; görünürlüğünü değiştirme.
 - README, belgeler ve GitHub sayfası Uykusuz'u bağımsız bir proje olarak
   anlatır: başka bir projenin adını ya da adresini, "fork", "çatal",
-  "upstream" gibi ifadeleri yazma.
+  "upstream" gibi ifadeleri yazma. Tek istisna README'nin Lisans bölümündeki
+  teşekkür satırıdır; onu silme.
 - `LICENSE` lisans bildirimidir; kullanıcı açıkça istemedikçe silme ya da
   değiştirme.
 - Arayüz, bildirimler, sesli uyarılar ve kullanıcı belgeleri Türkçedir; kod ve
