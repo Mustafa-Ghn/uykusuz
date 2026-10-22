@@ -72,7 +72,14 @@ Bu çalışma kopyasında birden fazla oturum aynı anda çalışabilir.
 
 ## Depo kuralları
 
-- Depo gizli (private) kalır; görünürlüğünü değiştirme.
+- Depo herkese açıktır (public); kullanıcı istemedikçe görünürlüğünü
+  değiştirme.
+- Commit'lere, testlere ve belgelere kişisel ya da gizli veri koyma: gerçek
+  Wi-Fi ağ adları, telefon numaraları, e-posta adresleri, API anahtarları,
+  kişisel klasör yolları, iş ya da proje adları. Testlerde uydurma değerler
+  kullan (`OrnekAg`, `+905550000000`, `/Users/me` gibi). Böyle bir şey
+  yanlışlıkla commit'lenirse hemen kullanıcıya söyle: geçmişten silmek force
+  push gerektirir.
 - README, belgeler ve GitHub sayfası Uykusuz'u bağımsız bir proje olarak
   anlatır: başka bir projenin adını ya da adresini, "fork", "çatal",
   "upstream" gibi ifadeleri yazma. Tek istisna README'nin Lisans bölümündeki
