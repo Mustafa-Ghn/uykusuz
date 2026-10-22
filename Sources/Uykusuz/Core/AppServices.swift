@@ -83,9 +83,11 @@ final class AppServices {
         keyboard: keyboard,
         idleSeconds: idleSeconds,
         config: { [weak self] in self?.manager?.config ?? Config() },
-        awake: displayAwake
+        awake: displayAwake,
+        screenLock: screenLock
     )
     private let displayAwake: any DisplayAwakeHolding
+    private let screenLock: any ScreenLocking
     /// Spoken alerts while the lid is closed (fork addition); nil outside a
     /// session.
     private(set) var announcer: VoiceAnnouncer?
@@ -131,11 +133,13 @@ final class AppServices {
         lidSimulation: (any LidSimulating)? = LidSimulationBuild.makeWatcher(),
         lidSimulationEnabled: Bool = LidSimulationBuild.isCompiledIn,
         speech: any SpeechSynthesizing = NoSpeech(),
-        displayAwake: any DisplayAwakeHolding = NoDisplayAwake()
+        displayAwake: any DisplayAwakeHolding = NoDisplayAwake(),
+        screenLock: any ScreenLocking = NoScreenLock()
     ) {
         self.idleSeconds = idleSeconds
         self.speech = speech
         self.displayAwake = displayAwake
+        self.screenLock = screenLock
         self.paths = paths
         self.notifier = notifier
         self.audio = audio

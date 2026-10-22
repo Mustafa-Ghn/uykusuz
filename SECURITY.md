@@ -85,9 +85,12 @@ alır.
 okur (`CGEventSource.secondsSinceLastEventType`); bunun için tuş vuruşlarını
 okumaz, sahte tuş ya da olay göndermez. Süre kutuları açıkken menü çubuğu, dışarı
 tıklanınca kutuları kapatmak için yalnızca fare tıklamalarını dinler. Ekran
-ve klavye parlaklığı için macOS'in özel DisplayServices ve CoreBrightness
-çerçeveleri sabit sistem yollarından `dlopen` ile yüklenir; bunların dışında
-dışarıdan kod yüklenmez. Sesli uyarılar `/usr/bin/say` ile söylenir; metin
+ve klavye parlaklığı için macOS'in özel DisplayServices ve CoreBrightness,
+hotspot katılma ayarını okumak için CoreWiFi, kararmış ekranı kilitlemek için
+login çerçeveleri sabit sistem yollarından `dlopen` ile yüklenir; bunların
+dışında dışarıdan kod yüklenmez. Kilitleme, Denetim Merkezi'ndeki Ekranı Kilitle
+ile aynı çağrıdır (`SACLockScreenImmediate`) ve yalnızca ekran karardıktan sonra
+Ayarlar'daki süre (varsayılan 15 dakika) boyunca girdi olmazsa yapılır. Sesli uyarılar `/usr/bin/say` ile söylenir; metin
 tek bir argüman olarak, `--` ayıracından sonra verilir. Ses, Mac'te kurulu
 sesler arasından seçilen en iyi Türkçe sestir; listesi sistemden
 (`AVSpeechSynthesisVoice`) yalnızca okunur.

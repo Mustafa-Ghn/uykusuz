@@ -663,7 +663,8 @@ final class SessionManager {
             display: display,
             keyboard: keyboard,
             speech: SaySpeech(),
-            displayAwake: DisplayAwakeAssertion()
+            displayAwake: DisplayAwakeAssertion(),
+            screenLock: LoginScreenLock()
         )
         m.services = services
         services.logStartupSnapshot()

@@ -48,12 +48,44 @@ final class DisplayAwakeAssertion: DisplayAwakeHolding {
     }
 }
 
+/// Locks the login session.
+protocol ScreenLocking: Sendable {
+    func lock() throws
+}
+
+/// Locks nothing: the default outside the live app, so tests never lock
+/// the screen.
+struct NoScreenLock: ScreenLocking {
+    func lock() throws {}
+}
+
+/// Locks the session at once, as the Lock Screen item of Control Center
+/// does: `SACLockScreenImmediate` in the private login framework. No screen
+/// saver starts and the display is not touched, so a panel the idle black
+/// screen holds at 0 shows nothing until the user comes back.
+struct LoginScreenLock: ScreenLocking {
+    static let frameworkPath = "/System/Library/PrivateFrameworks/login.framework/Versions/Current/login"
+    private typealias Lock = @convention(c) () -> Int32
+
+    func lock() throws {
+        guard let handle = dlopen(Self.frameworkPath, RTLD_LAZY),
+              let symbol = dlsym(handle, "SACLockScreenImmediate") else {
+            throw DisplayPowerError(what: "login.framework içinde SACLockScreenImmediate yok")
+        }
+        let result = unsafeBitCast(symbol, to: Lock.self)()
+        if result != 0 { Log.info("SACLockScreenImmediate returned \(result)") }
+    }
+}
+
 /// The idle black screen (fork addition): while a session runs with the lid
 /// open, the screen saver and display sleep are held off (`awake`), and
 /// after `idleBlackoutAfter` seconds without input the display goes to
 /// brightness 0, which on a Mac laptop turns the backlight off, so the panel
 /// gives no light. The keyboard backlight goes off after `keyboardOffAfter`.
-/// Any input brings both back to the levels they had.
+/// Any input brings both back to the levels they had. When the user stays
+/// away `lockAfterBlackout` past the black, the session is locked
+/// (`ScreenLocking`): the assertion keeps macOS from locking it as it would
+/// on display sleep.
 ///
 /// What it changed is held only here, in memory. While it holds a level the
 /// brightness sampler must not take the black for the user's level
@@ -73,8 +105,11 @@ final class IdleBlackout {
     private let idleSeconds: @Sendable () -> Double
     private let config: @MainActor () -> Config
     private let awake: any DisplayAwakeHolding
+    private let screenLock: any ScreenLocking
     private var timer: (any DispatchSourceTimer)?
     private(set) var active = false
+    /// Locked for this absence: not again until the user is back.
+    private(set) var locked = false
     /// The user's display level, held while the display is black.
     private(set) var savedDisplay: Float?
     /// The user's keyboard level, held while the backlight is off.
@@ -88,13 +123,15 @@ final class IdleBlackout {
         keyboard: any KeyboardBacklighting,
         idleSeconds: @escaping @Sendable () -> Double,
         config: @escaping @MainActor () -> Config,
-        awake: any DisplayAwakeHolding = NoDisplayAwake()
+        awake: any DisplayAwakeHolding = NoDisplayAwake(),
+        screenLock: any ScreenLocking = NoScreenLock()
     ) {
         self.display = display
         self.keyboard = keyboard
         self.idleSeconds = idleSeconds
         self.config = config
         self.awake = awake
+        self.screenLock = screenLock
     }
 
     /// Turns the idle watch on or off. Off restores anything it darkened
@@ -127,6 +164,16 @@ final class IdleBlackout {
         if idle >= c.idleBlackoutAfter {
             darkenDisplay(idle: idle)
         }
+        if c.lockAfterBlackout > 0, !locked, idle >= c.idleBlackoutAfter + c.lockAfterBlackout {
+            // Once per absence, failed or not: never a retry every tick.
+            locked = true
+            do {
+                try screenLock.lock()
+                Log.info("idle black screen: session locked after \(Int(c.lockAfterBlackout / 60)) min black")
+            } catch {
+                Log.error("idle black screen: lock failed: \(error.localizedDescription)")
+            }
+        }
         if savedKeyboard == nil, idle >= c.keyboardOffAfter {
             do {
                 if let current = try keyboard.readBrightness(), current > 0, !keyboard.isSuppressedOrDimmed() {
@@ -142,6 +189,7 @@ final class IdleBlackout {
 
     /// Puts back what this darkened. Safe to call any time.
     func restore() {
+        locked = false
         if let level = savedDisplay {
             savedDisplay = nil
             do {
