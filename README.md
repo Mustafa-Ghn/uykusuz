@@ -606,3 +606,7 @@ Bir güvenlik açığı bulduğunuzu düşünüyorsanız herkese açık bir issu
 yerine [SECURITY.md](SECURITY.md) dosyasındaki yolu izleyin. Uygulamanın
 yetkileri, kalıcı bileşenleri ve tuttuğu veriler
 [GUVENLIK-INCELEMESI.md](GUVENLIK-INCELEMESI.md) dosyasında incelenir.
+
+## Lisans
+
+[MIT](LICENSE)
