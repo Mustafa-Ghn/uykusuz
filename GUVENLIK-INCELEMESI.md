@@ -190,7 +190,7 @@ macOS'un sorduğu Otomasyon (Mesajlar) iznidir.
   izne yanıt vermez. İşaret dosyasına yalnızca bekleme zamanı eklenir. Uygulama
   açılışta, kullanıcının daha önce kurduğu hook'lara eksik olayları ekler; hiç
   kurulmamışsa dokunmaz.
-- **Sen yokken özeti (0.3.0):** Kapak açılınca `~/.claude/projects` altındaki
+- **Sen yokken özeti (0.3.0):** Kapak ya da kilit açılınca (0.7.4) `~/.claude/projects` altındaki
   Claude Code kayıtlarını yalnızca okur; oturum başlığı, araç sayıları,
   düzenlenen dosyaların adları, komut açıklamaları ve Claude'un son
   mesajlarının sonu dışında hiçbir şey alınmaz. Anahtar kayıtlı değilse özet

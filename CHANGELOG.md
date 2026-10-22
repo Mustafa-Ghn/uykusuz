@@ -4,6 +4,16 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.7.4 — 2026-10-22
+
+### Eklenenler
+
+- **Kilit açılınca özet.** "Sen yokken" özeti artık kilit açılınca da gelir: ekran en az 3 dakika kilitli kaldıysa, ister Ctrl+Cmd+Q ile ister boşta siyah ekranın kilidiyle, döndüğünüzde Claude'un o sırada yaptıkları gösterilir. Boşta siyah ekranın kilidinde süre, Mac'e son dokunduğunuz andan sayılır.
+
+### Değişenler
+
+- **Özet kilit ekranının arkasında kalmaz.** Kapağı kilit ekranında açarsanız özet, kilidi açtığınızda gelir; kapak ve kilit aynı yokluk sayılır ve özet bir kez gösterilir.
+
 ## 0.7.3 — 2026-10-22
 
 ### Eklenenler

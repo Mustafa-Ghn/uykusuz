@@ -1,8 +1,10 @@
+import AppKit
 import Foundation
 import Observation
 
-/// "While you were away" (fork addition): when the lid opens after being
-/// closed for `minimumAway`, what Claude Code did in between is told in one
+/// "While you were away" (fork addition): when the user is back after
+/// `minimumAway` with the lid closed or the screen locked (the idle black
+/// screen locks it too), what Claude Code did in between is told in one
 /// or two Turkish sentences, in a small window at the top right
 /// (`SummaryPanel`) that reads them aloud only when asked: the user may
 /// have opened the lid somewhere quiet, or for something else. With a
@@ -11,8 +13,12 @@ import Observation
 /// are put together here from counts (`ClaudeDigest.localSummary`), and
 /// nothing leaves the Mac.
 ///
-/// It watches the lid on its own, whether or not a session runs: Claude may
-/// have finished, and its session ended, long before the lid opens.
+/// It watches the lid and the lock on its own, whether or not a session
+/// runs: Claude may have finished, and its session ended, long before the
+/// lid opens. The absence starts at the close or the lock, whichever came
+/// first; a lock after a while without input (the idle black screen's)
+/// starts it at the last input. The user is back once the lid is open and
+/// the screen unlocked, so the summary never waits behind the lock screen.
 @MainActor
 @Observable
 final class AwaySummary {
@@ -27,8 +33,12 @@ final class AwaySummary {
     @ObservationIgnored private let digest: @MainActor (Date, Date) -> ClaudeDigest?
     @ObservationIgnored private let writer: @MainActor (_ key: String, _ model: String) -> any SummaryWriting
     @ObservationIgnored private let clock: @MainActor () -> Date
+    @ObservationIgnored private let screenIsLocked: @MainActor () -> Bool
+    @ObservationIgnored private let idleSeconds: @MainActor () -> TimeInterval
     @ObservationIgnored private var lid: LidObserver?
-    @ObservationIgnored private var closedAt: Date?
+    @ObservationIgnored private var lockObservers: [any NSObjectProtocol] = []
+    @ObservationIgnored private var awaySince: Date?
+    @ObservationIgnored private var lidClosed = false
 
     /// The last summary, or why there was none, for Settings.
     private(set) var lastResult: String?
@@ -44,7 +54,9 @@ final class AwaySummary {
         keyStore: any AnthropicKeyStoring = KeychainAnthropicKeyStore(),
         digest: (@MainActor (Date, Date) -> ClaudeDigest?)? = nil,
         writer: (@MainActor (String, String) -> any SummaryWriting)? = nil,
-        clock: @escaping @MainActor () -> Date = { Date() }
+        clock: @escaping @MainActor () -> Date = { Date() },
+        screenIsLocked: @escaping @MainActor () -> Bool = { UserPresence.screenIsLocked() },
+        idleSeconds: @escaping @MainActor () -> TimeInterval = { UserInput.secondsSinceLastInput() }
     ) {
         self.config = config
         self.present = present
@@ -55,28 +67,57 @@ final class AwaySummary {
         }
         self.writer = writer ?? { key, model in AnthropicSummaryClient(key: key, model: model) }
         self.clock = clock
+        self.screenIsLocked = screenIsLocked
+        self.idleSeconds = idleSeconds
     }
 
-    /// Starts watching the lid, for the life of the app.
+    /// Starts watching the lid and the lock, for the life of the app.
     func start() {
         guard lid == nil else { return }
         let observer = LidObserver()
         observer.onChange = { [weak self] closed in self?.lidChanged(closed: closed) }
         observer.start()
         lid = observer
+        let center = DistributedNotificationCenter.default()
+        for (name, isLocked) in [("com.apple.screenIsLocked", true), ("com.apple.screenIsUnlocked", false)] {
+            lockObservers.append(center.addObserver(forName: Notification.Name(name), object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.lockChanged(locked: isLocked) }
+            })
+        }
     }
 
     /// Internal so tests drive it. A lid close takes a summary that is up
     /// down, so it is never read aloud into a closed Mac.
     func lidChanged(closed: Bool) {
-        let now = clock()
+        lidClosed = closed
         if closed {
-            closedAt = now
-            dismiss()
-            return
+            leave(at: clock())
+        } else if !screenIsLocked() {
+            back()
         }
-        guard let since = closedAt else { return }
-        closedAt = nil
+    }
+
+    /// Internal so tests drive it. A lock takes a summary that is up down;
+    /// the absence it starts began at the last input.
+    func lockChanged(locked isLocked: Bool) {
+        if isLocked {
+            leave(at: clock().addingTimeInterval(-max(0, idleSeconds())))
+        } else if !lidClosed {
+            back()
+        }
+    }
+
+    /// The earliest start of an absence is kept: a lock after a close, or a
+    /// close after a lock, is the same absence.
+    private func leave(at start: Date) {
+        awaySince = min(awaySince ?? start, start)
+        dismiss()
+    }
+
+    private func back() {
+        guard let since = awaySince else { return }
+        awaySince = nil
+        let now = clock()
         guard config().awaySummary, now.timeIntervalSince(since) >= Self.minimumAway else { return }
         Task { await summarize(from: since, to: now, away: true, sayIfNothing: false) }
     }

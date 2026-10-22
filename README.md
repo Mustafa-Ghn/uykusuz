@@ -65,7 +65,7 @@ Claude çalışırken bunu kendiliğinden de yapar.
 - **Claude ile otomatik oturum.** Claude Code bir görev yürüttüğü sürece oturum
   kendiliğinden açılır, uzar ve Claude durunca kapanır; Claude sizden yanıt
   beklerken bir süre sonra kapanır ve istediğinizde belli bir süre duraklatılır.
-- **Sen yokken özeti.** Kapak açılınca Claude'un siz yokken yaptıkları küçük bir
+- **Sen yokken özeti.** Kapak ya da kilit açılınca Claude'un siz yokken yaptıkları küçük bir
   pencerede bir iki cümleyle anlatılır; ▶ ile dinlersiniz, okunan kelime
   vurgulanır ve çubukla ileri geri gidersiniz; bir Claude API anahtarı
   kaydederseniz özeti Claude yazar.
@@ -210,7 +210,7 @@ Ayarlar penceresi göze sağ tıklayınca açılan menüden (⌘,) açılır:
 | Ajan uygulamaları | Hiçbir zaman dondurulmayan ya da kısıtlanmayan uygulamalar, App Nap |
 | Pil ve ısı | Düşük Güç Modu ve oturum sonu eşikleri, ısı kuralları |
 | Claude, kod modu ve ekran | Claude Code hook'ları, izin isteklerini otomatik onaylama, otomatik oturum, yanıt beklerken bitirme ve bekleme süresi, kod modu, boşta siyah ekran süreleri ve kilitleme |
-| Sen yokken özeti | Kapak açılınca özet penceresi, Claude API anahtarı, özeti yazan model, son 2 saati şimdi özetle |
+| Sen yokken özeti | Kapak ya da kilit açılınca özet penceresi, Claude API anahtarı, özeti yazan model, son 2 saati şimdi özetle |
 | Telefondan yanıt | Claude'un telefon bildirimleri yalnızca uzaktayken, yanıt için Mac'in uyanık kalacağı süre |
 | Claude sizi beklerken iPhone'a haber ver | iMessage gönder, alıcı (telefon numarası ya da Apple ID e-postası), deneme mesajı |
 | Ağ yedekleme | iPhone kişisel erişim noktası, bilinen Wi-Fi ağına geri dönüş, tmux dürtmesi |
@@ -375,9 +375,12 @@ bildirimi de gelir; ikisini birden istemiyorsanız iMessage'ı kapatın.
 
 ### Sen yokken özeti
 
-Kapak en az 3 dakika kapalı kaldıysa, açılınca Claude Code oturumlarında o
-sırada olanlar ekranın sağ üstündeki küçük bir pencerede bir iki cümleyle
-anlatılır. Oturumun hâlâ sürmesi gerekmez; Uykusuz kapağı her zaman izler.
+Kapak en az 3 dakika kapalı ya da ekran o kadar kilitli kaldıysa, döndüğünüzde
+Claude Code oturumlarında o sırada olanlar ekranın sağ üstündeki küçük bir
+pencerede bir iki cümleyle anlatılır. Döndüğünüz an, kapağın açık ve kilidin
+açılmış olduğu andır; kapağı kilit ekranında açarsanız özet kilidi açınca gelir.
+Boşta siyah ekranın kilidinde süre, Mac'e son dokunduğunuz andan sayılır.
+Oturumun hâlâ sürmesi gerekmez; Uykusuz kapağı ve kilidi her zaman izler.
 Ayarlar > Sen yokken özeti bölümündeki **Son 2 saati şimdi özetle** düğmesi
 özeti hemen dener; göze sağ tıklayınca açılan menüdeki **Son özeti göster** son
 özeti yeniden açar.
