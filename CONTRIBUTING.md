@@ -87,7 +87,7 @@ ekran, ses, dondurma, kurtarma, kurulum ya da hotspot davranışını değiştir
 bir pull request, en son commit'i için kendi Mac'inizden bir rapor gerektirir.
 Raporu son push'unuzdan sonra yorum olarak ekleyin; yeniden push ederseniz
 yenisini ekleyin. Yalnızca `docs/`, `Tests/`, `.github/`, README.md,
-CONTRIBUTING.md, SECURITY.md ve .gitignore dosyalarını değiştiren bir
+CONTRIBUTING.md, SECURITY.md, LICENSE ve .gitignore dosyalarını değiştiren bir
 pull request rapor gerektirmez.
 
 - **Derleme.** Başka hiçbir pull request uygulanmamış, en son commit'in temiz

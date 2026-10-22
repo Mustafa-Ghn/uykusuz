@@ -76,7 +76,7 @@ Bu çalışma kopyasında birden fazla oturum aynı anda çalışabilir.
 - README, belgeler ve GitHub sayfası Uykusuz'u bağımsız bir proje olarak
   anlatır: başka bir projenin adını ya da adresini, "fork", "çatal",
   "upstream" gibi ifadeleri yazma.
-- `docs/LICENSE` lisans bildirimidir; kullanıcı açıkça istemedikçe silme ya da
+- `LICENSE` lisans bildirimidir; kullanıcı açıkça istemedikçe silme ya da
   değiştirme.
 - Arayüz, bildirimler, sesli uyarılar ve kullanıcı belgeleri Türkçedir; kod ve
   kod yorumları İngilizcedir.
