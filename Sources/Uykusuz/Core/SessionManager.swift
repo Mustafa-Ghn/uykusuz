@@ -664,7 +664,8 @@ final class SessionManager {
             keyboard: keyboard,
             speech: SaySpeech(),
             displayAwake: DisplayAwakeAssertion(),
-            screenLock: LoginScreenLock()
+            screenLock: LoginScreenLock(),
+            othersHoldDisplay: { DisplayHolds.liveOthersHold() }
         )
         m.services = services
         services.logStartupSnapshot()

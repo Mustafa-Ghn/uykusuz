@@ -369,7 +369,9 @@ bildirimi de gelir; ikisini birden istemiyorsanız iMessage'ı kapatın.
   ışık vermez; 30 sn olmazsa klavye ışığı söner. Bir tuşa ya da fareye
   dokununca ikisi de eski seviyesine döner. Ekran karardıktan sonra 15 dakika
   dönmezseniz oturum kilitlenir: ekran koruyucu açılmaz ve ekran karanlık kalır,
-  döndüğünüzde kilit ekranı gelir. Claude ve oturum çalışmayı sürdürür. Süreler
+  döndüğünüzde kilit ekranı gelir. Claude ve oturum çalışmayı sürdürür. Bir
+  video oynarken (tarayıcı ya da oynatıcı ekranı açık tutarken) ekran kararmaz
+  ve kilitlenmez; süreler video bitince yeniden başlar. Süreler
   Ayarlar > Claude, kod modu ve ekran bölümünden değişir; kilitleme süresi 0
   yapılırsa ekran kendiliğinden kilitlenmez.
 

@@ -77,6 +77,31 @@ struct LoginScreenLock: ScreenLocking {
     }
 }
 
+/// Whether another app keeps the display on: a video playing (a browser's
+/// "Video Wake Lock", a player), a call, a presentation. Read from the power
+/// assertions macOS's own display sleep honours; this process's own is left
+/// out.
+enum DisplayHolds {
+    static let displayTypes: Set<String> = ["PreventUserIdleDisplaySleep", "NoDisplaySleepAssertion"]
+
+    /// From a dictionary shaped like `IOPMCopyAssertionsByProcess`'s.
+    static func othersHold(_ byProcess: [NSNumber: [[String: Any]]], ownPid: pid_t) -> Bool {
+        byProcess.contains { pid, assertions in
+            pid.int32Value != ownPid && assertions.contains { a in
+                guard let type = a[kIOPMAssertionTypeKey] as? String, displayTypes.contains(type) else { return false }
+                return (a["AssertLevel"] as? Int).map { $0 > 0 } ?? true
+            }
+        }
+    }
+
+    static func liveOthersHold() -> Bool {
+        var unmanaged: Unmanaged<CFDictionary>?
+        guard IOPMCopyAssertionsByProcess(&unmanaged) == kIOReturnSuccess,
+              let dict = unmanaged?.takeRetainedValue() as? [NSNumber: [[String: Any]]] else { return false }
+        return othersHold(dict, ownPid: getpid())
+    }
+}
+
 /// The idle black screen (fork addition): while a session runs with the lid
 /// open, the screen saver and display sleep are held off (`awake`), and
 /// after `idleBlackoutAfter` seconds without input the display goes to
@@ -85,7 +110,10 @@ struct LoginScreenLock: ScreenLocking {
 /// Any input brings both back to the levels they had. When the user stays
 /// away `lockAfterBlackout` past the black, the session is locked
 /// (`ScreenLocking`): the assertion keeps macOS from locking it as it would
-/// on display sleep.
+/// on display sleep. Another app keeping the display on (`DisplayHolds`: a
+/// video playing) counts as the user being there: the idle count restarts
+/// from its last sight, so the screen goes dark and locks only that long
+/// after it lets go, and a display it finds dark is lit again.
 ///
 /// What it changed is held only here, in memory. While it holds a level the
 /// brightness sampler must not take the black for the user's level
@@ -99,6 +127,10 @@ final class IdleBlackout {
     /// Input within this many seconds counts as the user being back.
     static let activeWithin: TimeInterval = 1
     static let tickInterval: TimeInterval = 0.5
+    /// Other apps' display holds are looked at from this much idle on, and
+    /// then every `holdCheckEvery` seconds of it.
+    static let holdCheckFrom: TimeInterval = 5
+    static let holdCheckEvery: TimeInterval = 2
 
     private let display: any DisplayDimming
     private let keyboard: any KeyboardBacklighting
@@ -106,7 +138,11 @@ final class IdleBlackout {
     private let config: @MainActor () -> Config
     private let awake: any DisplayAwakeHolding
     private let screenLock: any ScreenLocking
+    private let othersHoldDisplay: @MainActor () -> Bool
     private var timer: (any DispatchSourceTimer)?
+    /// The idle time at the last sight of another app's display hold.
+    private var heldAtIdle: Double?
+    private var checkedAtIdle: Double?
     private(set) var active = false
     /// Locked for this absence: not again until the user is back.
     private(set) var locked = false
@@ -124,7 +160,8 @@ final class IdleBlackout {
         idleSeconds: @escaping @Sendable () -> Double,
         config: @escaping @MainActor () -> Config,
         awake: any DisplayAwakeHolding = NoDisplayAwake(),
-        screenLock: any ScreenLocking = NoScreenLock()
+        screenLock: any ScreenLocking = NoScreenLock(),
+        othersHoldDisplay: @escaping @MainActor () -> Bool = { false }
     ) {
         self.display = display
         self.keyboard = keyboard
@@ -132,6 +169,7 @@ final class IdleBlackout {
         self.config = config
         self.awake = awake
         self.screenLock = screenLock
+        self.othersHoldDisplay = othersHoldDisplay
     }
 
     /// Turns the idle watch on or off. Off restores anything it darkened
@@ -155,7 +193,18 @@ final class IdleBlackout {
     /// One look at the idle time. Internal so tests drive it.
     func tick() {
         guard active else { return }
-        let idle = idleSeconds()
+        let input = idleSeconds()
+        if input < Self.activeWithin {
+            heldAtIdle = nil
+            checkedAtIdle = nil
+            restore()
+            return
+        }
+        if input >= Self.holdCheckFrom, checkedAtIdle.map({ input < $0 || input - $0 >= Self.holdCheckEvery }) ?? true {
+            checkedAtIdle = input
+            if othersHoldDisplay() { heldAtIdle = input }
+        }
+        let idle = heldAtIdle.map { input >= $0 ? input - $0 : input } ?? input
         if idle < Self.activeWithin {
             restore()
             return

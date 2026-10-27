@@ -83,7 +83,9 @@ alır.
 
 **Ekran ve girdi.** Boşta siyah ekran yalnızca son girdiden geçen süreyi
 okur (`CGEventSource.secondsSinceLastEventType`); bunun için tuş vuruşlarını
-okumaz, sahte tuş ya da olay göndermez. Süre kutuları açıkken menü çubuğu, dışarı
+okumaz, sahte tuş ya da olay göndermez. Bir videonun ekranı açık tuttuğunu
+görmek için diğer uygulamaların güç kilitlerini yalnızca okur
+(`IOPMCopyAssertionsByProcess`). Süre kutuları açıkken menü çubuğu, dışarı
 tıklanınca kutuları kapatmak için yalnızca fare tıklamalarını dinler. Ekran
 ve klavye parlaklığı için macOS'in özel DisplayServices ve CoreBrightness,
 hotspot katılma ayarını okumak için CoreWiFi, kararmış ekranı kilitlemek için

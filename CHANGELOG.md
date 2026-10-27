@@ -4,6 +4,12 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.7.5 — 2026-10-27
+
+### Düzeltilenler
+
+- **Video izlerken ekran kararmaz.** Bir video oynarken (tarayıcı ya da oynatıcı ekranı açık tutarken) boşta siyah ekran ekranı karartmaz ve oturumu kilitlemez. Karanlıkken bir video başlarsa ekran geri açılır; süreler video bitince yeniden başlar, böylece video biter bitmez ekran kararmaz.
+
 ## 0.7.4 — 2026-10-22
 
 ### Eklenenler

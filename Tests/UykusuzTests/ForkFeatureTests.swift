@@ -527,6 +527,58 @@ final class IdleBlackoutTests: XCTestCase {
         XCTAssertEqual(locks.count, 2, "a new absence locks again")
     }
 
+    @MainActor final class Holds {
+        var on = false
+    }
+
+    func testAVideoPlayingKeepsTheScreenLitAndTheLockOffUntilItEnds() {
+        let d = FakeDisplayDimmer(brightness: 0.7)
+        let idle = Idle()
+        let locks = Locks()
+        let holds = Holds()
+        let config: Config = {
+            var c = Config()
+            c.lockAfterBlackout = 15 * 60
+            return c
+        }()
+        let blackout = IdleBlackout(display: d, keyboard: FakeKeyboardBacklight(brightness: 0.5), idleSeconds: { idle.seconds },
+                                    config: { config }, screenLock: locks, othersHoldDisplay: { holds.on })
+        blackout.setActive(true, startTimer: false)
+        holds.on = true
+        for second in stride(from: 10.0, through: 3600, by: 10) {
+            idle.seconds = second
+            blackout.tick()
+        }
+        XCTAssertEqual(d.brightness, 0.7, "an hour of video without a touch: never dark")
+        XCTAssertEqual(locks.count, 0)
+
+        holds.on = false
+        idle.seconds = 3600 + 30
+        blackout.tick()
+        XCTAssertEqual(d.brightness, 0.7, "not dark the moment the video ends")
+        idle.seconds = 3600 + config.idleBlackoutAfter
+        blackout.tick()
+        XCTAssertEqual(d.brightness, 0, "dark once it has been let go that long")
+        idle.seconds = 3600 + config.idleBlackoutAfter + config.lockAfterBlackout
+        blackout.tick()
+        XCTAssertEqual(locks.count, 1, "the lock counts from the end of the video too")
+
+        holds.on = true
+        idle.seconds += 10
+        blackout.tick()
+        XCTAssertEqual(d.brightness, 0.7, "a video that starts while dark lights the screen again")
+    }
+
+    func testOnlyAnotherProcesssDisplayHoldCounts() {
+        let own: pid_t = 100
+        func holds(_ byProcess: [NSNumber: [[String: Any]]]) -> Bool { DisplayHolds.othersHold(byProcess, ownPid: own) }
+        XCTAssertFalse(holds([100: [["AssertType": "PreventUserIdleDisplaySleep", "AssertLevel": 255]]]), "our own hold")
+        XCTAssertTrue(holds([200: [["AssertType": "PreventUserIdleDisplaySleep", "AssertLevel": 255]]]), "a browser's video wake lock")
+        XCTAssertTrue(holds([200: [["AssertType": "NoDisplaySleepAssertion"]]]))
+        XCTAssertFalse(holds([200: [["AssertType": "PreventUserIdleDisplaySleep", "AssertLevel": 0]]]), "released")
+        XCTAssertFalse(holds([200: [["AssertType": "PreventUserIdleSystemSleep", "AssertLevel": 255]]]), "audio or Claude at work: the display may still go dark")
+    }
+
     func testZeroNeverLocks() {
         let (blackout, _, idle, locks, _) = lockingBlackout(after: 0)
         idle.seconds = 24 * 3600

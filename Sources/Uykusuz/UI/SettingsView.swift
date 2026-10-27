@@ -353,7 +353,7 @@ struct SettingsView: View {
             Stepper(value: bind(\.lockAfterBlackout), in: 0...7200, step: 5 * 60) {
                 LabeledContent("Karardıktan sonra kilitle", value: manager.config.lockAfterBlackout > 0 ? "\(Int(manager.config.lockAfterBlackout / 60)) dk" : "Kilitleme")
             }
-            Text("Oturum sürerken kapak açıkken ekran koruyucu ve ekran uykusu çalışmaz. Bu süre boyunca girdi olmazsa ekran parlaklığı 0'a iner ve ekran hiç ışık vermez; klavye ışığı da söner. Bir tuşa ya da fareye dokununca ikisi de geri gelir. Ekran karardıktan sonra yukarıdaki süre boyunca dönmezseniz oturum kilitlenir; ekran koruyucu açılmaz ve ekran karanlık kalır, döndüğünüzde kilit ekranı gelir. Claude ve oturum çalışmayı sürdürür.")
+            Text("Oturum sürerken kapak açıkken ekran koruyucu ve ekran uykusu çalışmaz. Bu süre boyunca girdi olmazsa ekran parlaklığı 0'a iner ve ekran hiç ışık vermez; klavye ışığı da söner. Bir tuşa ya da fareye dokununca ikisi de geri gelir. Ekran karardıktan sonra yukarıdaki süre boyunca dönmezseniz oturum kilitlenir; ekran koruyucu açılmaz ve ekran karanlık kalır, döndüğünüzde kilit ekranı gelir. Claude ve oturum çalışmayı sürdürür. Bir video oynarken ekran kararmaz ve kilitlenmez; süreler video bitince yeniden başlar.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

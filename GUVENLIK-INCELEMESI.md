@@ -177,7 +177,9 @@ macOS'un sorduğu Otomasyon (Mesajlar) iznidir.
 - **Kod modu ve boşta siyah ekran:** Parlaklığı mevcut ekran ve klavye
   arayüzleriyle değiştirir. Yalnızca son girdiden geçen süre okunur
   (`CGEventSource.secondsSinceLastEventType`); bunun için tuş vuruşları
-  okunmaz, sahte tuş ya da olay gönderilmez.
+  okunmaz, sahte tuş ya da olay gönderilmez. Video oynarken kararmamak için
+  diğer uygulamaların ekranı açık tutan güç kilitleri yalnızca okunur
+  (`IOPMCopyAssertionsByProcess`, 0.7.5).
 - **Kurtarma ajanının başlangıcı:** Ajan `/bin/sh` yerine uygulamanın kendi
   programıyla başlar (`--backstop-agent`); böylece Sistem Ayarları öğeyi
   Uykusuz olarak gösterir. Program hemen aynı `/bin/sh` doğrulama komutunu
