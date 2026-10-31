@@ -148,7 +148,7 @@ Quit, or reconcile.
 | Display (optional, default on) | save brightness, set it to 0, request display sleep (best effort) | wake the display, restore the saved brightness |
 | Keyboard backlight (optional, same toggle) | save brightness, set it to 0 | restore the saved brightness |
 | Freeze scope | `SIGSTOP` every process whose responsible app is in the freeze scope (rules below) | `SIGCONT` the recorded pids only |
-| Docker rule (default off) | if Docker Desktop is running and `docker ps -q` is empty, journal its tree, ask `docker ps -q` once more right before the SIGSTOP and freeze it only on a second clean empty answer; busy, a failed probe, a timeout, a lid open or a session end at either point leaves it running | resume |
+| Docker rule (default off) | if Docker Desktop is running, `docker ps -q` is empty and the process table shows no `docker build`, `pull` or `push` at work (`DockerWatcher.commandsAtWork`), journal its tree, ask both once more right before the SIGSTOP and freeze it only on a second clean answer; busy, a command at work, a failed probe, a timeout, an unreadable process table or `docker` process, a lid open or a session end at either point leaves it running | resume |
 | Mute (optional, default on) | journal the default output's UID, name, volume and mute state as its own entry, unless that device already has one, then mute that device; another device's entry never stops it | restore each entry on its own device, never on another output, and clear only that entry; a device the user unmuted meanwhile is left as it is; a device that is not connected keeps its entry (see below) |
 | Low Power Mode | on (optional, default on) | off unless a battery or thermal floor still wants it |
 | Countdown redraw | stop timer | restart timer |
@@ -1361,7 +1361,9 @@ validation record.
    running container". One container → untouched, log has "first check found
    containers running". A container started between the two checks →
    untouched, log has the first check finding none and "second check found
-   containers running".
+   containers running". No container and a `docker pull` or BuildKit
+   `docker build` still running → untouched and the command finishes with the
+   lid closed, log has "first check found docker pull at work".
 7. **Mute.** Volume 60%, close lid → muted. Open → 60%, unmuted. With a
    headset as the output, close the lid, unplug the headset, open the lid
    and choose End: the notification and the menu name the headset as still

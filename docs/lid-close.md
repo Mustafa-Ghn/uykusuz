@@ -82,14 +82,24 @@ Varsayılanları bilmekte yarar var:
   dondurmak, kapak kapanınca görüşmeyi, kaydı ya da toplantı notlarını
   sonlandırır. Birini dondurma listesine elle eklemek onu yine de dondurur;
   bunun tek istisnası bir Apple uygulaması olan FaceTime'dır.
-- **Docker kuralı:** kapalı. Hiçbir kapsayıcı çalışmıyorken Docker Desktop'ı
-  kapak kapanınca duraklatmak için açın. Yerel Desktop soketine bir kez
-  Docker'ı seçmek için, bir kez de duraklatmadan hemen önce sorulur; bu iki
-  noktadan birinde meşgul yanıtı, başarısız bir `docker ps` ya da zaman aşımı
-  Docker'ı çalışır durumda bırakır. İkinci denetim ile duraklatma arasında
-  başlayan bir kapsayıcı da Desktop ile birlikte duraklatılır; bu yüzden
-  beklenmedik bir duraklatmanın zarar vereceği Docker iş yükleri için kuralı
-  kapalı bırakın.
+- **Docker kuralı:** kapalı. Hiçbir kapsayıcı çalışmıyorken ve `docker build`,
+  `docker pull` ya da `docker push` sürmüyorken Docker Desktop'ı kapak kapanınca
+  duraklatmak için açın. Bu komutlar kapsayıcı olarak görünmediği için Uykusuz
+  onları süreç tablosunda, `docker`, `docker-buildx` ve `docker-compose`
+  süreçlerinin argümanlarına bakarak bulur; argümanları saklamaz. Yerel Desktop
+  soketine ve süreç tablosuna bir kez Docker'ı seçmek için, bir kez de
+  duraklatmadan hemen önce bakılır. Bu iki noktadan birinde meşgul yanıtı, süren
+  bir komut, başarısız bir `docker ps`, zaman aşımı, okunamayan bir süreç tablosu
+  ya da argümanları okunamayan bir docker süreci (örneğin `sudo docker build`)
+  Docker'ı çalışır durumda bırakır. Docker o kapanışta yeniden denetlenmez: iş
+  kapak kapalıyken bitse de Docker bir sonraki kapanışa kadar çalışır. Denetim
+  yalnızca `docker` komut satırını görür: henüz kapsayıcısını açmamış bir
+  `docker run` ya da `docker compose up` imaj indirirken veya bir araç Docker'ı
+  doğrudan API'si üzerinden kullanırken Docker yine duraklatılabilir. İkinci
+  denetim ile duraklatma arasında başlayan bir kapsayıcı ya da komut da Desktop
+  ile birlikte duraklatılır; Docker duraklatıldıktan sonra başlatılan bir komut da
+  kapak açılana kadar bekler. Bu yüzden beklenmedik bir duraklatmanın zarar
+  vereceği Docker iş yükleri için kuralı kapalı bırakın.
 - **Kapak kapanınca sesi kapat:** açık; böylece kapak kapanınca ses durur.
   Kapağı açmak, sesi kapatılan her çıkışı, o sırada başka biri kullanılıyor
   olsa bile geri yükler. Bağlı olmayan bir çıkış yeniden bağlanana kadar sessiz

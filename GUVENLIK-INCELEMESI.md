@@ -105,6 +105,14 @@ Root olarak çalışan başka bir şey yoktur.
   Her süreç, başlangıç zamanı ve önyükleme oturumuyla doğrulanır. Apple
   uygulamaları, ajan uygulamaları, parola yöneticileri ve yerleşik olarak
   korunan uygulamalar hiçbir zaman otomatik olarak dondurulmaz.
+- **Docker kuralı:** İsteğe bağlıdır ve varsayılan olarak kapalıdır. Açıkken
+  Docker Desktop boştaysa kapak kapanınca `SIGSTOP` ile duraklatılır. Boşta olup
+  olmadığını anlamak için iki kez Docker Desktop'ın kendi soketi üzerinden
+  `docker ps -q` çalıştırılır, süreç tablosuna bakılır ve kullanıcının `docker`,
+  `docker-buildx` ve `docker-compose` süreçlerinin argümanları okunur (0.9.3).
+  Argümanlar saklanmaz; günlüğe yalnızca `docker build` gibi komutun adı yazılır.
+  Yeni izin, ağ isteği, `sudo` komutu ya da kalıcı bileşen eklemez. Süreç tablosu
+  ya da bir docker sürecinin argümanları okunamazsa Docker duraklatılmaz.
 - **Ajanlar için App Nap:** İsteğe bağlıdır ve varsayılan olarak kapalıdır.
   Açılırsa ajan uygulamalarının `NSAppSleepDisabled` tercihini yazar, oturum
   sonunda eski değeri geri koyar.

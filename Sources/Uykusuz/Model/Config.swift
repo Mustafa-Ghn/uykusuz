@@ -25,8 +25,9 @@ struct Config: Codable, Equatable, Sendable {
     /// once (`applyLidCloseDefaults`).
     var freezeAllApps: Bool = true
     /// SIGSTOP Docker Desktop on lid close when `docker ps` finds no running
-    /// container, checked once more right before the signal. Off by default
-    /// (and for a config.json without the key): a container that starts
+    /// container and no `docker build`, `pull` or `push` is at work, checked
+    /// once more right before the signal. Off by default (and for a
+    /// config.json without the key): a container or a command that starts
     /// between the last check and the signal is frozen with Desktop.
     var dockerRule: Bool = false
     /// Mute the output on lid close and restore the volume on open. On by

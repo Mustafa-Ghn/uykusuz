@@ -150,7 +150,7 @@ final class LidActions {
     /// The answer of `probe`, or nil as soon as a lid event after `event`
     /// arrives (or one already has). The probe then runs on in its own task
     /// and its answer is dropped: it only reads (`docker ps`, bounded by
-    /// `DockerRule.timeout`).
+    /// `DockerRule.timeout`, and the process table).
     private func untilNextLidEvent<T: Sendable>(after event: Int, _ probe: @escaping @Sendable () async -> T) async -> T? {
         guard lidEvents == event else { return nil }
         let race = ProbeRace<T>()

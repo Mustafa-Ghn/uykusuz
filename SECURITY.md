@@ -61,7 +61,14 @@ oturum sonunda geri koyar. Dondurma, kapak kapalıyken uygulamaların
 süreçlerine `SIGSTOP` gönderir; Uykusuz yalnızca kendi dondurduğunu
 doğrulayabildiği süreçleri `SIGCONT` ile çözer ve her süreci başlangıç zamanı
 ve önyükleme oturumuyla doğrular. Apple uygulamaları, ajan uygulamaları ve
-parola yöneticileri hiçbir zaman otomatik olarak dondurulmaz.
+parola yöneticileri hiçbir zaman otomatik olarak dondurulmaz. Docker kuralı
+açıksa (varsayılan olarak kapalıdır) Docker Desktop da boştayken böyle
+duraklatılır. Boşta olup olmadığını anlamak için Uykusuz kapak kapanınca iki
+kez Docker Desktop'ın kendi soketi üzerinden `docker ps -q` çalıştırır, süreç
+tablosuna bakar ve kullanıcının `docker`, `docker-buildx` ve `docker-compose`
+süreçlerinin argümanlarını okur. Argümanlar saklanmaz; günlüğe yalnızca
+`docker build` gibi komutun adı yazılır. Süreç tablosu ya da bir docker
+sürecinin argümanları okunamazsa Docker duraklatılmaz.
 
 **Claude entegrasyonu.** Otomatik oturum, güç kilitlerini IOKit üzerinden
 yalnızca okur (`IOPMCopyAssertionsByProcess`). Claude Code hook'ları

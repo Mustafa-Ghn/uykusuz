@@ -224,7 +224,7 @@ struct SettingsView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Toggle("Çalışan kapsayıcı yokken Docker Desktop'ı duraklat", isOn: bind(\.dockerRule))
-            Text("Varsayılan olarak kapalıdır. Açıkken Docker Desktop, yalnızca duraklatmadan hemen önce yapılan ikinci bir denetim de çalışan kapsayıcı bulamazsa duraklatılır; tam o son anda başlayan bir kapsayıcı da onunla birlikte duraklatılır.")
+            Text("Varsayılan olarak kapalıdır. Açıkken Docker Desktop, yalnızca duraklatmadan hemen önce yapılan ikinci bir denetim de çalışan bir kapsayıcı veya süren bir docker build, pull ya da push bulamazsa duraklatılır; tam o son anda başlayan bir kapsayıcı ya da komut da onunla birlikte duraklatılır.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Toggle("Kapak kapanınca sesi kapat", isOn: bind(\.muteOnLidClose))

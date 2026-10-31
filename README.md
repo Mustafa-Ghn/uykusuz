@@ -491,8 +491,8 @@ bunları geri almaya çalışır. Kapak kapalıyken zamanlayıcı geri saymayı 
   Seslendirilen İçerik > Sistem sesi bölümünden "Yelda (Gelişmiş)" sesini
   indirin; Uykusuz onu yeniden başlatmadan kullanmaya başlar. Ayarlar'da
   kullanılan ses görünür ve **Dinle** düğmesi onu çalar.
-- **Çalışan kapsayıcı yoksa Docker Desktop duraklatılır.** Bu seçenek
-  varsayılan olarak kapalıdır.
+- **Çalışan kapsayıcı ve süren bir `docker build`, `pull` ya da `push` yoksa
+  Docker Desktop duraklatılır.** Bu seçenek varsayılan olarak kapalıdır.
 
 Apple çipli ya da T2 çipli Mac dizüstü bilgisayarlarda kapağı kapatmak,
 yerleşik mikrofonun bağlantısını donanım düzeyinde keser. Kapak kapalıyken bir

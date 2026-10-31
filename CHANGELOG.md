@@ -4,6 +4,12 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.9.3 — 2026-11-01
+
+### Düzeltilenler
+
+- **Docker kuralı süren işi dondurmaz.** "Çalışan kapsayıcı yokken Docker Desktop'ı duraklat" açıkken, kapsayıcı olarak görünmeyen bir `docker build`, `docker pull` ya da `docker push` sürerken kapak kapanırsa Docker duraklatılıyor ve iş kapak açılana kadar asılı kalıyordu. Artık iki denetim de bu komutlara bakar; biri sürüyorsa ya da süreç tablosu okunamıyorsa Docker çalışır durumda kalır.
+
 ## 0.9.2 — 2026-11-01
 
 ### Düzeltilenler

@@ -32,6 +32,7 @@ final class LidActionsTests: XCTestCase {
     /// in so the Docker tree (400, 401) is part of the close.
     private func make(
         dockerIdle: @escaping @Sendable () async throws -> Bool = { true },
+        dockerCommands: @escaping DockerRule.CommandProbe = { [] },
         dockerRule: Bool? = true,
         mute: Bool = true,
         sampler: BrightnessSampler? = nil,
@@ -43,7 +44,7 @@ final class LidActionsTests: XCTestCase {
         m.config.muteOnLidClose = mute
         m.config.freezeList = ["com.tinyspeck.slackmacgap"]
         if let dockerRule { m.config.dockerRule = dockerRule }
-        let docker = DockerRule(freezer: freezer, probe: dockerIdle)
+        let docker = DockerRule(freezer: freezer, probe: dockerIdle, commands: dockerCommands)
         let actions = LidActions(manager: m, freezer: freezer, docker: docker, audio: h.audio, display: h.display, keyboard: h.keyboard, sampler: sampler)
         return (m, actions)
     }
@@ -1940,6 +1941,103 @@ final class LidActionsTests: XCTestCase {
         let log = logText()
         XCTAssertTrue(log.contains("docker rule: first check found containers running, Docker left alone"), log)
         XCTAssertFalse(log.contains("second check"), log)
+    }
+
+    // MARK: Commands at work
+
+    /// A BuildKit `docker build`: `docker ps -q` answers empty, the process
+    /// table does not. Docker never reaches the journal and no second check
+    /// runs; the rest of the close goes on.
+    func testFirstCheckFindingACommandLeavesDockerAlone() async throws {
+        let (m, actions) = await make(dockerCommands: { ["docker build"] })
+        await m.start(duration: 3600)
+
+        await actions.onClose()
+
+        XCTAssertEqual(h.procs.suspended, [[100, 101, 102]], "Docker was stopped in the middle of a build")
+        let s = try XCTUnwrap(try h.store.loadState())
+        XCTAssertEqual(s.frozenPids, [100, 101, 102])
+        XCTAssertFalse(s.dockerFrozen)
+        let log = logText()
+        XCTAssertTrue(log.contains("docker rule: first check found docker build at work, Docker left alone"), log)
+        XCTAssertFalse(log.contains("second check"), log)
+    }
+
+    /// A `docker pull` that starts after the first check, with no container
+    /// at either: Docker is left running, its journal entries go away again,
+    /// and the open resumes only what was stopped.
+    func testSecondCheckFindingACommandLeavesDockerAloneAndCleansTheJournal() async throws {
+        let reads = Locked(0)
+        let (m, actions) = await make(dockerCommands: {
+            reads.value += 1
+            return reads.value == 1 ? [] : ["docker pull"]
+        })
+        await m.start(duration: 3600)
+
+        await actions.onClose()
+
+        XCTAssertEqual(reads.value, 2)
+        XCTAssertEqual(h.procs.suspended, [[100, 101, 102]], "Docker was stopped although a pull had started")
+        let s = try XCTUnwrap(try h.store.loadState())
+        XCTAssertEqual(s.frozenPids, [100, 101, 102])
+        XCTAssertFalse(s.dockerFrozen)
+        XCTAssertEqual(m.state, s)
+        let log = logText()
+        XCTAssertTrue(log.contains("docker rule: first check found no running container and no docker command at work"), log)
+        XCTAssertTrue(log.contains("docker rule: second check found docker pull at work, Docker left alone"), log)
+        XCTAssertTrue(log.contains("Docker left running: the check before the signal said no"), log)
+
+        await actions.onOpen()
+        XCTAssertEqual(h.procs.resumed, [[100, 101, 102]])
+        XCTAssertEqual(try h.store.loadState()?.frozenProcesses, [])
+    }
+
+    /// Commands that cannot be known count as a failed probe does, and the
+    /// log says why.
+    private func assertUnknownCommandsLeaveDockerAlone(atRead failingRead: Int, check: String, file: StaticString = #filePath, line: UInt = #line) async throws {
+        let unknown = DockerRule.CommandsUnknownError(reason: "the process table could not be read")
+        let reads = Locked(0)
+        let (m, actions) = await make(dockerCommands: {
+            reads.value += 1
+            if reads.value == failingRead { throw unknown }
+            return []
+        })
+        await m.start(duration: 3600)
+
+        await actions.onClose()
+
+        XCTAssertEqual(reads.value, failingRead, file: file, line: line)
+        XCTAssertEqual(h.procs.suspended, [[100, 101, 102]], file: file, line: line)
+        let s = try XCTUnwrap(try h.store.loadState())
+        XCTAssertEqual(s.frozenPids, [100, 101, 102], file: file, line: line)
+        XCTAssertFalse(s.dockerFrozen, file: file, line: line)
+        let log = logText()
+        XCTAssertTrue(log.contains("docker rule: \(check) check failed, Docker left alone: \(unknown.localizedDescription)"), log, file: file, line: line)
+    }
+
+    func testCommandsThatCannotBeKnownAtTheFirstCheckLeaveDockerAlone() async throws {
+        try await assertUnknownCommandsLeaveDockerAlone(atRead: 1, check: "first")
+    }
+
+    func testCommandsThatCannotBeKnownAtTheSecondCheckLeaveDockerAlone() async throws {
+        try await assertUnknownCommandsLeaveDockerAlone(atRead: 2, check: "second")
+    }
+
+    /// Both checks read the table after their `docker ps`, and the second
+    /// one's read is the last thing before the SIGSTOP.
+    func testBothChecksReadTheCommandsAndTheLastReadComesRightBeforeTheSignal() async throws {
+        let events = Locked<[String]>([])
+        let (m, actions) = await make(
+            dockerIdle: { events.value.append("probe"); return true },
+            dockerCommands: { events.value.append("commands"); return [] }
+        )
+        await m.start(duration: 3600)
+        h.procs.onSuspend = { pids in events.value.append("suspend \(pids)") }
+
+        await actions.onClose()
+
+        XCTAssertEqual(events.value, ["suspend [100, 101, 102]", "probe", "commands", "probe", "commands", "suspend [400, 401]"])
+        XCTAssertTrue(try XCTUnwrap(try h.store.loadState()).dockerFrozen)
     }
 
     /// Returns once `m.end` has been entered: its first statement bumps

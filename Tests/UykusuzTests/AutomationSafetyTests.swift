@@ -772,6 +772,185 @@ final class DockerRuleSecondCheckTests: XCTestCase {
     }
 }
 
+// MARK: - DockerRule commands at work
+
+final class DockerRuleCommandTests: XCTestCase {
+    private var config: Config {
+        var config = Config()
+        config.dockerRule = true
+        return config
+    }
+
+    private func freezer(dockerRuns: Bool = true) -> FakeFreezer {
+        FakeFreezer(
+            apps: dockerRuns ? [RunningApp(pid: 400, bundleId: DockerRule.bundleId, name: "Docker")] : [],
+            processes: [
+                ProcessEntry(pid: 1, ppid: 0, startedAt: 1),
+                ProcessEntry(pid: 400, ppid: 1, startedAt: 4000),
+                ProcessEntry(pid: 401, ppid: 400, startedAt: 4001),
+            ],
+            control: FakeProcessControl()
+        )
+    }
+
+    /// Docker Desktop is up and `docker ps -q` answers empty unless `probe`
+    /// says otherwise.
+    private func rule(probe: @escaping DockerRule.ContainerProbe = { true }, commands: @escaping DockerRule.CommandProbe) -> DockerRule {
+        DockerRule(freezer: freezer(), probe: probe, commands: commands)
+    }
+
+    private func process(_ pid: pid_t, _ name: String) -> BashToolWatcher.Process {
+        BashToolWatcher.Process(pid: pid, ppid: 1, name: name, started: Date(timeIntervalSince1970: 1_000_000))
+    }
+
+    /// The real `commandsAtWork` over a made-up process table. A pid missing
+    /// from `arguments` has none to read.
+    private func commands(_ table: [BashToolWatcher.Process], _ arguments: [pid_t: [String]] = [:], gone: Set<pid_t> = []) -> DockerRule.CommandProbe {
+        DockerRule.makeCommandProbe(processes: { table }, arguments: { arguments[$0] }, isGone: { gone.contains($0) })
+    }
+
+    /// Whether the first and the second check let the SIGSTOP go ahead.
+    private func answers(_ rule: DockerRule) async -> [Bool] {
+        let first = await rule.idleDockerGroup(config: config)
+        let second = await rule.isStillIdle()
+        return [first != nil, second]
+    }
+
+    /// The defect: `docker ps -q` answers empty all through a BuildKit build,
+    /// a pull and a push, and Docker was stopped in the middle of them.
+    func testACommandAtWorkKeepsDockerRunningAtBothChecks() async {
+        let cases: [(name: String, arguments: [String])] = [
+            ("docker", ["docker", "build", "-t", "x", "."]),
+            ("docker-buildx", ["docker-buildx", "buildx", "build", "."]),
+            ("docker-buildx", ["docker-buildx", "buildx", "bake"]),
+            ("docker", ["docker", "pull", "x"]),
+            ("docker", ["docker", "--host", "unix:///s", "image", "push", "x"]),
+            ("docker-compose", ["docker-compose", "compose", "up", "--build"]),
+        ]
+        for (name, arguments) in cases {
+            let found = await answers(rule(commands: commands([process(20, name)], [20: arguments])))
+            XCTAssertEqual(found, [false, false], "\(arguments)")
+        }
+    }
+
+    /// The same fixture with nothing at work lets both checks through, so
+    /// the test above cannot pass just because the fixture never pauses.
+    /// `build` is no docker process: its arguments are not asked for, or the
+    /// answer would be an error.
+    func testOtherCommandsAndProcessesDoNotKeepDockerRunning() async {
+        let table = [process(20, "docker"), process(21, "docker"), process(22, "com.docker.backe"), process(23, "build")]
+        let found = await answers(rule(commands: commands(table, [20: ["docker", "ps", "-q"], 21: ["docker", "logs", "-f", "db"]])))
+        XCTAssertEqual(found, [true, true])
+    }
+
+    /// `docker ps` can take seconds, so the table is read after its answer.
+    func testACommandStartedWhileDockerPsRunsIsSeen() async {
+        let started = Locked(false)
+        let late = rule(probe: { started.value = true; return true }, commands: { started.value ? ["docker build"] : [] })
+        let first = await late.idleDockerGroup(config: config)
+        XCTAssertNil(first)
+        started.value = false
+        let second = await late.isStillIdle()
+        XCTAssertFalse(second)
+    }
+
+    /// Other processes' arguments are read only when the answer depends on
+    /// them: with the rule on, Docker Desktop up and no container running.
+    func testTheProcessTableIsReadOnlyWhenItDecides() async {
+        let reads = Locked(0)
+        let counting: DockerRule.CommandProbe = { reads.value += 1; return [] }
+        var off = config
+        off.dockerRule = false
+        let ruleOff = await rule(commands: counting).idleDockerGroup(config: off)
+        XCTAssertNil(ruleOff)
+        let noDesktop = await DockerRule(freezer: freezer(dockerRuns: false), probe: { true }, commands: counting).idleDockerGroup(config: config)
+        XCTAssertNil(noDesktop)
+        let containers = await rule(probe: { false }, commands: counting).idleDockerGroup(config: config)
+        XCTAssertNil(containers)
+        XCTAssertEqual(reads.value, 0)
+
+        let idle = await rule(commands: counting).idleDockerGroup(config: config)
+        XCTAssertEqual(idle?.pids, [400, 401])
+        XCTAssertEqual(reads.value, 1)
+    }
+
+    /// `liveProcesses` answers a failed read with nothing: that is not "no
+    /// command".
+    func testAnUnreadableProcessTableLeavesDockerAlone() async {
+        let found = await answers(rule(commands: commands([])))
+        XCTAssertEqual(found, [false, false])
+    }
+
+    /// `sudo docker build` has no arguments to read for this user.
+    /// `commandsAtWork` skips it; the rule must not take that for no command.
+    func testADockerProcessWhoseArgumentsCannotBeReadLeavesDockerAlone() async {
+        let found = await answers(rule(commands: commands([process(20, "docker-buildx")])))
+        XCTAssertEqual(found, [false, false])
+    }
+
+    /// A short command that ended since the table was read (or lingers as a
+    /// zombie) has no arguments either, and does not stop the rule.
+    func testADockerProcessThatEndedIsNoObstacle() async {
+        let found = await answers(rule(commands: commands([process(20, "docker")], gone: [20])))
+        XCTAssertEqual(found, [true, true])
+    }
+
+    /// What is known decides: a command at work is reported as that, not as
+    /// a failure, next to a process that cannot be read.
+    func testACommandAtWorkIsReportedNextToAnUnreadableProcess() throws {
+        let probe = commands([process(20, "docker"), process(21, "docker")], [21: ["docker", "pull", "x"]])
+        XCTAssertEqual(try probe(), ["docker pull"])
+    }
+
+    /// The real process table and the real arguments, through the rule that
+    /// `DockerRule(freezer:)` builds: a process named `docker` that was asked
+    /// to build. A copy of `cat` waiting on its input stands in for it.
+    func testTheLiveRuleSeesARealDockerProcess() async throws {
+        let dir = URL(fileURLWithPath: "/tmp/ins-\(getpid())-\(UInt16.random(in: 0...UInt16.max))", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let build = dir.appendingPathComponent("docker")
+        try FileManager.default.copyItem(atPath: "/bin/cat", toPath: build.path)
+        let process = Process()
+        process.executableURL = build
+        process.arguments = ["-", "build", "."]
+        let input = Pipe()
+        process.standardInput = input
+        try process.run()
+        defer {
+            process.terminate()
+            process.waitUntilExit()
+        }
+
+        let live = DockerRule(freezer: freezer())
+        let deadline = Date().addingTimeInterval(5)
+        var found = try live.commands()
+        while !found.contains("docker build"), Date() < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+            found = try live.commands()
+        }
+        XCTAssertTrue(found.contains("docker build"), "\(found)")
+
+        let busy = DockerRule(freezer: freezer(), probe: { true }, commands: live.commands)
+        let answered = await answers(busy)
+        XCTAssertEqual(answered, [false, false])
+    }
+
+    /// `sudo docker build` from the kernel's side: pid 1 belongs to another
+    /// user, has no arguments to read and is not gone. A child that exited is.
+    func testLiveIsGoneTellsAnUnreadableProcessFromAnEndedOne() throws {
+        try XCTSkipIf(getuid() == 0, "root can read every process's arguments")
+        XCTAssertNil(DockerWatcher.liveArguments(1))
+        XCTAssertFalse(DockerRule.liveIsGone(1))
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/true")
+        try process.run()
+        process.waitUntilExit()
+        XCTAssertTrue(DockerRule.liveIsGone(process.processIdentifier))
+    }
+}
+
 // MARK: - DockerRule endpoint binding
 
 final class DockerRuleEndpointTests: XCTestCase {

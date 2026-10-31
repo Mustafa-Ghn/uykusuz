@@ -114,13 +114,16 @@ final class DockerWatcher {
     /// What `docker`, `docker compose` and `docker buildx` are asked that
     /// runs until the work is done. `up`, `run` and `exec` are not here: they
     /// can stay open for days, and what they run shows in `docker stats`.
+    /// `DockerRule` does not pause Docker while one of these runs.
     nonisolated static let workingVerbs: [(argument: String, label: String)] = [
         ("build", "docker build"), ("--build", "docker build"), ("bake", "docker build"),
         ("pull", "docker pull"), ("push", "docker push"),
     ]
 
     /// The commands at work, each once, by name only: their arguments can
-    /// hold anything and are not kept.
+    /// hold anything and are not kept. A process whose arguments cannot be
+    /// read is skipped; `DockerRule.makeCommandProbe` does not take that for
+    /// no command.
     nonisolated static func commandsAtWork(_ processes: [BashToolWatcher.Process], arguments: (pid_t) -> [String]?) -> [String] {
         var labels: Set<String> = []
         for process in processes where ["docker", "docker-buildx", "docker-compose"].contains(process.name) {
