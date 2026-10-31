@@ -207,6 +207,8 @@ final class LidActions {
     /// The keyboard reads 0 when suppressed by display sleep, so it takes
     /// the current read if trusted now, else the last trusted sample, else
     /// nothing, since restoring 0 would leave the backlight off for good.
+    /// A level of 0 is not journaled, for the same reason; a value kept
+    /// after a refused restore stays, as an ordinary entry.
     private func darkenSavingCurrent(_ manager: SessionManager) {
         do {
             let current = try display.readBrightness()
@@ -306,8 +308,19 @@ final class LidActions {
                 } else if value != nil {
                     // Off already (macOS turns it off in daylight): nothing to
                     // put back, and a 0 written back on open would pin it off,
-                    // so it could not come on by itself in the evening.
-                    Log.info("keyboard backlight already off; leaving it to macOS")
+                    // so it could not come on by itself in the evening. A
+                    // value kept after a refused restore is still owed, and
+                    // the device answered, so as for the display above it is
+                    // an ordinary entry again. Left flagged, the open would
+                    // take the level macOS puts back after the wake for one
+                    // set by hand, and drop the value.
+                    let journaled = manager.effectiveState
+                    if journaled.keyboardRestoreRefused, let kept = journaled.savedKeyboardBrightness {
+                        try manager.journal { $0.keyboardRestoreRefused = false }
+                        Log.info("keyboard backlight already off; the value kept after a refused restore, \(kept), stays journaled for the open to restore")
+                    } else {
+                        Log.info("keyboard backlight already off; leaving it to macOS")
+                    }
                 } else {
                     Log.info("keyboard backlight suppressed by display sleep and no trusted sample; leaving it to macOS")
                 }

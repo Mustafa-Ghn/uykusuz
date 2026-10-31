@@ -4,6 +4,12 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.9.2 — 2026-11-01
+
+### Düzeltilenler
+
+- **Kayıtlı klavye ışığı düzeyi.** Geri yüklemesi daha önce reddedilmiş bir klavye ışığı düzeyi kayıtlıyken kapak, ışık kapalıyken kapanırsa düzey artık kapak açılınca geri yüklenir. 0.7.1'den beri macOS'in uyanırken geri getirdiği düzey elle ayarlanmış sanılabiliyor ve kayıtlı düzey silinebiliyordu.
+
 ## 0.9.1 — 2026-11-01
 
 ### Düzeltilenler

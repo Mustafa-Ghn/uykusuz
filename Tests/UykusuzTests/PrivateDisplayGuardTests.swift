@@ -1039,8 +1039,10 @@ final class RefusedDarkeningTests: XCTestCase {
     /// read-only writes nothing, and the sampler, no longer held by the
     /// settled entries, takes the new levels. Once the journal takes writes
     /// again, the lid close clears the old entries first and journals the
-    /// levels the user chose, so the open brings back 0.2 and 0, never the
-    /// old 0.8 and 0.3.
+    /// display level the user chose. The backlight is off, so nothing is
+    /// journaled or written for it (a 0 written back would pin it off for
+    /// the evening). The open brings back 0.2 and leaves the backlight off,
+    /// never the old 0.8 and 0.3.
     func testACloseAfterAClearTheJournalRefusedJournalsTheLevelChosenSince() async throws {
         try seedSavedBrightness(sessionValid: false, refused: true)
         h.clamshell.closed = false
@@ -1095,16 +1097,17 @@ final class RefusedDarkeningTests: XCTestCase {
 
         let closed = try XCTUnwrap(try h.store.loadState())
         XCTAssertEqual(closed.savedDisplayBrightness, 0.2)
-        XCTAssertEqual(closed.savedKeyboardBrightness, 0)
+        XCTAssertNil(closed.savedKeyboardBrightness, "off already: nothing to put back")
         XCTAssertFalse(closed.displayRestoreRefused)
         XCTAssertFalse(closed.keyboardRestoreRefused)
         XCTAssertTrue(logText().contains("keyboard backlight 0.3, set since its refused restore, cleared from the journal"), logText())
+        XCTAssertTrue(logText().contains("keyboard backlight already off; leaving it to macOS"), logText())
 
         h.clamshell.closed = false
         await actions.onOpen()
 
         XCTAssertFalse(h.display.sets.contains(0.8), "\(h.display.sets)")
-        XCTAssertFalse(h.keyboard.sets.contains(0.3), "\(h.keyboard.sets)")
+        XCTAssertEqual(h.keyboard.sets, [], "neither the old 0.3 nor a 0 that would pin the backlight off")
         XCTAssertEqual(h.display.brightness, 0.2)
         XCTAssertEqual(h.keyboard.brightness, 0)
     }
@@ -1197,6 +1200,53 @@ final class RefusedDarkeningTests: XCTestCase {
         XCTAssertEqual(h.display.sets.last, 0.8)
         XCTAssertEqual(h.keyboard.sets.last, 0.3)
         XCTAssertFalse(try XCTUnwrap(try h.store.loadState()).brightnessJournaled)
+    }
+
+    /// The same close, and macOS puts its own remembered backlight level
+    /// back after the wake, before the open reads the device. The entry the
+    /// close made ordinary is written over that level: still flagged, the
+    /// reading would pass for a level the user set, and the kept value
+    /// would be lost.
+    func testAnOpenDoesNotTakeTheLevelMacOSPutsBackForOneSetSinceTheClose() async throws {
+        try seedSavedBrightness(sessionValid: false, refused: true)
+        h.display.brightness = 0
+        h.keyboard.brightness = 0
+        let (m, actions) = makeDarkeningOnly(display: h.display, keyboard: h.keyboard)
+        await m.start(duration: 3600)
+        await actions.onClose()
+
+        h.keyboard.brightness = 0.1
+        await actions.onOpen()
+
+        XCTAssertEqual(h.keyboard.sets, [0.3])
+        XCTAssertEqual(h.keyboard.brightness, 0.3)
+        XCTAssertNil(try XCTUnwrap(try h.store.loadState()).savedKeyboardBrightness)
+        XCTAssertFalse(logText().contains("set since its restore to 0.3 was refused"), logText())
+    }
+
+    /// The same close while state.json refuses every write. The entry stays
+    /// as it was, flagged, so the open reads it first and, finding the
+    /// backlight still at 0, writes the kept value all the same.
+    func testACloseThatCannotUnflagADarkKeyboardLeavesTheKeptValueForTheOpen() async throws {
+        try seedSavedBrightness(sessionValid: false, refused: true)
+        h.display.brightness = 0
+        h.keyboard.brightness = 0
+        let (m, actions) = makeDarkeningOnly(display: h.display, keyboard: h.keyboard)
+        await m.start(duration: 3600)
+        let file = h.home.paths.stateFile.path
+        try FileManager.default.setAttributes([.immutable: true], ofItemAtPath: file)
+        defer { try? FileManager.default.setAttributes([.immutable: false], ofItemAtPath: file) }
+
+        await actions.onClose()
+
+        let closed = try XCTUnwrap(try h.store.loadState())
+        XCTAssertEqual(closed.savedKeyboardBrightness, 0.3)
+        XCTAssertTrue(closed.keyboardRestoreRefused)
+        XCTAssertEqual(h.keyboard.sets, [])
+
+        await actions.onOpen()
+
+        XCTAssertEqual(h.keyboard.sets.first, 0.3)
     }
 
     /// The same close after the user set both levels by hand: those levels

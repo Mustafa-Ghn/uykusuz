@@ -31,6 +31,9 @@ denetimin artık reddettiği bir düzey, onu geri yükleyebilecek bir sürüm i�
 kayıtlı kalır; menü de bu arada düzeyi parlaklık tuşlarıyla ayarlamanızı
 söyler. O sürüm, elle ayarladığınız bir düzeye dokunmaz ve kararını yalnızca
 ekran uyanıkken ve tuşlar kısılmamışken alınan bir okumaya göre verir.
+Böyle kayıtlı bir klavye düzeyi varken kapak, ışık kapalıyken kapanırsa düzey
+silinmez: kapak açılınca geri yüklenir ve macOS'in uyanışta geri getirdiği bir
+düzey elle ayarlanmış sayılmaz.
 Kaydedilmiş bir ekran düzeyi varken Uykusuz'un kendi Düşük Güç Modu bir kez
 açık kaldıysa Uykusuz, uygulama yeniden açılsa bile, Mac yeniden başlayana
 kadar o düzeyi kararsız bırakır; o zamana kadar bir kapak kapanışı o ekranı
