@@ -118,6 +118,16 @@ Erişilebilirlik izni istemez; macOS ilk gönderimde Mesajlar'ı denetleme iznin
 sorar. Mesajda oturumun adı ve Claude'un ne yaptığına dair bir iki cümle bulunur;
 API anahtarı kayıtlıysa bu cümleleri Claude yazar (yukarıdaki "Ağ").
 
+"Docker kullanılırken de haber ver" açıksa (varsayılan olarak açıktır, ama
+iMessage kapalıyken hiçbir şey yapılmaz) Uykusuz 30 saniyede bir süreç tablosuna
+bakar ve kullanıcının `docker`, `docker-buildx` ve `docker-compose` süreçlerinin
+argümanlarını okur. Argümanlar saklanmaz; mesaja yalnızca `docker build` gibi
+komutun adı yazılır. Docker'ın sanal makinesi çalışıyorsa Docker Desktop'ın kendi
+soketi üzerinden `docker stats --no-stream` çalıştırır; bu komut yalnızca okur ve
+kapsayıcılara dokunmaz. Docker Desktop kapalıysa, Resource Saver'daysa ya da
+Uykusuz onu duraklattıysa bu komut çalıştırılmaz. Mesajda kapsayıcıların adı ve
+işin süresi bulunur; bu mesajlar yerelde yazılır ve API'ye gitmez.
+
 ## Telefondan yanıt
 
 "Telefondan yanıt" açılınca Uykusuz, `~/.claude/settings.json` dosyasının `env`

@@ -223,6 +223,14 @@ macOS'un sorduğu Otomasyon (Mesajlar) iznidir.
   `NSAppleEventsUsageDescription` eklendi. Anahtar kayıtlıysa mesajı yazmak
   için "Sen yokken" özetindeki alanlar, yalnızca o oturum için, aynı yolla
   `api.anthropic.com`'a gönderilir.
+- **Docker mesajları (0.9.0):** Yalnızca iPhone'a iMessage açıkken çalışır ve
+  Ayarlar'dan kapatılabilir. 30 saniyede bir süreç tablosuna bakar, kullanıcının
+  `docker`, `docker-buildx` ve `docker-compose` süreçlerinin argümanlarını okur
+  (saklamaz; mesaja yalnızca `docker build` gibi komutun adı yazılır) ve Docker'ın
+  sanal makinesi çalışıyorsa Docker Desktop'ın kendi soketi üzerinden
+  `docker stats --no-stream` çalıştırır. Yeni izin, ağ isteği, `sudo` komutu ya da
+  kalıcı bileşen eklemez; kapsayıcılara dokunmaz. Mesaj yerelde yazılır, API'ye
+  gitmez ve kapsayıcıların adını ve işin süresini içerir.
 - **Telefondan yanıt (0.7.0):** İsteğe bağlıdır ve varsayılan olarak kapalıdır.
   Açılınca `~/.claude/settings.json` dosyasının `env` bölümüne Claude Code'un
   `CLAUDE_CLIENT_PRESENCE_FILE` satırı eklenir (dosyanın eski hâli yedeklenir;

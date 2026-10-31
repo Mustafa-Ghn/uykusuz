@@ -120,6 +120,9 @@ struct Config: Codable, Equatable, Sendable {
     /// `imessageHandle` (a phone number or an Apple ID e-mail).
     var imessageAlerts: Bool = false
     var imessageHandle: String = ""
+    /// With `imessageAlerts` on, also tell when Docker Desktop starts being
+    /// used while the user is away, and when that work ends (`DockerAlerts`).
+    var dockerAlerts: Bool = true
     /// Replies from the phone, through Claude's Remote Control: Claude's
     /// own phone pushes come only while the user is away (`ClaudePushGate`),
     /// and the automatic session stays on `phoneReplyWindow` after Claude
@@ -253,6 +256,7 @@ struct Config: Codable, Equatable, Sendable {
         returnToKnownWiFi = try c.decodeIfPresent(Bool.self, forKey: .returnToKnownWiFi) ?? d.returnToKnownWiFi
         imessageAlerts = try c.decodeIfPresent(Bool.self, forKey: .imessageAlerts) ?? d.imessageAlerts
         imessageHandle = try c.decodeIfPresent(String.self, forKey: .imessageHandle) ?? d.imessageHandle
+        dockerAlerts = try c.decodeIfPresent(Bool.self, forKey: .dockerAlerts) ?? d.dockerAlerts
         phoneReplies = try c.decodeIfPresent(Bool.self, forKey: .phoneReplies) ?? d.phoneReplies
         phoneReplyWindow = try c.decodeIfPresent(TimeInterval.self, forKey: .phoneReplyWindow) ?? d.phoneReplyWindow
         awaySummary = try c.decodeIfPresent(Bool.self, forKey: .awaySummary) ?? d.awaySummary

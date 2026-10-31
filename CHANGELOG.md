@@ -4,6 +4,16 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.9.0 — 2026-10-31
+
+### Eklenenler
+
+- **Docker kullanılırken iPhone'a haber.** iMessage açıkken ve Mac'in başında değilken Docker Desktop'ta bir iş sürüyorsa (yeni açılan ya da yoğun çalışan bir kapsayıcı, `docker build`, `pull` ya da `push`) bir mesaj, iş bitince bir mesaj daha gelir; mesajda kapsayıcıların adı ve işin süresi yazar. Boşta açık duran kapsayıcılar için mesaj gitmez. Ayarlar > Claude sizi beklerken iPhone'a haber ver > Docker kullanılırken de haber ver ile kapatılır.
+
+### Düzeltilenler
+
+- **Mesaj hangi oturumu söylüyor.** Aynı anda çok sayıda Claude oturumu çalışırken iMessage "Uykusuz: Claude işini bitirdi ve yeni isteğinizi bekliyor." diye, oturumun adı ve son mesajı olmadan geliyordu. Artık her mesaj ilgili oturumun adıyla başlar. Oturuma ad verilmemişse Claude'un ürettiği ad, o da yoksa klasörün adı yazılır.
+
 ## 0.8.0 — 2026-10-31
 
 ### Eklenenler

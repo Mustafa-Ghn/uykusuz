@@ -41,6 +41,49 @@ final class ClaudeDigestTests: XCTestCase {
          "isSidechain": sidechain, "message": ["role": "assistant", "content": content]]
     }
 
+    func testOneSessionIsReadHoweverManyOthersAreNewer() throws {
+        try transcript("old", in: "-Users-me-other", session)
+        for index in 0...ClaudeDigest.maxSessions {
+            try transcript("new\(index)", [assistant(1000 + Double(index), [["type": "text", "text": "newer"]])])
+        }
+        XCTAssertNil(ClaudeDigest.build(from: from, to: to, projects: projects)?.sessions.first { $0.id == "old" }, "kept out of the newest few")
+        let found = try XCTUnwrap(ClaudeDigest.session("old", from: from, to: to, projects: projects) { XCTAssertEqual($0, "old"); return .waiting })
+        XCTAssertEqual(found.title, "Uykusuz özeti")
+        XCTAssertEqual(found.status, .waiting)
+        XCTAssertEqual(found.lastTexts.last, "Testlerin hepsi geçti ve değişikliği commit'ledim.")
+        XCTAssertNil(ClaudeDigest.session("missing", from: from, to: to, projects: projects))
+    }
+
+    func testASessionIsFoundByItsMarkersName() throws {
+        try transcript("a.b", session)
+        XCTAssertEqual(ClaudeDigest.session("a_b", from: from, to: to, projects: projects)?.id, "a.b")
+    }
+
+    func testASessionWithNothingInTheSpanStillHasItsName() throws {
+        try transcript("quiet", [
+            ["type": "custom-title", "customTitle": "Sessiz oturum", "sessionId": "quiet"],
+            assistant(-600, [["type": "text", "text": "before the span"]]),
+        ])
+        XCTAssertNil(ClaudeDigest.build(from: from, to: to, projects: projects), "nothing done in the span")
+        let found = try XCTUnwrap(ClaudeDigest.session("quiet", from: from, to: to, projects: projects))
+        XCTAssertEqual(found.title, "Sessiz oturum")
+        XCTAssertEqual(found.lastTexts, [])
+    }
+
+    func testTheNameClaudeGaveIsUsedWhenNoOneNamedTheSession() throws {
+        let work = assistant(100, [["type": "text", "text": "tamam"]])
+        try transcript("generated", [["type": "ai-title", "aiTitle": "Üretilen ad", "sessionId": "generated"], work])
+        try transcript("both", [
+            ["type": "custom-title", "customTitle": "Verilen ad", "sessionId": "both"],
+            ["type": "ai-title", "aiTitle": "Üretilen ad", "sessionId": "both"],
+            work,
+        ])
+        try transcript("neither", [work])
+        XCTAssertEqual(ClaudeDigest.session("generated", from: from, to: to, projects: projects)?.title, "Üretilen ad")
+        XCTAssertEqual(ClaudeDigest.session("both", from: from, to: to, projects: projects)?.title, "Verilen ad")
+        XCTAssertEqual(ClaudeDigest.session("neither", from: from, to: to, projects: projects)?.title, "insomnia-tr", "the folder it ran in")
+    }
+
     private var session: [[String: Any]] {
         [
             ["type": "custom-title", "customTitle": "Uykusuz özeti", "sessionId": "s1"],
@@ -839,6 +882,53 @@ final class WaitingAlertsTests: XCTestCase {
         XCTAssertEqual(Array(args.suffix(2)), ["\" & do shell script \"x", "+90555"], "the text is an argument, never script")
         XCTAssertEqual(args.filter { $0 == "-e" }.count, IMessageSender.script.count)
         XCTAssertTrue(IMessageSender.explain("execution error: Not authorized to send Apple events to Messages. (-1743)").contains("Otomasyon"))
+    }
+
+    /// A finished session is named however many others are at work: the
+    /// digest of a span keeps only its newest few.
+    func testTheMessageNamesASessionThatManyOthersOutran() async throws {
+        let projects = FileManager.default.temporaryDirectory.appendingPathComponent("uykusuz-alert-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: projects) }
+        let dir = projects.appendingPathComponent("-Users-me-p", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let stampText = { (offset: TimeInterval) in
+            Date.ISO8601FormatStyle(includingFractionalSeconds: true).format(self.now.addingTimeInterval(offset))
+        }
+        func write(_ id: String, title: String, at offset: TimeInterval) throws {
+            let lines: [[String: Any]] = [
+                ["type": "custom-title", "customTitle": title, "sessionId": id],
+                ["type": "assistant", "timestamp": stampText(offset), "cwd": "/Users/me/p",
+                 "message": ["role": "assistant", "content": [["type": "text", "text": "\(title) tamam."]]]],
+            ]
+            let text = try lines.map { String(decoding: try JSONSerialization.data(withJSONObject: $0), as: UTF8.self) }.joined(separator: "\n")
+            let file = dir.appendingPathComponent("\(id).jsonl")
+            try Data((text + "\n").utf8).write(to: file)
+            try FileManager.default.setAttributes([.modificationDate: now.addingTimeInterval(offset)], ofItemAtPath: file.path)
+        }
+        try write("finished", title: "Biten oturum", at: -120)
+        for index in 0..<ClaudeDigest.maxSessions + 1 {
+            try write("busy\(index)", title: "Diğer \(index)", at: -Double(index + 1))
+        }
+        let text = await WaitingAlerts.liveCompose(
+            session: "finished",
+            event: .finished,
+            keyStore: InMemoryAnthropicKeyStore(),
+            model: "claude-haiku-5-5",
+            projects: projects,
+            now: now
+        )
+        XCTAssertEqual(text, "Uykusuz · Biten oturum: Claude işini bitirdi ve yeni isteğinizi bekliyor. Son mesajı: Biten oturum tamam.")
+    }
+
+    func testAMessageThatIsAboutNoSessionGoesTheSameWay() async {
+        let alerts = make()
+        await alerts.tell("Uykusuz · Docker: iş bitti.", what: "docker finished")
+        XCTAssertEqual(sender.sent.map(\.text), ["Uykusuz · Docker: iş bitti."])
+        XCTAssertEqual(sender.sent.first?.handle, "+905550000000")
+        XCTAssertTrue(alerts.lastResult?.hasSuffix("gönderildi") ?? false, alerts.lastResult ?? "")
+        config.imessageHandle = " "
+        await alerts.tell("x", what: "docker finished")
+        XCTAssertEqual(sender.sent.count, 1, "no one to tell")
     }
 
     func testAClientWithItsOwnInstructions() throws {

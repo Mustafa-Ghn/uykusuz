@@ -422,6 +422,10 @@ struct SettingsView: View {
                     }
                 }
             }
+            Toggle("Docker kullanılırken de haber ver", isOn: bind(\.dockerAlerts))
+            Text("Docker Desktop'ta bir iş sürerken (yeni açılan ya da yoğun çalışan bir kapsayıcı, docker build, pull ya da push) Mac'in başında değilseniz bir mesaj, iş bitince bir mesaj daha gönderilir. Boşta açık duran kapsayıcılar için mesaj gitmez.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
             Text("Kapak kapalıyken, ekran kilitliyken ya da 2 dakikadır Mac'e dokunulmadıysa, bir Claude Code oturumu onay ya da yanıt beklemeye başlayınca ya da işini bitirip yeni isteğinizi bekleyince Uykusuz bu alıcıya Mesajlar üzerinden iMessage gönderir. API anahtarı kayıtlıysa mesajı Claude yazar, değilse oturumun adı ve Claude'un son mesajının sonu gider. Her oturum için en çok 10 dakikada bir mesaj gönderilir. İlk gönderimde macOS, Uykusuz'un Mesajlar'ı denetlemesine izin vermenizi ister. Kendi numaranıza gönderirseniz mesaj kendinizle olan sohbete düşer; deneme mesajıyla telefonunuzda bildirim gelip gelmediğine bakın. Telefondan yanıt açıksa Claude'un kendi bildirimi de gelir; ikisini birden istemiyorsanız bunu kapatın.")
                 .font(.caption)
                 .foregroundStyle(.secondary)

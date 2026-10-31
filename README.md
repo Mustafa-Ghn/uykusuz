@@ -78,6 +78,7 @@ Claude çalışırken bunu kendiliğinden de yapar.
 - **Claude sizi beklerken iPhone'a haber.** Kapak kapalıyken, ekran kilitliyken
   ya da Mac'e bir süredir dokunulmadıysa, bir Claude oturumu onay ya da yanıt
   beklemeye başlayınca veya işini bitirince Uykusuz telefonunuza iMessage gönderir.
+  Docker Desktop'ta bir iş sürerken ve o iş bitince de mesaj gelir.
 - **Kapak eylemleri.** Kapak kapanınca ekran ve klavye ışığı söner, seçili
   uygulamalar dondurulur, ses kapanır ve Düşük Güç Modu açılır; kapağı açmak
   hepsini geri almaya çalışır.
@@ -216,7 +217,7 @@ Ayarlar penceresi göze sağ tıklayınca açılan menüden (⌘,) açılır:
 | Sen yokken özeti | Kapak ya da kilit açılınca özet penceresi, Claude API anahtarı, özeti yazan model, son 2 saati şimdi özetle |
 | Claude'un yanıtını dinle | Claude işini bitirince son yanıtını sesli okuma |
 | Telefondan yanıt | Claude'un telefon bildirimleri yalnızca uzaktayken, yanıt için Mac'in uyanık kalacağı süre |
-| Claude sizi beklerken iPhone'a haber ver | iMessage gönder, alıcı (telefon numarası ya da Apple ID e-postası), deneme mesajı |
+| Claude sizi beklerken iPhone'a haber ver | iMessage gönder, alıcı (telefon numarası ya da Apple ID e-postası), deneme mesajı, Docker kullanılırken de haber ver |
 | Ağ yedekleme | iPhone kişisel erişim noktası, bilinen Wi-Fi ağına geri dönüş, tmux dürtmesi |
 | Uygulama | Girişte aç, yapılandırma klasörü, kurulu sürüm |
 
@@ -347,7 +348,9 @@ bildirimi de gelir; ikisini birden istemiyorsanız iMessage'ı kapatın.
 
 - **Mesajın içeriği.** Her mesaj, Claude uygulamasının kenar çubuğunda görünen
   oturum adıyla başlar; böylece birden çok oturum varken hangisinin beklediği
-  bellidir. API anahtarı kayıtlıysa gerisini Claude yazar: Claude'un ne yaptığı
+  ya da işini bitirdiği bellidir. Oturuma ad verilmemişse Claude'un ürettiği ad,
+  o da yoksa oturumun çalıştığı klasörün adı yazılır. API anahtarı kayıtlıysa
+  gerisini Claude yazar: Claude'un ne yaptığı
   ve sizden ne beklediği, en çok iki cümle. Anahtar yoksa ya da istek başarısız
   olursa Claude'un son mesajının sonu gider.
 - **Ne zaman.** Bekleme ya da bitiş 45 saniye sürmeli; hemen yeni bir tura
@@ -363,6 +366,18 @@ bildirimi de gelir; ikisini birden istemiyorsanız iMessage'ı kapatın.
   numaranıza gönderilen mesaj kendinizle olan sohbete düşer. Uygulama her
   kurulumda yeniden imzalandığı için macOS bu izni yeni bir kurulumdan sonra
   yeniden sorabilir; kurulumdan sonra bir deneme mesajı gönderin.
+- **Docker.** **Docker kullanılırken de haber ver** açıkken (varsayılan) Docker
+  Desktop'ta bir iş sürüyorsa bir mesaj, iş bitince bir mesaj daha gelir:
+  "Uykusuz · Docker: aktif kullanılıyor (kapsayıcının adı). İş bitince yine haber
+  vereceğim." ve "Uykusuz · Docker: iş bitti, 12 dakika sürdü. Çalışan kapsayıcı
+  kalmadı." İş sayılanlar: yeni açılan bir kapsayıcı (ilk 15 dakika), bir
+  çekirdeğin %10'undan fazlasını kullanan bir kapsayıcı ve sürmekte olan
+  `docker build`, `docker pull` ya da `docker push`. Boşta açık duran bir
+  veritabanı iş sayılmaz. İş en az 45 saniye sürmeli; bitmiş sayılması için 2
+  dakika yeni iş olmamalı, böylece art arda çalışan kapsayıcılar tek iş sayılır.
+  Mac'in başındaysanız mesaj gitmez; iş sürerken uzaklaşırsanız, ne zaman
+  başlamış olursa olsun mesaj o an gider. "Aktif" mesajı gittiyse bitiş mesajı,
+  Mac'e dönmüş olsanız da gider. En çok 10 dakikada bir iş bildirilir.
 
 ### Kod modu ve boşta siyah ekran
 

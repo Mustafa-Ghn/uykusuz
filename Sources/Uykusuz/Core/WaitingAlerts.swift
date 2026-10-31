@@ -15,7 +15,7 @@ import Observation
 /// ends and a new one that starts at once is not a finish. One that comes
 /// while the user is at the Mac is told if they leave within
 /// `pendingLimit`, and each session gets at most one message per
-/// `perSessionGap`.
+/// `perSessionGap`. Docker's messages go out the same way (`DockerAlerts`).
 @MainActor
 @Observable
 final class WaitingAlerts {
@@ -47,6 +47,17 @@ final class WaitingAlerts {
     @ObservationIgnored private var pending: [String: (event: Event, at: Date)] = [:]
     @ObservationIgnored private var lastSent: [String: Date] = [:]
     @ObservationIgnored private var ticking = false
+    /// Docker's messages, told the same way (`DockerAlerts`).
+    @ObservationIgnored private lazy var docker: DockerAlerts = {
+        let watcher = DockerWatcher()
+        return DockerAlerts(
+            config: config,
+            activity: { [clock] in await watcher.look(now: clock()) },
+            away: away,
+            send: { [weak self] text, what in await self?.tell(text, what: what) },
+            clock: clock
+        )
+    }()
 
     /// The last message sent, or why it was not, for Settings.
     private(set) var lastResult: String?
@@ -77,11 +88,13 @@ final class WaitingAlerts {
         }
         RunLoop.main.add(t, forMode: .common)
         timer = t
+        docker.start()
     }
 
     func stop() {
         timer?.invalidate()
         timer = nil
+        docker.stop()
     }
 
     /// One look. Internal so tests drive it.
@@ -146,6 +159,13 @@ final class WaitingAlerts {
         await deliver(Self.testText, to: handle, at: clock(), what: "test")
     }
 
+    /// Sends a message that is not about a Claude session.
+    func tell(_ text: String, what: String) async {
+        let handle = config().imessageHandle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !handle.isEmpty else { return }
+        await deliver(text, to: handle, at: clock(), what: what)
+    }
+
     private func deliver(_ text: String, to handle: String, at now: Date, what: String) async {
         do {
             try await sender.send(text, to: handle)
@@ -201,15 +221,19 @@ final class WaitingAlerts {
         keyStore: any AnthropicKeyStoring,
         model: String,
         paths: Paths = .fromEnvironment(),
+        projects: URL = ClaudeDigest.defaultProjectsDirectory,
         now: Date = Date()
     ) async -> String {
-        let digest = ClaudeDigest.build(from: now.addingTimeInterval(-window), to: now) {
-            AwaySummary.status(ofSession: $0, paths: paths, now: now)
-        }
-        let session = digest?.sessions.first { ClaudeHookCommand.markerName($0.id) == "\(id).json" }
+        let from = now.addingTimeInterval(-window)
+        // A long session's transcript takes a moment to read.
+        let session = await Task.detached(priority: .utility) {
+            ClaudeDigest.session(id, from: from, to: now, projects: projects) {
+                AwaySummary.status(ofSession: $0, paths: paths, now: now)
+            }
+        }.value
         let local = localText(event: event, session: session)
         guard let session, case let .key(key) = await keyStore.read() else { return local }
-        var one = ClaudeDigest(from: now.addingTimeInterval(-window), to: now, sessions: [session])
+        var one = ClaudeDigest(from: from, to: now, sessions: [session])
         one.away = false
         let happened = event == .waiting
             ? "Olay: Claude bu oturumda kullanıcıdan onay ya da yanıt bekliyor."

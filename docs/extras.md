@@ -116,7 +116,9 @@ iPhone'a giden mesajdır: `api.anthropic.com`'a yalnızca Ayarlar'da bir Claude
 API anahtarı kaydettiyseniz gidilir ve istek yalnızca oturum başlıklarını, araç
 sayılarını, düzenlenen dosyaların adlarını, Claude'un komut açıklamalarını ve
 son mesajlarının sonunu içerir. iPhone'a giden iMessage'ı Mac'teki Mesajlar
-uygulaması gönderir; Uykusuz yalnızca Mesajlar'a metni ve alıcıyı verir.
+uygulaması gönderir; Uykusuz yalnızca Mesajlar'a metni ve alıcıyı verir. Docker
+mesajları yerelde yazılır ve API'ye gitmez: kapsayıcıların adını ve işin süresini
+içerir.
 Anahtar giriş Anahtar Zinciri'nde tutulur; config.json'a ve günlüğe yazılmaz
 (ayrıntılar: [Sen yokken özeti](../README.md#sen-yokken-özeti)). [Claude'un
 yanıtını dinleme](../README.md#claudeun-yanıtını-dinleme) açıksa Claude'un son

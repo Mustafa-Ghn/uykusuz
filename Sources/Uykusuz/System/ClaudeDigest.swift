@@ -84,19 +84,51 @@ struct ClaudeDigest: Equatable, Sendable {
         return ClaudeDigest(from: from, to: to, sessions: Array(sessions.prefix(maxSessions)))
     }
 
+    /// One session between `from` and `to`, by the name its marker goes by
+    /// (`ClaudeHookCommand.markerName`), however many others ran in the span:
+    /// `build` keeps only the newest `maxSessions`. Nil when it has no
+    /// transcript; one where Claude did nothing in the span still gives its
+    /// title, since a message has to say which session it is about.
+    static func session(
+        _ marker: String,
+        from: Date,
+        to: Date,
+        projects: URL = defaultProjectsDirectory,
+        status: (String) -> Status = { _ in .done }
+    ) -> Session? {
+        let fm = FileManager.default
+        guard let folders = try? fm.contentsOfDirectory(at: projects, includingPropertiesForKeys: nil) else { return nil }
+        for folder in folders {
+            guard let files = try? fm.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil) else { continue }
+            for file in files where file.pathExtension == "jsonl" {
+                let id = file.deletingPathExtension().lastPathComponent
+                guard ClaudeHookCommand.markerName(id) == "\(marker).json",
+                      var session = read(file, id: id, from: from, to: to, requiringWork: false) else { continue }
+                session.status = status(id)
+                return session
+            }
+        }
+        return nil
+    }
+
     /// One transcript's entries between `from` and `to`; nil when Claude
-    /// did nothing in them.
-    static func read(_ file: URL, id: String, from: Date, to: Date) -> Session? {
+    /// did nothing in them, if `requiringWork`.
+    static func read(_ file: URL, id: String, from: Date, to: Date, requiringWork: Bool = true) -> Session? {
         guard let data = tail(of: file) else { return nil }
         var session = Session(id: id, title: id, lastActivity: from)
         var assistantEntries = 0
         var title: String?
+        var generatedTitle: String?
         var folder: String?
         for line in data.split(separator: UInt8(ascii: "\n")) {
             guard let object = try? JSONSerialization.jsonObject(with: Data(line)) as? [String: Any] else { continue }
             let type = object["type"] as? String
             if type == "custom-title", let custom = object["customTitle"] as? String, !custom.isEmpty {
                 title = custom
+                continue
+            }
+            if type == "ai-title", let generated = object["aiTitle"] as? String, !generated.isEmpty {
+                generatedTitle = generated
                 continue
             }
             if let cwd = object["cwd"] as? String, !cwd.isEmpty { folder = URL(fileURLWithPath: cwd).lastPathComponent }
@@ -140,8 +172,8 @@ struct ClaudeDigest: Equatable, Sendable {
                 }
             }
         }
-        guard assistantEntries > 0 else { return nil }
-        session.title = title ?? folder ?? id
+        guard assistantEntries > 0 || !requiringWork else { return nil }
+        session.title = title ?? generatedTitle ?? folder ?? id
         return session
     }
 
