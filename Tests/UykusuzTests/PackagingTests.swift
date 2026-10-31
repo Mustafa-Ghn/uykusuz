@@ -326,7 +326,7 @@ final class PackagingTests: XCTestCase {
 
         func fake(_ name: String, _ body: String) throws -> URL {
             let url = bin.appendingPathComponent(name)
-            try TestScripts.write("#!/bin/bash\n" + body, to: url)
+            try TestScripts.writeLaunched("#!/bin/bash\n" + body, to: url)
             return url
         }
         let swift = try fake("swift", """
@@ -361,8 +361,8 @@ final class PackagingTests: XCTestCase {
         var lines = try String(contentsOf: Self.repoRoot.appendingPathComponent("scripts/build-app.sh"), encoding: .utf8).components(separatedBy: "\n")
         for (name, value) in tools {
             let hits = lines.indices.filter { lines[$0].hasPrefix("\(name)=") }
-            XCTAssertEqual(hits.count, 1, "build-app.sh must have exactly one \(name)= line")
-            lines[hits[0]] = "\(name)='\(value)'"
+            let hit = try XCTUnwrap(hits.count == 1 ? hits.first : nil, "build-app.sh must have exactly one \(name)= line")
+            lines[hit] = "\(name)='\(value)'"
         }
         let script = checkout.appendingPathComponent("scripts/build-app.sh")
         try lines.joined(separator: "\n").write(to: script, atomically: true, encoding: .utf8)
@@ -897,7 +897,7 @@ private struct IconScriptFixture {
 
     private func writeFake(_ name: String, _ body: String) throws {
         let url = bin.appendingPathComponent(name)
-        try TestScripts.write("#!/bin/bash\n" + body + "\n", to: url)
+        try TestScripts.writeLaunched("#!/bin/bash\n" + body + "\n", to: url)
     }
 
     func setWritable(_ dir: URL, _ writable: Bool) throws {

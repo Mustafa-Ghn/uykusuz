@@ -132,7 +132,7 @@ final class LidSimulationGateScriptTests: XCTestCase {
 
     private func stub(_ name: String, _ body: String) throws {
         let url = root.appendingPathComponent("bin/\(name)")
-        try TestScripts.write("#!/bin/bash\n" + body + "\n", to: url)
+        try TestScripts.writeLaunched("#!/bin/bash\n" + body + "\n", to: url)
     }
 
     private func runGate() throws -> (status: Int32, stdout: String, stderr: String) {

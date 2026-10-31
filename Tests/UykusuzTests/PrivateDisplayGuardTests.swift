@@ -1249,6 +1249,26 @@ final class RefusedDarkeningTests: XCTestCase {
         XCTAssertEqual(h.keyboard.sets.first, 0.3)
     }
 
+    /// The same close with the backlight suppressed: its reading of 0 is no
+    /// answer, so nothing shows the device can be read again, and the kept
+    /// value stays flagged for the open to read.
+    func testACloseOverASuppressedKeyboardLeavesItsKeptValueFlagged() async throws {
+        try seedSavedBrightness(sessionValid: false, refused: true)
+        h.display.brightness = 0
+        h.keyboard.brightness = 0
+        h.keyboard.suppressedOrDimmed = true
+        let (m, actions) = makeDarkeningOnly(display: h.display, keyboard: h.keyboard)
+        await m.start(duration: 3600)
+
+        await actions.onClose()
+
+        let closed = try XCTUnwrap(try h.store.loadState())
+        XCTAssertEqual(closed.savedKeyboardBrightness, 0.3)
+        XCTAssertTrue(closed.keyboardRestoreRefused)
+        XCTAssertEqual(h.keyboard.sets, [])
+        XCTAssertTrue(logText().contains("keyboard backlight suppressed by display sleep and no trusted sample; leaving it to macOS"), logText())
+    }
+
     /// The same close after the user set both levels by hand: those levels
     /// replace the kept values, and the open comes back to them.
     func testACloseAfterTheLevelWasSetSavesThatLevel() async throws {

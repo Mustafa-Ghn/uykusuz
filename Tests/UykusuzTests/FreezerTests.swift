@@ -28,14 +28,15 @@ final class FreezerTests: XCTestCase {
         XCTAssertEqual(FreezePlanner.tree(root: 200, in: processes), [200])
     }
 
-    func testGroupsMainPlusHelpersExcludingUnrelated() {
+    func testGroupsMainPlusHelpersExcludingUnrelated() throws {
         let groups = FreezePlanner.groups(bundleIds: ["com.tinyspeck.slackmacgap"], apps: apps, processes: processes, config: Config())
         XCTAssertEqual(groups.count, 1)
-        XCTAssertEqual(groups[0].bundleId, "com.tinyspeck.slackmacgap")
-        XCTAssertEqual(groups[0].name, "Slack")
-        XCTAssertEqual(Set(groups[0].pids), [100, 101, 102, 103])
-        XCTAssertEqual(groups[0].expectedParents, [100: 1, 101: 100, 102: 101, 103: 100])
-        XCTAssertFalse(groups[0].pids.contains(200))
+        let group = try XCTUnwrap(groups.first)
+        XCTAssertEqual(group.bundleId, "com.tinyspeck.slackmacgap")
+        XCTAssertEqual(group.name, "Slack")
+        XCTAssertEqual(Set(group.pids), [100, 101, 102, 103])
+        XCTAssertEqual(group.expectedParents, [100: 1, 101: 100, 102: 101, 103: 100])
+        XCTAssertFalse(group.pids.contains(200))
     }
 
     func testNotRunningAppYieldsNoGroup() {
@@ -88,7 +89,7 @@ final class FreezerTests: XCTestCase {
         let procs = processes + [ProcessEntry(pid: 500, ppid: 1, startedAt: 5000), ProcessEntry(pid: 501, ppid: 500, startedAt: 5001)]
         let groups = FreezePlanner.groups(bundleIds: ["com.tinyspeck.slackmacgap", "com.tinyspeck.slackmacgap"], apps: two, processes: procs, config: Config())
         XCTAssertEqual(groups.count, 1)
-        XCTAssertEqual(Set(groups[0].pids), [100, 101, 102, 103, 500, 501])
+        XCTAssertEqual(groups.first.map { Set($0.pids) }, [100, 101, 102, 103, 500, 501])
     }
 
     func testSuspendAndResumeSignalsGoToProcessControl() {

@@ -24,7 +24,7 @@ final class LidCloseCopyTests: XCTestCase {
     private func lidSection() throws -> String {
         let source = try read("Sources/Uykusuz/UI/SettingsView.swift")
         let start = try XCTUnwrap(source.range(of: "private var lidSection: some View {")).upperBound
-        let end = try XCTUnwrap(source.range(of: "private var agentSection: some View {")).lowerBound
+        let end = try XCTUnwrap(source.range(of: "private var agentSection: some View {", range: start..<source.endIndex)).lowerBound
         return String(source[start..<end])
     }
 

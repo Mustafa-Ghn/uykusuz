@@ -28,7 +28,7 @@ final class PrivilegedCommandLockTests: XCTestCase {
 
     private func script(_ name: String, _ body: String) throws -> String {
         let path = file(name)
-        try TestScripts.write("#!/bin/sh\n\(body)\n", to: URL(fileURLWithPath: path))
+        try TestScripts.writeLaunched("#!/bin/sh\n\(body)\n", to: URL(fileURLWithPath: path))
         return path
     }
 

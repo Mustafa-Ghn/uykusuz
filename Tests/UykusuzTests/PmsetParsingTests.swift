@@ -170,7 +170,7 @@ final class PmsetParsingTests: XCTestCase {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         addTeardownBlock { try? FileManager.default.removeItem(at: dir) }
         let pmset = dir.appendingPathComponent("pmset")
-        try TestScripts.write("#!/bin/sh\nprintf 'Battery Power:\\n powermode 2\\nAC Power:\\n powermode 0\\n'\n", to: pmset)
+        try TestScripts.writeLaunched("#!/bin/sh\nprintf 'Battery Power:\\n powermode 2\\nAC Power:\\n powermode 0\\n'\n", to: pmset)
         let sleepGuard = PmsetSleepGuard(sudo: "/usr/bin/false", pmset: pmset.path, timeout: 5, stopGrace: 1)
         do {
             let on = try await sleepGuard.isLowPowerModeOn()

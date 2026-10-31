@@ -66,6 +66,18 @@ push'ta çalışır.
   yazmaz. TestIsolationTests, `UYKUSUZ_HOME` ayarlı değilse ya da uygulamanın
   çözdüğü bir yol onun dışına ya da gerçek `~/Library` içine düşerse başarısız
   olur.
+- Bir betiğin ya da uygulamanın yoluyla çalıştırdığı sahte araçları
+  `TestScripts.writeLaunched` ile yazın. macOS her yeni dosyanın ilk
+  çalıştırmasını Gatekeeper taraması bitene dek bekletir; taramalar Mac genelinde
+  sırayla yürür (saniyede yaklaşık 8 tarama) ve CPU yükünden bağımsızdır. Yeni
+  dosya çalıştıran başka süreçler varken bir ilk çalıştırma saniyeler sürer ve
+  zaman sınırının altında asılı kalmış gibi görünür.
+- Zaman sınırını testin amacına göre seçin: `backstop.sh` kopyasının sınırı
+  üretimdeki gibi 30 saniyedir. Yalnızca bir komutun sınıra ulaşmasını sınayan
+  bir test kısa sınır ister (`shortenCommandLimit`).
+- Bir doğrulamadan sonra dizi indekslemeyin (`x[0]`): doğrulama kırılırsa indeks
+  bütün çalışmayı öldürür ve sonraki test sınıfları hiç koşmaz. `XCTUnwrap` ya da
+  `x.first` kullanın.
 - Test paketinin bir parçası olarak katkıcının kendi Mac'inde kurulum,
   kaldırma, güç ayarı değişikliği, süreç dondurma ya da hotspot geçişi
   çalıştırmayın. Test verilerine ya da günlüklere parola veya kişisel ağ adı

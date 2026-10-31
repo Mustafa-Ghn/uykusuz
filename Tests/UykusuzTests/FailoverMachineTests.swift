@@ -129,7 +129,7 @@ final class NetworkFailoverDriverTests: XCTestCase {
 
         XCTAssertEqual(nudged.value, ["agents:0.0", "agents:0.1"])
         XCTAssertEqual(notifier.posts.count, 1)
-        XCTAssertEqual(notifier.posts[0].body, "Ağ 2dk 10sn boyunca kesikti. 2 tmux bölmesi dürtüldü. GUI ajanlarını denetleyin.")
+        XCTAssertEqual(notifier.posts.first?.body, "Ağ 2dk 10sn boyunca kesikti. 2 tmux bölmesi dürtüldü. GUI ajanlarını denetleyin.")
         XCTAssertEqual(gaps.value, [130])
         XCTAssertEqual(n.lastGap, 130)
         let log = try String(contentsOf: home.paths.handoffsLog, encoding: .utf8)

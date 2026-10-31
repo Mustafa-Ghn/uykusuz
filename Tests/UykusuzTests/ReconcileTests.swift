@@ -89,7 +89,8 @@ final class ReconcileTests: XCTestCase {
         XCTAssertTrue(h.guardFake.sleepDisabled)
         XCTAssertNil(try h.store.loadSession())
         XCTAssertEqual(h.notifier.posts.map(\.title), [SessionManager.foreignSleepTitle])
-        XCTAssertTrue(h.notifier.posts[0].body.contains(SessionManager.foreignSleepCommand), h.notifier.posts[0].body)
+        let post = try XCTUnwrap(h.notifier.posts.first)
+        XCTAssertTrue(post.body.contains(SessionManager.foreignSleepCommand), post.body)
         XCTAssertTrue(try XCTUnwrap(m.foreignSleepWarning).contains(SessionManager.foreignSleepCommand), m.foreignSleepWarning ?? "")
         XCTAssertNil(m.lastError, "a bit someone else set is not an Uykusuz failure")
 

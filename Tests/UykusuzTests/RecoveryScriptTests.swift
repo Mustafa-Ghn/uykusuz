@@ -26,7 +26,8 @@ final class RecoveryScriptTests: XCTestCase {
     }
 
     override func tearDown() {
-        fx.destroy()
+        // nil when setUp threw: a script lost a constant the fixture patches.
+        fx?.destroy()
         fx = nil
     }
 
@@ -168,7 +169,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(fx.calls(), [
             "sudo -n \(fx.fakePmset) -a disablesleep 0",
             "sudo -n \(fx.fakePmset) -b lowpowermode 0",
-            "Uykusuz --resume-frozen 2 < 4242 \(started) 17 \(fx.bootUUID)",
+            "Uykusuz --resume-frozen 31 < 4242 \(started) 17 \(fx.bootUUID)",
         ], "an entry with microseconds is resumed by the app binary, never by ps and kill")
         let s = try fx.stateJSON()
         XCTAssertEqual(s["sleepDisabledByUs"] as? Bool, false)
@@ -196,7 +197,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertNotEqual(r.status, 0)
         XCTAssertEqual(fx.calls(), [
             "sudo -n \(fx.fakePmset) -a disablesleep 0",
-            "Uykusuz --resume-frozen 2 < 111 \(started) 1 \(fx.bootUUID); 222 \(started) 2 \(fx.bootUUID)",
+            "Uykusuz --resume-frozen 31 < 111 \(started) 1 \(fx.bootUUID); 222 \(started) 2 \(fx.bootUUID)",
         ], "both entries in one call, no ps and no kill")
         let s = try fx.stateJSON()
         XCTAssertEqual(s["sleepDisabledByUs"] as? Bool, false, "an unrelated stuck pid must not hold sleep disabled")
@@ -780,7 +781,8 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertFalse(fx.exists(fx.session))
         let moved = try movedAsideSessions()
         XCTAssertEqual(moved.count, 1, "\(moved)")
-        XCTAssertEqual(try String(contentsOf: fx.home.appendingPathComponent(moved[0]), encoding: .utf8), json, "bytes kept as they were")
+        let copy = try XCTUnwrap(moved.first, "nothing was moved aside")
+        XCTAssertEqual(try String(contentsOf: fx.home.appendingPathComponent(copy), encoding: .utf8), json, "bytes kept as they were")
         XCTAssertTrue(fx.log().contains("startedAt is missing"), fx.log())
         XCTAssertTrue(fx.log().contains("extensions is missing"), fx.log())
     }
@@ -1801,7 +1803,7 @@ final class RecoveryScriptTests: XCTestCase {
             let label = installedCopy ? "installed copy" : "no installed copy"
             XCTAssertEqual(r.status, 0, "\(label): \(r.stderr) \(f.log())")
             XCTAssertFalse(f.calls().contains("installed backstop --force"), "\(label): \(f.calls())")
-            XCTAssertTrue(f.calls().contains("Uykusuz --resume-frozen 2 < 5311 1789388423 11 \(f.bootUUID)"), "\(label): \(f.calls())")
+            XCTAssertTrue(f.calls().contains("Uykusuz --resume-frozen 31 < 5311 1789388423 11 \(f.bootUUID)"), "\(label): \(f.calls())")
             XCTAssertFalse(f.exists(f.app), label)
             XCTAssertFalse(f.exists(f.state), label)
         }
@@ -3374,7 +3376,7 @@ final class RecoveryScriptTests: XCTestCase {
         let r = try fx.run(fx.backstop)
 
         XCTAssertEqual(r.status, 0, r.stderr)
-        XCTAssertEqual(fx.calls(), ["Uykusuz --resume-frozen 2 < 5100 \(started) 654321 \(fx.bootUUID)"])
+        XCTAssertEqual(fx.calls(), ["Uykusuz --resume-frozen 31 < 5100 \(started) 654321 \(fx.bootUUID)"])
         XCTAssertEqual((try fx.stateJSON()["frozenProcesses"] as? [Any])?.count, 0)
         XCTAssertEqual(try fx.stateJSON()["dockerFrozen"] as? Bool, false)
         XCTAssertTrue(fx.log().contains("SIGCONT sent to pid 5100 by the app binary"), fx.log())
@@ -3391,7 +3393,7 @@ final class RecoveryScriptTests: XCTestCase {
         let r = try fx.run(fx.backstop)
 
         XCTAssertEqual(r.status, 0, r.stderr)
-        XCTAssertEqual(fx.calls(), ["Uykusuz --resume-frozen 2 < 5101 \(started) 0 \(fx.bootUUID)"])
+        XCTAssertEqual(fx.calls(), ["Uykusuz --resume-frozen 31 < 5101 \(started) 0 \(fx.bootUUID)"])
     }
 
     func testAppBinaryGoneClearsTheEntryWithoutSignal() throws {
@@ -3535,7 +3537,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(fx.calls(), [
             "ps -o lstart=,stat=,uid= -p 5109",
             "kill -CONT 5109",
-            "Uykusuz --resume-frozen 2 < 5108 \(started) 8 \(fx.bootUUID)",
+            "Uykusuz --resume-frozen 31 < 5108 \(started) 8 \(fx.bootUUID)",
         ])
         XCTAssertEqual((try fx.stateJSON()["frozenProcesses"] as? [Any])?.count, 0)
     }
@@ -3565,7 +3567,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertNotEqual(r.status, 0)
         XCTAssertEqual(fx.calls(), [
             "ps -o lstart=,stat=,uid= -p 5204",
-            "Uykusuz --resume-frozen 2 < 5201 \(started) 1 \(fx.bootUUID); 5203 \(started) 3 \(fx.bootUUID); 5205 \(started) 5 \(fx.bootUUID); 5206 \(started) 6 \(fx.bootUUID)",
+            "Uykusuz --resume-frozen 31 < 5201 \(started) 1 \(fx.bootUUID); 5203 \(started) 3 \(fx.bootUUID); 5205 \(started) 5 \(fx.bootUUID); 5206 \(started) 6 \(fx.bootUUID)",
         ])
         let frozen = try XCTUnwrap(try fx.stateJSON()["frozenProcesses"] as? [[String: Any]])
         XCTAssertEqual(frozen.map { $0["pid"] as? Int }, [5201, 5202, 5205], "journal order, not settle order")
@@ -3583,6 +3585,7 @@ final class RecoveryScriptTests: XCTestCase {
     /// 128 + SIGTERM) is the kernel's record that SIGTERM ended the fake,
     /// which sleeps for 300 s otherwise; no wall-clock bound is needed.
     func testAppBinaryThatDoesNotExitInTimeKeepsEveryEntry() throws {
+        try fx.shortenCommandLimit()
         try fx.writeSession(endsAt: Date(timeIntervalSinceNow: -60))
         let started = 1_789_388_423
         try fx.writeState("""
@@ -3614,6 +3617,7 @@ final class RecoveryScriptTests: XCTestCase {
     /// instead of racing to install a trap before the signal arrives. Wait
     /// status 137 (128 + SIGKILL) shows SIGKILL ended it.
     func testAppBinaryThatIgnoresSigtermIsKilled() throws {
+        try fx.shortenCommandLimit()
         try writeMicrosecondEntry(pid: 5303, started: 1_789_388_423, micros: 3)
         fx.setMode("uykusuz", "hang")
 
@@ -3632,7 +3636,7 @@ final class RecoveryScriptTests: XCTestCase {
     /// The binary runs with the recovery lock open on its fd 9, also when a
     /// caller handed its lock down on fd 9 (the uninstall path), and is
     /// told to end itself after COMMAND_TIMEOUT_SECONDS +
-    /// KILL_GRACE_SECONDS (1 + 1 here).
+    /// KILL_GRACE_SECONDS (30 + 1 here).
     func testAppBinaryRunsWithTheRecoveryLockOnFd9() throws {
         try Data().write(to: fx.lock)
         let lockInode = try XCTUnwrap(try FileManager.default.attributesOfItem(atPath: fx.lock.path)[.systemFileNumber] as? Int)
@@ -3650,7 +3654,7 @@ final class RecoveryScriptTests: XCTestCase {
             fx.clearCalls()
             let r = try run()
             XCTAssertEqual(r.status, 0, r.stderr + fx.log())
-            XCTAssertEqual(fx.calls(), ["Uykusuz --resume-frozen 2 < 5304 1789388423 4 \(fx.bootUUID)"])
+            XCTAssertEqual(fx.calls(), ["Uykusuz --resume-frozen 31 < 5304 1789388423 4 \(fx.bootUUID)"])
             let fd9 = try String(contentsOf: fx.root.appendingPathComponent("uykusuz.fd9"), encoding: .utf8)
             XCTAssertEqual(fd9.trimmingCharacters(in: .whitespacesAndNewlines), String(lockInode), "the binary did not get the lock on fd 9")
         }
@@ -3671,11 +3675,8 @@ final class RecoveryScriptTests: XCTestCase {
         try writeMicrosecondEntry(pid: 5309, started: 1_789_388_423, micros: 9)
         fx.setMode("uykusuz", "hold")
         let release = fx.root.appendingPathComponent("uykusuz.release")
-        let slow = fx.root.appendingPathComponent("backstop-30s.sh")
-        try ScriptFixture.patch(try String(contentsOf: fx.backstop, encoding: .utf8), ["COMMAND_TIMEOUT_SECONDS": "30"])
-            .write(to: slow, atomically: true, encoding: .utf8)
 
-        let shell = try fx.spawn(slow)
+        let shell = try fx.spawn(fx.backstop)
         // The release first: a shell still running waits for the binary.
         defer {
             try? Data().write(to: release)
@@ -3894,6 +3895,7 @@ final class RecoveryScriptTests: XCTestCase {
     // MARK: - Final integration checks
 
     func testHungPowerCommandTimesOutReleasesLockAndKeepsJournalDirty() throws {
+        try fx.shortenCommandLimit()
         try fx.writeSession(endsAt: Date(timeIntervalSinceNow: -60))
         try fx.writeState(#"{"sleepDisabledByUs":true,"lowPowerSetByUs":true,"frozenProcesses":[],"dockerFrozen":false}"#)
         fx.setMode("sudo", "hang")
@@ -3902,7 +3904,7 @@ final class RecoveryScriptTests: XCTestCase {
         let r = try fx.run(fx.backstop)
 
         XCTAssertNotEqual(r.status, 0)
-        XCTAssertLessThan(Date().timeIntervalSince(started), 8, "two 1 s timeouts, not two hung commands")
+        XCTAssertLessThan(Date().timeIntervalSince(started), 30, "two 1 s limits, not the fake's two 60 s hangs")
         let s = try fx.stateJSON()
         XCTAssertEqual(s["sleepDisabledByUs"] as? Bool, true, "ownership is preserved on timeout")
         XCTAssertEqual(s["lowPowerSetByUs"] as? Bool, true)
@@ -3914,6 +3916,7 @@ final class RecoveryScriptTests: XCTestCase {
     }
 
     func testHungCommandDoesNotBlockTheNextRunOrTheApp() throws {
+        try fx.shortenCommandLimit()
         try fx.writeSession(endsAt: Date(timeIntervalSinceNow: -60))
         try fx.writeState(#"{"sleepDisabledByUs":true,"lowPowerSetByUs":false,"frozenProcesses":[],"dockerFrozen":false}"#)
         fx.setMode("sudo", "hang")
@@ -3987,6 +3990,7 @@ final class RecoveryScriptTests: XCTestCase {
     }
 
     func testCommandThatIgnoresSigtermIsNeverKilledAndKeepsTheLock() throws {
+        try fx.shortenCommandLimit()
         // A "terminated" signal is not a dead child. The fake ignores TERM and
         // lives until this test releases it; the script must return while it
         // is still alive, leave the lock held until the command really ends,
@@ -4022,6 +4026,7 @@ final class RecoveryScriptTests: XCTestCase {
     }
 
     func testTimedOutLiveCommandStopsTheTransactionBeforeTheNextUndo() throws {
+        try fx.shortenCommandLimit()
         // Both power flags are dirty and the first pmset ignores TERM. The run
         // must stop right there: no second privileged command while the first
         // is alive, no flag cleared, and the retry later clears both.
@@ -4055,6 +4060,7 @@ final class RecoveryScriptTests: XCTestCase {
     }
 
     func testLiveSupervisorDoesNotHoldACallersCapturePipe() throws {
+        try fx.shortenCommandLimit()
         // A caller that captures the script's output (command substitution,
         // like uninstall.sh's helpers or a pipe) must get EOF when the script
         // exits, even though the supervisor and its live command go on.
@@ -4081,6 +4087,7 @@ final class RecoveryScriptTests: XCTestCase {
     }
 
     func testLockOutlivesASudoThatClosedItsInheritedHandle() throws {
+        try fx.shortenCommandLimit()
         // Real sudo closes extra descriptors before running pmset, so nothing
         // may rely on the command inheriting the lock. This fake closes fd 9
         // first, ignores TERM and lives until this test releases it. The lock
@@ -4123,6 +4130,7 @@ final class RecoveryScriptTests: XCTestCase {
     /// it has written its status. The sentinel is a /bin/sleep this test
     /// posix_spawned and reaps only at the end, so its pid stays its own.
     func testALateStatusNeverLeadsToSignalingThePidInTheStatusFiles() throws {
+        try fx.shortenCommandLimit()
         try fx.writeSession(endsAt: Date(timeIntervalSinceNow: -60))
         try fx.writeState(#"{"sleepDisabledByUs":true,"lowPowerSetByUs":true,"frozenProcesses":[],"dockerFrozen":false}"#)
         let sentinelScript = fx.root.appendingPathComponent("sentinel.sh")
@@ -4280,6 +4288,7 @@ final class RecoveryScriptTests: XCTestCase {
     /// under that same lock may still have a supervisor waiting for its
     /// command.
     func testStatusFilesGoWithTheirCallAndLeftoversOnlyUnderTheRunsOwnLock() throws {
+        try fx.shortenCommandLimit()
         let leftovers = [".backstop.4242.1.pid", ".backstop.4242.1.rc"]
         for name in leftovers {
             try "4242\n".write(to: fx.home.appendingPathComponent(name), atomically: true, encoding: .utf8)
@@ -4434,7 +4443,7 @@ final class RecoveryScriptTests: XCTestCase {
 
         XCTAssertEqual(installed.status, 0, installed.stderr + installed.stdout)
         let step = try XCTUnwrap(installed.stdout.split(separator: "\n").first { $0.contains("Kaldırma:") }, installed.stdout)
-        let uninstall = String(step.split(separator: ":", maxSplits: 1)[1]).trimmingCharacters(in: .whitespaces)
+        let uninstall = String(try XCTUnwrap(step.split(separator: ":", maxSplits: 1).dropFirst().first, installed.stdout)).trimmingCharacters(in: .whitespaces)
         XCTAssertEqual(try pastedWords(of: uninstall), [checkout.appendingPathComponent("scripts/uninstall.sh").path], "the uninstaller of the checkout")
     }
 
@@ -4473,8 +4482,8 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(r.status, 1, r.stderr + r.stdout)
         let bootstraps = fx.calls().filter { $0.hasPrefix("launchctl bootstrap") }
         XCTAssertEqual(bootstraps.count, 2, "candidate, then the previous plist again: \(fx.calls())")
-        XCTAssertTrue(bootstraps[0].contains("candidate-") && bootstraps[0].hasSuffix(".plist"), "loaded through a private candidate launchctl accepts: \(bootstraps)")
-        XCTAssertEqual(bootstraps[1], "launchctl bootstrap gui/\(fx.uid) \(fx.plist.path)")
+        XCTAssertTrue(bootstraps.first?.contains("candidate-") == true && bootstraps.first?.hasSuffix(".plist") == true, "loaded through a private candidate launchctl accepts: \(bootstraps)")
+        XCTAssertEqual(bootstraps.last, "launchctl bootstrap gui/\(fx.uid) \(fx.plist.path)")
         XCTAssertEqual(try String(contentsOf: fx.plist, encoding: .utf8), "trusted", "the trusted plist was never modified")
         XCTAssertTrue(r.stderr.contains("önceki plist dosyasından (\(fx.plist.path)) yeniden yüklendi"), r.stderr)
         XCTAssertTrue(r.stderr.contains("zamanlaması burada doğrulanmadı"), "reload success is not a schedule claim: \(r.stderr)")
@@ -5112,7 +5121,7 @@ final class RecoveryScriptTests: XCTestCase {
         let unload = try XCTUnwrap(calls.firstIndex(of: "launchctl bootout gui/\(fx.uid)/com.mustafaghn.uykusuz.backstop"), "\(calls)")
         let reload = try XCTUnwrap(calls.firstIndex(of: "launchctl bootstrap gui/\(fx.uid) \(fx.plist.path)"), "\(calls)")
         XCTAssertLessThan(recovery, unload, "the job that may be retrying recovery stays until recovery succeeds: \(calls)")
-        XCTAssertLessThan(unload, reload, "\(calls)")
+        guard unload < reload else { return XCTFail("the bootstrap came before the bootout: \(calls)") }
         XCTAssertTrue(calls[unload..<reload].contains("launchctl print gui/\(fx.uid)/com.mustafaghn.uykusuz.backstop"), "the unload is confirmed first: \(calls)")
         XCTAssertEqual(
             calls.filter { $0.hasPrefix("launchctl APP-") },
@@ -6361,7 +6370,7 @@ private struct FixtureError: Error, CustomStringConvertible {
 
 /// A throwaway tree:
 ///   root/home              UYKUSUZ_HOME (session.json, state.json, Logs/, LaunchAgents/)
-///   root/bin               recording fakes
+///   root/bin               recording fakes (see TestScripts.writeLaunched)
 ///   root/repo/scripts      patched copies of backstop.sh and uninstall.sh
 ///   root/Applications      fake Uykusuz.app bundle
 ///   root/etc/sudoers.d     fake sudoers rule
@@ -6558,6 +6567,21 @@ private final class ScriptFixture {
 
     // MARK: Scripts
 
+    /// What a bounded command gets in the backstop copy: the same as in
+    /// production, so that on a slow Mac no test sees a command that merely
+    /// took its time as a hung one. A test about the limit itself asks for a
+    /// short one (see shortenCommandLimit).
+    static let commandLimit = 30
+
+    /// Rewrites the backstop copy with a limit of `seconds`, for a test in
+    /// which a command is meant to reach the limit; call it before anything
+    /// copies the backstop elsewhere. Every bounded command in such a test
+    /// gets this limit, also those meant to finish, so they should be few.
+    func shortenCommandLimit(to seconds: Int = 1) throws {
+        try Self.patch(try String(contentsOf: backstop, encoding: .utf8), ["COMMAND_TIMEOUT_SECONDS": String(seconds)])
+            .write(to: backstop, atomically: true, encoding: .utf8)
+    }
+
     static var productionScripts: URL {
         // .../Tests/UykusuzTests/RecoveryScriptTests.swift -> .../scripts
         URL(fileURLWithPath: #filePath)
@@ -6581,7 +6605,7 @@ private final class ScriptFixture {
             "DATE": bin.appendingPathComponent("date").path,
             "MV": bin.appendingPathComponent("mv").path,
             "LOCK_TIMEOUT_SECONDS": "1",
-            "COMMAND_TIMEOUT_SECONDS": "1",
+            "COMMAND_TIMEOUT_SECONDS": String(Self.commandLimit),
             "KILL_GRACE_SECONDS": "1",
         ]).write(to: backstop, atomically: true, encoding: .utf8)
 
@@ -6728,7 +6752,7 @@ private final class ScriptFixture {
 
     private func writeFake(_ name: String, _ body: String) throws {
         let url = bin.appendingPathComponent(name)
-        try TestScripts.write("#!/bin/bash\n" + body, to: url)
+        try TestScripts.writeLaunched("#!/bin/bash\n" + body, to: url)
     }
 
     private func writeFakes() throws {
@@ -7564,7 +7588,7 @@ private final class ScriptFixture {
         let dir = root.appendingPathComponent("slow-poll", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let stub = dir.appendingPathComponent("sleep")
-        try TestScripts.write("""
+        try TestScripts.writeLaunched("""
         #!/bin/bash
         echo "$*" >> "\(root.path)/slow-poll.log"
         /bin/sleep 0.25

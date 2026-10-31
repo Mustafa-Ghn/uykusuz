@@ -455,7 +455,7 @@ final class LoginItemTests: XCTestCase {
     func testLiveInstallNamesHashPathAndExecutable() throws {
         let install = LoginItem.liveInstall()
         let parts = install.split(separator: "@", maxSplits: 1)
-        XCTAssertEqual(parts.count, 2, install)
+        guard parts.count == 2 else { return XCTFail(install) }
         XCTAssertTrue(parts[0] == "unsigned" || parts[0].allSatisfy(\.isHexDigit), install)
         let file = try XCTUnwrap(parts[1].lastIndex(of: "#"))
         XCTAssertEqual(String(parts[1][..<file]), Bundle.main.bundleURL.path)

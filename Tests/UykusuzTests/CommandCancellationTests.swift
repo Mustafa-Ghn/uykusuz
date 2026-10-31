@@ -19,7 +19,7 @@ final class CommandCancellationTests: XCTestCase {
 
     private func script(_ name: String, _ body: String) throws -> String {
         let path = dir.appendingPathComponent(name).path
-        try TestScripts.write("#!/bin/sh\n\(body)\n", to: URL(fileURLWithPath: path))
+        try TestScripts.writeLaunched("#!/bin/sh\n\(body)\n", to: URL(fileURLWithPath: path))
         return path
     }
 

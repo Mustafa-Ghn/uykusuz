@@ -135,8 +135,9 @@ final class ReconcileLidGatingTests: XCTestCase {
         await m.start(duration: 3600)
         await m.end(reason: .user)
         XCTAssertEqual(h.notifier.posts.count, 1)
-        XCTAssertEqual(h.notifier.posts[0].title, "Oturum bitti")
-        XCTAssertTrue(h.notifier.posts[0].body.contains("Oturumu siz bitirdiniz"))
+        let post = try XCTUnwrap(h.notifier.posts.first)
+        XCTAssertEqual(post.title, "Oturum bitti")
+        XCTAssertTrue(post.body.contains("Oturumu siz bitirdiniz"))
     }
 
     /// A session that ends while the lid is shut must not leave the 1 Hz

@@ -20,8 +20,8 @@ final class StatusMenuWarningTests: XCTestCase {
             foreignSleep: SessionManager.foreignSleepLine
         )
         XCTAssertEqual(items.map(\.kind), [.warning, .warning, .separator, .settings, .quit])
-        XCTAssertEqual(items[0].title, "\u{26A0} could not clear low power mode: sudo: a password is required")
-        XCTAssertEqual(items[1].title, "\u{26A0} \(SessionManager.foreignSleepLine)")
+        XCTAssertEqual(items.first?.title, "\u{26A0} could not clear low power mode: sudo: a password is required")
+        XCTAssertEqual(items.dropFirst().first?.title, "\u{26A0} \(SessionManager.foreignSleepLine)")
     }
 
     func testForeignSleepLineAloneIsAWarning() {
@@ -35,7 +35,7 @@ final class StatusMenuWarningTests: XCTestCase {
             foreignSleep: SessionManager.foreignSleepLine
         )
         XCTAssertEqual(items.map(\.kind), [.warning, .separator, .settings, .quit])
-        XCTAssertEqual(items[0].title, "\u{26A0} \(SessionManager.foreignSleepLine)")
+        XCTAssertEqual(items.first?.title, "\u{26A0} \(SessionManager.foreignSleepLine)")
     }
 
     /// The hotspot password line, the session error and the foreign-sleep
@@ -86,8 +86,8 @@ final class StatusMenuWarningTests: XCTestCase {
             commandRunning: command
         )
         XCTAssertEqual(items.map(\.kind), [.warning, .warning, .separator, .settings, .quit])
-        XCTAssertEqual(items[0].title, "\u{26A0} \(command)")
-        XCTAssertEqual(items[1].title, "\u{26A0} could not remove session.json: permission denied")
+        XCTAssertEqual(items.first?.title, "\u{26A0} \(command)")
+        XCTAssertEqual(items.dropFirst().first?.title, "\u{26A0} could not remove session.json: permission denied")
 
         let afterExit = StatusMenu.items(
             sessionActive: false,
@@ -99,7 +99,7 @@ final class StatusMenuWarningTests: XCTestCase {
             commandRunning: nil
         )
         XCTAssertEqual(afterExit.map(\.kind), [.warning, .separator, .settings, .quit])
-        XCTAssertEqual(afterExit[0].title, "\u{26A0} could not remove session.json: permission denied")
+        XCTAssertEqual(afterExit.first?.title, "\u{26A0} could not remove session.json: permission denied")
     }
 
     /// The relaunch entry holds the browser itself, not just its name, so

@@ -200,7 +200,7 @@ final class UIStatusTests: XCTestCase {
         XCTAssertEqual(StatusRootView.countdownText(pending: nil, live: "", phase: .idle), "")
     }
 
-    func testCountdownShapeIsDerivedFromSessionSpan() {
+    func testCountdownShapeIsDerivedFromSessionSpan() throws {
         let t0 = Date(timeIntervalSince1970: 1_800_000_000)
         XCTAssertEqual(Session(startedAt: t0, endsAt: t0.addingTimeInterval(30 * 60)).countdownShape, .minutes)
         XCTAssertEqual(Session(startedAt: t0, endsAt: t0.addingTimeInterval(3600)).countdownShape, .hours)
@@ -208,8 +208,8 @@ final class UIStatusTests: XCTestCase {
         XCTAssertEqual(Session(startedAt: t0, endsAt: t0.addingTimeInterval(2 * 86400)).countdownShape, .days)
         // The shape rides on the persisted span, so it comes back identical after a reload.
         let s = Session(startedAt: t0, endsAt: t0.addingTimeInterval(4 * 3600))
-        let data = try! JSONEncoder().encode(s)
-        XCTAssertEqual(try! JSONDecoder().decode(Session.self, from: data).countdownShape, .hours)
+        let data = try JSONEncoder().encode(s)
+        XCTAssertEqual(try JSONDecoder().decode(Session.self, from: data).countdownShape, .hours)
     }
 
     @MainActor
@@ -378,7 +378,7 @@ final class UIStatusTests: XCTestCase {
             items.map(\.kind),
             [.info, .warning, .relaunchBrowser(Self.chrome), .warning, .warning, .separator, .settings, .quit]
         )
-        XCTAssertEqual(items[3], StatusMenu.Item(
+        XCTAssertEqual(items.dropFirst(3).first, StatusMenu.Item(
             title: "\u{26A0} Bu derleme hotspot parolasını okuyamıyor: Ayarlar'da yeniden girin",
             kind: .warning
         ))

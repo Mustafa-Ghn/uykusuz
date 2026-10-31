@@ -390,7 +390,7 @@ final class ProcessIdentityTests: XCTestCase {
 
     // MARK: Planner
 
-    func testPlannerRecordsIdentityForEveryPidAndLeavesOutStoppedOnes() {
+    func testPlannerRecordsIdentityForEveryPidAndLeavesOutStoppedOnes() throws {
         let processes = [
             ProcessEntry(pid: 1, ppid: 0, startedAt: 1),
             ProcessEntry(pid: 100, ppid: 1, startedAt: 1000),
@@ -400,9 +400,10 @@ final class ProcessIdentityTests: XCTestCase {
         let apps = [RunningApp(pid: 100, bundleId: "com.example.app", name: "App")]
         let groups = FreezePlanner.groups(bundleIds: ["com.example.app"], apps: apps, processes: processes, config: Config())
         XCTAssertEqual(groups.count, 1)
-        XCTAssertEqual(groups[0].pids, [100, 101])
-        XCTAssertEqual(groups[0].identities, [100: ProcessIdentity(startedAt: 1000), 101: ProcessIdentity(startedAt: 1001)])
-        XCTAssertEqual(groups[0].expectedParents, [100: 1, 101: 100])
+        let group = try XCTUnwrap(groups.first)
+        XCTAssertEqual(group.pids, [100, 101])
+        XCTAssertEqual(group.identities, [100: ProcessIdentity(startedAt: 1000), 101: ProcessIdentity(startedAt: 1001)])
+        XCTAssertEqual(group.expectedParents, [100: 1, 101: 100])
     }
     // MARK: Process table lookup (a root process too)
 

@@ -204,6 +204,23 @@ final class ClaudeReplyReaderTests: XCTestCase {
         ClaudeReply(session: session, title: "t", text: text, at: t0.addingTimeInterval(offset))
     }
 
+    /// Ends reading `index`. One that never started fails the test: indexing
+    /// `finishers` would end the whole test run.
+    private func finish(_ index: Int, file: StaticString = #filePath, line: UInt = #line) {
+        guard finishers.indices.contains(index) else {
+            return XCTFail("reading \(index) never started: \(shown)", file: file, line: line)
+        }
+        finishers[index]()
+    }
+
+    /// Closes the window of reading `index`, as `finish` ends it.
+    private func close(_ index: Int, file: StaticString = #filePath, line: UInt = #line) {
+        guard closers.indices.contains(index) else {
+            return XCTFail("reading \(index) never started: \(shown)", file: file, line: line)
+        }
+        closers[index]()
+    }
+
     /// `present` runs in a task the reader starts.
     private func settle() async {
         for _ in 0..<5 { await Task.yield() }
@@ -268,10 +285,10 @@ final class ClaudeReplyReaderTests: XCTestCase {
         r.arrived(reply("B2", session: "b", at: 3))
         await settle()
         XCTAssertEqual(shown, ["A"], "nothing cuts the reading off")
-        finishers[0]()
+        finish(0)
         await settle()
         XCTAssertEqual(shown, ["A", "C"])
-        finishers[1]()
+        finish(1)
         await settle()
         XCTAssertEqual(shown, ["A", "C", "B2"])
         XCTAssertEqual(r.last?.text, "B2")
@@ -308,8 +325,8 @@ final class ClaudeReplyReaderTests: XCTestCase {
         r.arrived(reply("A", session: "a"))
         r.arrived(reply("B", session: "b", at: 1))
         await settle()
-        closers[0]()
-        finishers[0]()
+        close(0)
+        finish(0)
         r.look()
         await settle()
         XCTAssertEqual(shown, ["A"])
@@ -336,7 +353,7 @@ final class ClaudeReplyReaderTests: XCTestCase {
         await settle()
         try prompt(session: "b", at: 5)
         r.look()
-        finishers[0]()
+        finish(0)
         await settle()
         XCTAssertEqual(shown, ["A"])
     }
@@ -354,7 +371,7 @@ final class ClaudeReplyReaderTests: XCTestCase {
         let r = reader(linger: 0)
         r.arrived(reply("A"))
         await settle()
-        finishers[0]()
+        finish(0)
         try await Task.sleep(for: .milliseconds(50))
         XCTAssertEqual(dismissals, 1)
     }
@@ -364,7 +381,7 @@ final class ClaudeReplyReaderTests: XCTestCase {
         r.arrived(reply("A"))
         await settle()
         windowReading = true
-        finishers[0]()
+        finish(0)
         try await Task.sleep(for: .milliseconds(50))
         XCTAssertEqual(dismissals, 0)
     }

@@ -976,7 +976,7 @@ final class DockerRuleEndpointTests: XCTestCase {
         printf '%s' '\(stdout)'
         exit \(exit)
         """
-        try TestScripts.write(script, to: URL(fileURLWithPath: exe))
+        try TestScripts.writeLaunched(script, to: URL(fileURLWithPath: exe))
         return (exe, argv)
     }
 

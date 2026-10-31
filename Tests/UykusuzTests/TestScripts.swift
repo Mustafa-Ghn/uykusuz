@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+@testable import Uykusuz
 
 /// Writes the shell scripts tests author: fakes of system tools, stand-in
 /// backstops and app binaries, wrappers. A broken fake makes a test fail, or
@@ -32,6 +33,62 @@ enum TestScripts {
             try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
         }
         try dump(text, name: url.lastPathComponent, source: "\(file):\(line)")
+    }
+
+    /// Writes a fake that a script runs by path, under a time limit or not:
+    /// the text goes to `url` + ".fake", and `url` is a symlink to one shared
+    /// launcher, which execs the text's #! interpreter on it under the same
+    /// pid, so a fake's pid, parent, signals and descriptors are as if it ran
+    /// by itself. The text must start with a #! line naming only the
+    /// interpreter.
+    ///
+    /// macOS holds the first exec of every new file until syspolicyd has
+    /// scanned it, and on a Mac where other processes run new files too that
+    /// wait has no useful bound. The scans take turns across the whole Mac,
+    /// about 8 a second whatever the CPU load: alone one takes about 130 ms,
+    /// beside 12 other processes doing the same about 2 s (measured on macOS
+    /// 26). A fake written for each test then looks hung to the limit it
+    /// runs under, though nothing is wrong with the script or the fake. The
+    /// real tools are not new files, so the scripts do not meet this outside
+    /// the tests. The launcher is scanned once, before any test's limit runs,
+    /// and an interpreter reading a fake's text is not an exec of it.
+    static func writeLaunched(
+        _ text: String, to url: URL,
+        file: StaticString = #fileID, line: UInt = #line
+    ) throws {
+        try write(text, to: url.appendingPathExtension("fake"), executable: false, file: file, line: line)
+        let fm = FileManager.default
+        let target = try launcher.get()
+        // A test may write a fake again, to change what it does.
+        if (try? fm.destinationOfSymbolicLink(atPath: url.path)) == target.path { return }
+        try fm.createSymbolicLink(at: url, withDestinationURL: target)
+    }
+
+    /// Read-only: a test that writes to a fake's path through its symlink
+    /// fails, instead of changing every fake in the process.
+    private static let launcher = Result<URL, any Error> {
+        let fm = FileManager.default
+        let dir = ProcessTestHome.root.appendingPathComponent("fake-launcher", isDirectory: true)
+        try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        let url = dir.appendingPathComponent("launcher")
+        try write("""
+        #!/bin/bash
+        read -r shebang < "$0.fake"
+        exec "${shebang:2}" "$0.fake" "$@"
+
+        """, to: url)
+        try fm.setAttributes([.posixPermissions: 0o555], ofItemAtPath: url.path)
+        // The first exec, which waits for the scan.
+        try "#!/bin/sh\nexit 0\n".write(to: url.appendingPathExtension("fake"), atomically: true, encoding: .utf8)
+        let scanned = Process()
+        scanned.executableURL = url
+        let exit = ProcessExit(scanned)
+        try scanned.run()
+        exit.wait()
+        guard scanned.terminationStatus == 0 else {
+            throw NSError(domain: "TestScripts", code: Int(scanned.terminationStatus), userInfo: [NSLocalizedDescriptionKey: "the fake launcher exited \(scanned.terminationStatus)"])
+        }
+        return url
     }
 
     private static let lock = NSLock()
