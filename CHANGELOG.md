@@ -4,6 +4,12 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.9.1 — 2026-11-01
+
+### Düzeltilenler
+
+- **Kurulumdaki derleme uyarıları.** Kurulum sırasında görünen iki derleme uyarısı giderildi; uygulamanın davranışı değişmedi.
+
 ## 0.9.0 — 2026-10-31
 
 ### Eklenenler

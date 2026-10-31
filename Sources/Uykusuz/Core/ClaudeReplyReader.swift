@@ -163,8 +163,8 @@ final class ClaudeReplyReader {
         lingering?.cancel()
         lingering = nil
         Log.info("claude reply: reading \(reply.text.count) characters aloud")
-        Task { [present] in
-            await present(reply, { [weak self] in self?.finished(id) }, { [weak self] in self?.closed(id) })
+        Task { [weak self, present] in
+            await present(reply, { self?.finished(id) }, { self?.closed(id) })
         }
     }
 
