@@ -112,6 +112,9 @@ struct Config: Codable, Equatable, Sendable {
     /// when a Claude API key is saved; otherwise it is made here from counts.
     var awaySummary: Bool = true
     var summaryModel: String = AnthropicSummaryClient.defaultModel
+    /// When Claude finishes, read its last reply aloud in the same window:
+    /// that message alone, not the steps before it (`ClaudeReplyReader`).
+    var readClaudeReplies: Bool = false
     /// While the user is away, tell their iPhone by iMessage when a Claude
     /// session starts to wait on them or finishes (`WaitingAlerts`), to
     /// `imessageHandle` (a phone number or an Apple ID e-mail).
@@ -254,6 +257,7 @@ struct Config: Codable, Equatable, Sendable {
         phoneReplyWindow = try c.decodeIfPresent(TimeInterval.self, forKey: .phoneReplyWindow) ?? d.phoneReplyWindow
         awaySummary = try c.decodeIfPresent(Bool.self, forKey: .awaySummary) ?? d.awaySummary
         summaryModel = try c.decodeIfPresent(String.self, forKey: .summaryModel) ?? d.summaryModel
+        readClaudeReplies = try c.decodeIfPresent(Bool.self, forKey: .readClaudeReplies) ?? d.readClaudeReplies
         endWhileWaiting = try c.decodeIfPresent(Bool.self, forKey: .endWhileWaiting) ?? d.endWhileWaiting
         approvalWaitGrace = try c.decodeIfPresent(TimeInterval.self, forKey: .approvalWaitGrace) ?? d.approvalWaitGrace
         autoApprovePermissions = try c.decodeIfPresent(Bool.self, forKey: .autoApprovePermissions) ?? d.autoApprovePermissions

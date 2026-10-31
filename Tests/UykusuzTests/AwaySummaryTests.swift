@@ -405,7 +405,8 @@ final class SummaryPlayerTests: XCTestCase {
         player.seek(to: 0.5)
         XCTAssertEqual(player.currentWord, 3)
         XCTAssertFalse(player.isPlaying, "moving does not start the reading")
-        let marked = player.highlighted.runs.filter { $0.backgroundColor != nil }.map { String(player.highlighted[$0.range].characters) }
+        let highlighted = player.highlighted(paragraph: 0)
+        let marked = highlighted.runs.filter { $0.backgroundColor != nil }.map { String(highlighted[$0.range].characters) }
         XCTAssertEqual(marked, ["dört"])
     }
 

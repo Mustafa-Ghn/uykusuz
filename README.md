@@ -69,6 +69,9 @@ Claude çalışırken bunu kendiliğinden de yapar.
   pencerede bir iki cümleyle anlatılır; ▶ ile dinlersiniz, okunan kelime
   vurgulanır ve çubukla ileri geri gidersiniz; bir Claude API anahtarı
   kaydederseniz özeti Claude yazar.
+- **Claude'un yanıtını dinleme.** Claude bir işi bitirince yalnızca size yazdığı
+  son mesaj sesli okunur; ara adımlar okunmaz. Göze sağ tıklayınca açılan menüden
+  tek tıkla açılıp kapanır.
 - **Telefondan yanıt.** Claude oturumlarını iPhone'daki Claude uygulamasından
   yanıtlar ve onaylarsınız; Uykusuz, Claude'un telefon bildirimlerini yalnızca
   siz uzaktayken gönderir ve yanıtınız gelene kadar Mac'i uyanık tutar.
@@ -211,6 +214,7 @@ Ayarlar penceresi göze sağ tıklayınca açılan menüden (⌘,) açılır:
 | Pil ve ısı | Düşük Güç Modu ve oturum sonu eşikleri, ısı kuralları |
 | Claude, kod modu ve ekran | Claude Code hook'ları, izin isteklerini otomatik onaylama, otomatik oturum, yanıt beklerken bitirme ve bekleme süresi, kod modu, boşta siyah ekran süreleri ve kilitleme |
 | Sen yokken özeti | Kapak ya da kilit açılınca özet penceresi, Claude API anahtarı, özeti yazan model, son 2 saati şimdi özetle |
+| Claude'un yanıtını dinle | Claude işini bitirince son yanıtını sesli okuma |
 | Telefondan yanıt | Claude'un telefon bildirimleri yalnızca uzaktayken, yanıt için Mac'in uyanık kalacağı süre |
 | Claude sizi beklerken iPhone'a haber ver | iMessage gönder, alıcı (telefon numarası ya da Apple ID e-postası), deneme mesajı |
 | Ağ yedekleme | iPhone kişisel erişim noktası, bilinen Wi-Fi ağına geri dönüş, tmux dürtmesi |
@@ -412,6 +416,31 @@ Ayarlar > Sen yokken özeti bölümündeki **Son 2 saati şimdi özetle** düğm
   planları her ay Claude Console'da kullanılabilen bir API kredisi içerir
   (claude.ai > Ayarlar > Faturalandırma > API credits); anahtarı harcama sınırı
   olan ayrı bir çalışma alanında oluşturun.
+
+### Claude'un yanıtını dinleme
+
+Claude Code bir işi bitirip size yazınca yalnızca o son mesaj, ekranın sağ
+üstündeki küçük pencerede sesli okunur; önceki adımlar ve araç çıktıları
+okunmaz. Varsayılan olarak kapalıdır. Göze sağ tıklayınca açılan menüdeki
+**Claude'un yanıtını sesli oku** ya da Ayarlar > Claude'un yanıtını dinle
+bölümü açıp kapatır. Ayarlar > Claude, kod modu ve ekran bölümündeki Claude Code
+hook'larının kurulu olması gerekir.
+
+- **Ne okunur.** Markdown işaretleri okunmaz. Kod blokları "Kod bloğu atlandı"
+  diye geçilir, bağlantı adresleri okunmaz, dosya yollarının yalnızca dosya adı
+  söylenir.
+- **Pencere.** [Sen yokken özetinin](#sen-yokken-özeti) penceresidir, ama okuma
+  kendiliğinden başlar: okunan kelime vurgulanır, ❚❚ durdurur, ◀◀ ve ▶▶ beşer
+  kelime gider, çubuk istediğiniz yere götürür. Sığmayan metin kaydırılır ve
+  okunan paragrafı izler. Okuma bitince pencere birkaç saniye sonra kapanır.
+- **Ne zaman durur.** O oturuma yeni bir istek gönderince okuma durur. Birkaç
+  oturum art arda biterse yanıtlar sırayla okunur; pencereyi kapatmak okumayı ve
+  sıradakileri bitirir.
+- **Ne zaman okumaz.** Kapak kapalıyken ya da ekran kilitliyken okumaz. Son yanıtı
+  menüdeki **Son yanıtı dinle** ile sonradan dinlersiniz. Uykusuz mikrofonun
+  kullanımda olup olmadığına bakmaz; toplantıya girmeden önce menüden kapatın.
+- **Gizlilik.** Yanıt bu Mac'te okunur ve hiçbir yere gönderilmez. Ayar kapalıyken
+  yanıt diske de yazılmaz.
 
 ## Kapak kapanınca neler olur
 

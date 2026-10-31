@@ -200,6 +200,16 @@ macOS'un sorduğu Otomasyon (Mesajlar) iznidir.
   çerezsiz tek bir HTTPS isteğiyle `api.anthropic.com`'a gönderilir. Anahtar
   giriş Anahtar Zinciri'nde, okunması istem açmayan bir kayıtta tutulur;
   config.json'a ve günlüğe yazılmaz.
+- **Claude'un yanıtını sesli okuma (0.8.0):** İsteğe bağlıdır ve varsayılan
+  olarak kapalıdır; kapalıyken hook hiçbir şey yazmaz. Açıkken `Stop` hook'u, Claude
+  Code'un verdiği `last_assistant_message` metnini ve oturumun başlığını 0700 izinli
+  `claude-replies` klasörüne 0600 izinli bir dosya olarak bırakır; dosya ilk bayttan
+  itibaren 0600'dür ve yerine adı değiştirilerek konur. Uygulama dosyayı çekirdeğin
+  dizin bildirimiyle fark eder, okur ve siler; 2 dakikadan eski kalanları bir sonraki
+  yanıt, kalanları da kaldırma siler. Başlık için kayıt dosyasının yalnızca son
+  256 KB'ı okunur. Metin günlüğe yazılmaz, ağa gitmez ve bu Mac'te
+  `AVSpeechSynthesizer` ile okunur. Hook yine hiçbir çıktı vermez ve hep başarılı
+  döner; yeni izin, ağ isteği ya da kalıcı bileşen yoktur.
 - **Bilinen Wi-Fi ağına geri dönüş (0.6.0):** Oturum sürerken hotspot'tayken
   CoreWLAN ile tarar ve bilinen ağ listesinden yalnızca adları ve parolalı olup
   olmadıklarını okur; Wi-Fi parolalarını okumaz ve hiçbir ağa kendisi katılmaz.

@@ -37,6 +37,7 @@ final class StatusItemController: NSObject {
     /// The last away summary, to put up again from the menu (fork
     /// addition); nil when there is none.
     private let lastSummary: (@MainActor () -> (() -> Void)?)?
+    private let replyReader: ClaudeReplyReader?
     /// What the projected countdown reads the time from. Tests inject the
     /// manager's fake clock so the text does not depend on when the tick
     /// happens to run.
@@ -83,6 +84,7 @@ final class StatusItemController: NSObject {
         askPauseUntil: (@MainActor () -> Date?)? = nil,
         presentPauseMenu: (@MainActor (NSMenu) -> Void)? = nil,
         lastSummary: (@MainActor () -> (() -> Void)?)? = nil,
+        replyReader: ClaudeReplyReader? = nil,
         clock: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.manager = manager
@@ -93,6 +95,7 @@ final class StatusItemController: NSObject {
         self.askPauseUntil = askPauseUntil ?? Self.askPauseTime
         self.presentPauseMenu = presentPauseMenu
         self.lastSummary = lastSummary
+        self.replyReader = replyReader
         self.clock = clock
         Self.seedPreferredPositionIfNeeded()
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -718,7 +721,14 @@ final class StatusItemController: NSObject {
         // next opening drop the line if sleep is enabled again.
         Task { await manager.recheckForeignSleep() }
         let menu = StatusMenu.menu(
-            Self.menuItems(manager: manager, status: status, hasSummary: lastSummary?() != nil),
+            Self.menuItems(
+                manager: manager,
+                status: status,
+                hasSummary: lastSummary?() != nil,
+                hasReply: replyReader?.last != nil,
+                // The hook hands the replies over: without it, nothing to turn on.
+                readReplies: replyReader != nil && ClaudeHooks.isInstalled() ? manager.config.readClaudeReplies : nil
+            ),
             target: self,
             settings: #selector(menuOpenSettings),
             quit: #selector(menuQuit),
@@ -726,14 +736,22 @@ final class StatusItemController: NSObject {
             stopWaitingForOutput: #selector(menuStopWaitingForOutput(_:)),
             pauseChoice: #selector(menuPauseChoice(_:)),
             resumeAuto: #selector(menuResumeAuto),
-            showSummary: #selector(menuShowSummary)
+            showSummary: #selector(menuShowSummary),
+            listenToReply: #selector(menuListenToReply),
+            readReplies: #selector(menuToggleReadReplies)
         )
         menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.height + 4), in: button)
     }
 
     /// The menu's lines from what the session and the status source report
     /// now. Static, so a test can check them without a status item.
-    static func menuItems(manager: SessionManager, status: any StatusSource, hasSummary: Bool = false) -> [StatusMenu.Item] {
+    static func menuItems(
+        manager: SessionManager,
+        status: any StatusSource,
+        hasSummary: Bool = false,
+        hasReply: Bool = false,
+        readReplies: Bool? = nil
+    ) -> [StatusMenu.Item] {
         StatusMenu.items(
             sessionActive: manager.isActive,
             sleepHeld: manager.state.sleepDisabledByUs,
@@ -742,6 +760,8 @@ final class StatusItemController: NSObject {
             autoIdleGrace: manager.config.autoIdleGrace,
             autoPausedUntil: manager.config.autoPausedUntil,
             hasSummary: hasSummary,
+            hasReply: hasReply,
+            readReplies: readReplies,
             machine: StatusLines.machine(
                 lidClosed: status.lidClosed,
                 watts: status.instantWatts(),
@@ -813,6 +833,20 @@ final class StatusItemController: NSObject {
 
     @objc private func menuShowSummary() {
         lastSummary?()?()
+    }
+
+    @objc private func menuListenToReply() {
+        replyReader?.listenAgain()
+    }
+
+    @objc private func menuToggleReadReplies() {
+        manager.config.readClaudeReplies.toggle()
+        do {
+            try manager.store.saveConfig(manager.config)
+        } catch {
+            Log.error("could not save reading replies: \(error.localizedDescription)")
+        }
+        replyReader?.settingChanged()
     }
 
     @objc private func menuResumeAuto() {

@@ -81,6 +81,16 @@ kendi süreçlerinin adları, argümanları ve işlemci süreleri okunur. "Sen y
 Code kayıtlarını yalnızca okur ve bunlardan yalnızca yukarıda sayılan alanları
 alır.
 
+**Claude'un yanıtını sesli okuma.** İsteğe bağlıdır ve varsayılan olarak
+kapalıdır; kapalıyken hook hiçbir şey yazmaz. Açıkken `Stop` hook'u Claude'un son
+mesajını ve oturumun başlığını, uygulama destek klasöründeki 0700 izinli
+`claude-replies` klasörüne 0600 izinli bir dosya olarak bırakır. Uygulama dosyayı
+okur okumaz siler; uygulama çalışmıyorsa dosya bir sonraki yanıtta, 2 dakikadan
+eskiyse silinir, kaldırma da onu her durumda siler. Metin günlüğe yazılmaz ve ağa
+gitmez; okuma macOS'in konuşma sentezleyicisiyle (`AVSpeechSynthesizer`) bu Mac'te
+yapılır. Uykusuz mikrofonun kullanımda olup olmadığına bakmadığı için yanıt bir
+toplantı sırasında da okunabilir.
+
 **Ekran ve girdi.** Boşta siyah ekran yalnızca son girdiden geçen süreyi
 okur (`CGEventSource.secondsSinceLastEventType`); bunun için tuş vuruşlarını
 okumaz, sahte tuş ya da olay göndermez. Bir videonun ekranı açık tuttuğunu

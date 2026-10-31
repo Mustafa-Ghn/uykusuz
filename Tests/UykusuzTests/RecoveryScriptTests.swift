@@ -1202,6 +1202,34 @@ final class RecoveryScriptTests: XCTestCase {
         }
     }
 
+    /// A reply the app never took holds a piece of a conversation: it and its
+    /// folder are gone after an uninstall, with or without --purge. A file
+    /// Uykusuz did not write keeps the folder, and is left alone.
+    func testUninstallRemovesRepliesTheAppNeverTook() throws {
+        for purge in [false, true] {
+            try fx.installMachinery()
+            let replies = fx.home.appendingPathComponent("claude-replies", isDirectory: true)
+            try FileManager.default.createDirectory(at: replies, withIntermediateDirectories: true)
+            try "{}".write(to: replies.appendingPathComponent("abc-123.json"), atomically: true, encoding: .utf8)
+
+            let r = try fx.run(fx.uninstall, purge ? ["--purge"] : [])
+
+            XCTAssertEqual(r.status, 0, r.stderr + r.stdout)
+            XCTAssertFalse(fx.exists(replies), "purge \(purge)")
+        }
+
+        try fx.installMachinery()
+        let replies = fx.home.appendingPathComponent("claude-replies", isDirectory: true)
+        try FileManager.default.createDirectory(at: replies, withIntermediateDirectories: true)
+        let notOurs = replies.appendingPathComponent("notlar.txt")
+        try "x".write(to: notOurs, atomically: true, encoding: .utf8)
+
+        let r = try fx.run(fx.uninstall, [])
+
+        XCTAssertEqual(r.status, 0, r.stderr + r.stdout)
+        XCTAssertTrue(fx.exists(notOurs))
+    }
+
     /// --purge removes the moved-aside copies, but only names of exactly the
     /// shape Uykusuz produces. Anything else under the prefix stays.
     func testUninstallPurgeRemovesOnlyMovedAsideSessionFilesOfUykusuzsShape() throws {

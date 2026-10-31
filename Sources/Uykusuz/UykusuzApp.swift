@@ -30,6 +30,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// window it is told in.
     let awaySummary: AwaySummary
     let summaryPanel = SummaryPanel()
+    /// Claude's last reply read aloud when it finishes (fork addition), in
+    /// the same window.
+    let replyReader: ClaudeReplyReader
     /// "Claude is waiting for you" to the iPhone by iMessage (fork addition).
     let waitingAlerts: WaitingAlerts
     /// Claude's own phone pushes only while the user is away (fork addition).
@@ -50,6 +53,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         let keys = awaySummary.keyStore
         let paths = Paths.fromEnvironment()
+        replyReader = ClaudeReplyReader(
+            config: { [manager] in manager.config },
+            present: { reply, onFinish, onClose in
+                await panel.show(
+                    ClaudeReplySpeech.plain(reply.text),
+                    told: reply.at,
+                    title: reply.title,
+                    autoplay: true,
+                    onFinish: onFinish,
+                    onClose: onClose
+                )
+            },
+            dismiss: { panel.close() },
+            windowIsReading: { panel.isReading },
+            canSpeak: { !(LidObserver.readClamshellState() ?? false) && !UserPresence.screenIsLocked() },
+            paths: paths
+        )
         waitingAlerts = WaitingAlerts(
             config: { [manager] in manager.config },
             sessions: { ClaudeActivity.liveSessions(paths: paths, now: Date()) },
@@ -99,7 +119,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 Log.error("could not save config after the launch at login check: \(error.localizedDescription)")
             }
         }
-        let settings = SettingsWindow { [manager, secrets, locationPermission, loginItem, awaySummary, waitingAlerts, pushGate] in
+        let settings = SettingsWindow { [manager, secrets, locationPermission, loginItem, awaySummary, replyReader, waitingAlerts, pushGate] in
             AnyView(
                 SettingsView(
                     manager: manager,
@@ -107,6 +127,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     locationPermission: locationPermission,
                     loginItem: loginItem,
                     awaySummary: awaySummary,
+                    replyReader: replyReader,
                     waitingAlerts: waitingAlerts,
                     pushGate: pushGate
                 )
@@ -120,7 +141,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             lastSummary: { [awaySummary] in
                 guard awaySummary.last != nil else { return nil }
                 return { Task { await awaySummary.showLast() } }
-            }
+            },
+            replyReader: replyReader
         )
         autoSession.onAgentActivityChange = { [weak services = manager.services] active in
             services?.setAgentActive(active)
@@ -130,6 +152,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             services?.announceAgentWaiting(endsAfter: c.autoSession && c.endWhileWaiting ? c.autoWaitGrace : nil)
         }
         awaySummary.start()
+        replyReader.start()
         waitingAlerts.start()
         pushGate.start()
         // Hooks an earlier build installed lack the events added since.

@@ -227,12 +227,12 @@ struct ClaudeDigest: Equatable, Sendable {
             ?? (try? Date.ISO8601FormatStyle().parse(text))
     }
 
-    /// The last `tailBytes` of the file, from its first whole line.
-    private static func tail(of file: URL) -> Data? {
+    /// The last `bytes` of the file, from its first whole line.
+    static func tail(of file: URL, bytes: Int = tailBytes) -> Data? {
         guard let handle = try? FileHandle(forReadingFrom: file) else { return nil }
         defer { try? handle.close() }
         guard let size = try? handle.seekToEnd() else { return nil }
-        let start = size > UInt64(tailBytes) ? size - UInt64(tailBytes) : 0
+        let start = size > UInt64(bytes) ? size - UInt64(bytes) : 0
         try? handle.seek(toOffset: start)
         guard var data = try? handle.readToEnd() else { return nil }
         if start > 0, let newline = data.firstIndex(of: UInt8(ascii: "\n")) {

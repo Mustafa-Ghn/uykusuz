@@ -238,6 +238,9 @@ struct ClaudeTaskMarker: Codable, Equatable, Sendable {
     /// Since when Claude has been stopped for the user (a permission prompt,
     /// a question, a plan to approve); nil while it works.
     var waitingSince: Date? = nil
+    /// When the user last sent this task a prompt; later tool uses keep it
+    /// (`ClaudeReplyReader`).
+    var promptedAt: Date? = nil
 }
 
 /// `Uykusuz --claude-hook`: what Claude Code runs on each hook event, with
@@ -248,13 +251,18 @@ struct ClaudeTaskMarker: Codable, Equatable, Sendable {
 /// call, with one exception the user turns on: with automatic approval on
 /// (`Config.autoApprovePermissions`), a permission request that is not a
 /// question or a plan to approve gets an approval on stdout, and the
-/// session goes on as at work rather than waiting.
+/// session goes on as at work rather than waiting. With reading replies on
+/// (`Config.readClaudeReplies`), `Stop` also leaves Claude's last message
+/// for the app (`ClaudeReplyInbox`).
 enum ClaudeHookCommand {
     struct Input: Decodable {
         let session_id: String?
         let hook_event_name: String?
         let notification_type: String?
         let tool_name: String?
+        var last_assistant_message: String? = nil
+        var transcript_path: String? = nil
+        var cwd: String? = nil
     }
 
     /// The approval Claude Code reads from a `PermissionRequest` hook.
@@ -274,6 +282,12 @@ enum ClaudeHookCommand {
     /// file cannot be read.
     static func liveAutoApprove(_ paths: Paths) -> Bool {
         (try? Store(paths: paths).loadConfig())?.autoApprovePermissions ?? false
+    }
+
+    /// The setting, read from config.json when Claude stops; off when the
+    /// file cannot be read.
+    static func liveReadReplies(_ paths: Paths) -> Bool {
+        (try? Store(paths: paths).loadConfig())?.readClaudeReplies ?? false
     }
 
     enum Kind: Equatable, Sendable {
@@ -315,6 +329,7 @@ enum ClaudeHookCommand {
         now: Date = Date(),
         claudeProcess: () -> (pid: Int32, identity: ProcessIdentity?)? = ClaudeHookCommand.findClaudeProcess,
         autoApprove: (Paths) -> Bool = ClaudeHookCommand.liveAutoApprove,
+        readReplies: (Paths) -> Bool = ClaudeHookCommand.liveReadReplies,
         write: (String) -> Void = { print($0) }
     ) -> Int32? {
         guard arguments.first == ClaudeHooks.flag else { return nil }
@@ -333,9 +348,11 @@ enum ClaudeHookCommand {
         case let kind? where kind != .idle:
             // A wait keeps the moment it began across the events that
             // repeat it (a dialog's request, then its notification).
-            let since = kind == .waiting ? (readMarker(file)?.waitingSince ?? now) : nil
+            let previous = readMarker(file)
+            let since = kind == .waiting ? (previous?.waitingSince ?? now) : nil
+            let prompted = event == "UserPromptSubmit" ? now : previous?.promptedAt
             let process = claudeProcess()
-            let marker = ClaudeTaskMarker(pid: process?.pid ?? 0, identity: process?.identity, event: event, updatedAt: now, waitingSince: since)
+            let marker = ClaudeTaskMarker(pid: process?.pid ?? 0, identity: process?.identity, event: event, updatedAt: now, waitingSince: since, promptedAt: prompted)
             do {
                 _ = try OwnerOnly.createDirectory(dir)
                 let encoder = JSONEncoder()
@@ -347,10 +364,24 @@ enum ClaudeHookCommand {
             }
         case .idle?:
             try? FileManager.default.removeItem(at: file)
+            if event == "Stop", readReplies(paths) {
+                leaveReply(input, session: String(name.dropLast(".json".count)), paths: paths, now: now)
+            }
         default:
             break
         }
         return 0
+    }
+
+    /// A turn with no text to read (it ended on a tool, say) leaves nothing.
+    private static func leaveReply(_ input: Input, session: String, paths: Paths, now: Date) {
+        guard let text = input.last_assistant_message?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { return }
+        let title = ClaudeReplyInbox.title(transcript: input.transcript_path, cwd: input.cwd)
+        do {
+            try ClaudeReplyInbox.put(ClaudeReply(session: session, title: title, text: text, at: now), paths: paths, now: now)
+        } catch {
+            Log.error("claude hook: could not leave the reply: \(error.localizedDescription)")
+        }
     }
 
     static func readMarker(_ file: URL) -> ClaudeTaskMarker? {

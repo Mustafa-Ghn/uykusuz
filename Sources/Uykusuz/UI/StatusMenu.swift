@@ -29,6 +29,10 @@ enum StatusMenu {
             case resumeAuto
             /// Put the last away summary up again.
             case showSummary
+            /// Read Claude's last reply aloud again.
+            case listenToReply
+            /// Whether Claude's replies are read aloud, with a tick when on.
+            case readReplies(on: Bool)
         }
 
         let title: String
@@ -42,6 +46,8 @@ enum StatusMenu {
         "Claude çalıştıkça açık; Claude durunca \(Int(idleGrace / 60)) dk sonra biter"
     }
     static let showSummaryTitle = "Son özeti göster"
+    static let listenToReplyTitle = "Son yanıtı dinle"
+    static let readRepliesTitle = "Claude'un yanıtını sesli oku"
     static let pauseTitle = "Otomatik oturumu duraklat"
     static let resumeTitle = "Otomatik oturumu sürdür"
 
@@ -128,6 +134,8 @@ enum StatusMenu {
         autoPausedUntil: Date? = nil,
         now: Date = Date(),
         hasSummary: Bool = false,
+        hasReply: Bool = false,
+        readReplies: Bool? = nil,
         machine: String?,
         actions: String?,
         throttledBrowsers: [ThrottledBrowser],
@@ -156,6 +164,12 @@ enum StatusMenu {
         }
         if hasSummary {
             out.append(Item(title: showSummaryTitle, kind: .showSummary))
+        }
+        if hasReply {
+            out.append(Item(title: listenToReplyTitle, kind: .listenToReply))
+        }
+        if let readReplies {
+            out.append(Item(title: readRepliesTitle, kind: .readReplies(on: readReplies)))
         }
         if let machine = present(machine) {
             out.append(Item(title: machine, kind: .info))
@@ -225,7 +239,9 @@ enum StatusMenu {
         stopWaitingForOutput: Selector,
         pauseChoice: Selector? = nil,
         resumeAuto: Selector? = nil,
-        showSummary: Selector? = nil
+        showSummary: Selector? = nil,
+        listenToReply: Selector? = nil,
+        readReplies: Selector? = nil
     ) -> NSMenu {
         let menu = NSMenu()
         menu.autoenablesItems = false
@@ -268,6 +284,14 @@ enum StatusMenu {
             case .showSummary:
                 guard let showSummary else { continue }
                 menu.addItem(action(title: item.title, selector: showSummary, key: "", target: target))
+            case .listenToReply:
+                guard let listenToReply else { continue }
+                menu.addItem(action(title: item.title, selector: listenToReply, key: "", target: target))
+            case let .readReplies(on):
+                guard let readReplies else { continue }
+                let entry = action(title: item.title, selector: readReplies, key: "", target: target)
+                entry.state = on ? .on : .off
+                menu.addItem(entry)
             }
         }
         return menu

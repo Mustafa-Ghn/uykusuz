@@ -4,7 +4,9 @@ import SwiftUI
 
 /// Reads the away summary aloud on request (fork addition): play and pause,
 /// the word being read highlighted, and a bar to move back and forth.
-/// Nothing is spoken until the user presses play.
+/// Nothing is spoken until the user presses play; Claude's reply
+/// (`ClaudeReplyReader`) is the one thing that starts on its own, as the user
+/// asked for by turning it on.
 ///
 /// AVSpeechSynthesizer reports each word as it reads it
 /// (`willSpeakRangeOfSpeechString`), with every system voice; it cannot
@@ -18,6 +20,11 @@ final class SummaryPlayer: NSObject, AVSpeechSynthesizerDelegate {
 
     let text: String
     let words: [NSRange]
+    /// Each line's range in `text`, without the line break. The window
+    /// scrolls a long text by these.
+    let paragraphs: [NSRange]
+    /// Called when a reading gets to the end, not when it is stopped.
+    @ObservationIgnored var onFinish: (@MainActor () -> Void)?
     private(set) var isPlaying = false
     /// The word being read, or the one a move landed on.
     private(set) var currentWord: Int?
@@ -35,6 +42,7 @@ final class SummaryPlayer: NSObject, AVSpeechSynthesizerDelegate {
         self.text = text
         self.voiceIdentifier = voiceIdentifier
         words = Self.words(in: text)
+        paragraphs = Self.paragraphs(in: text)
         super.init()
         synthesizer.delegate = self
     }
@@ -79,13 +87,22 @@ final class SummaryPlayer: NSObject, AVSpeechSynthesizerDelegate {
         move(to: Self.wordIndex(atFraction: fraction, count: words.count))
     }
 
-    /// The text with the current word marked.
-    var highlighted: AttributedString {
-        var attributed = AttributedString(text)
-        if let currentWord, words.indices.contains(currentWord),
-           let range = Range(words[currentWord], in: attributed) {
-            attributed[range].backgroundColor = Color.accentColor.opacity(0.28)
-            attributed[range].foregroundColor = Color.primary
+    /// The paragraph the current word is in.
+    var currentParagraph: Int? {
+        guard let currentWord, words.indices.contains(currentWord) else { return nil }
+        return Self.paragraphIndex(containing: words[currentWord].location, in: paragraphs)
+    }
+
+    /// A paragraph, with the current word marked if it is in there.
+    func highlighted(paragraph index: Int) -> AttributedString {
+        let range = paragraphs[index]
+        var attributed = AttributedString((text as NSString).substring(with: range))
+        if index == currentParagraph, let currentWord {
+            let word = NSRange(location: words[currentWord].location - range.location, length: words[currentWord].length)
+            if let marked = Range(word, in: attributed) {
+                attributed[marked].backgroundColor = Color.accentColor.opacity(0.28)
+                attributed[marked].foregroundColor = Color.primary
+            }
         }
         return attributed
     }
@@ -100,6 +117,20 @@ final class SummaryPlayer: NSObject, AVSpeechSynthesizerDelegate {
             ranges.append(range)
         }
         return ranges
+    }
+
+    /// Each non-empty line's range in `text`.
+    nonisolated static func paragraphs(in text: String) -> [NSRange] {
+        var ranges: [NSRange] = []
+        let ns = text as NSString
+        ns.enumerateSubstrings(in: NSRange(location: 0, length: ns.length), options: [.byLines, .substringNotRequired]) { _, range, _, _ in
+            if range.length > 0 { ranges.append(range) }
+        }
+        return ranges
+    }
+
+    nonisolated static func paragraphIndex(containing location: Int, in paragraphs: [NSRange]) -> Int? {
+        paragraphs.lastIndex { $0.location <= location }
     }
 
     nonisolated static func wordIndex(atFraction fraction: Double, count: Int) -> Int {
@@ -154,6 +185,7 @@ final class SummaryPlayer: NSObject, AVSpeechSynthesizerDelegate {
         isPlaying = false
         // Read to the end: the next play starts over.
         currentWord = nil
+        onFinish?()
     }
 
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, willSpeakRangeOfSpeechString characterRange: NSRange, utterance: AVSpeechUtterance) {
@@ -168,20 +200,62 @@ final class SummaryPlayer: NSObject, AVSpeechSynthesizerDelegate {
 }
 
 /// The small window the summary comes in: title, the text with the word
-/// being read marked, and the controls.
+/// being read marked, and the controls. A text too long for the screen
+/// scrolls, following the paragraph being read.
 struct SummaryPlayerView: View {
+    static let width: CGFloat = 400
+    static let padding: CGFloat = 16
+    static let paragraphSpacing: CGFloat = 6
+    static let maxTextHeight: CGFloat = 340
+
     let player: SummaryPlayer
+    let title: String
     let told: String
     let onClose: () -> Void
+    /// Once: the drawing below runs again for every word.
+    private let scrolls: Bool
     @State private var dragging: Double?
+
+    init(player: SummaryPlayer, title: String, told: String, onClose: @escaping () -> Void) {
+        self.player = player
+        self.title = title
+        self.told = told
+        self.onClose = onClose
+        scrolls = Self.needsScrolling(player.text, paragraphs: player.paragraphs.count)
+    }
+
+    /// Whether the text is taller than the window lets it be, at `.body`.
+    static func needsScrolling(_ text: String, paragraphs: Int) -> Bool {
+        let font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        let height = (text as NSString).boundingRect(
+            with: NSSize(width: width - 2 * padding, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: [.font: font]
+        ).height
+        return height + CGFloat(max(paragraphs - 1, 0)) * paragraphSpacing > maxTextHeight
+    }
+
+    private var paragraphs: some View {
+        VStack(alignment: .leading, spacing: Self.paragraphSpacing) {
+            ForEach(player.paragraphs.indices, id: \.self) { index in
+                Text(player.highlighted(paragraph: index))
+                    .font(.body)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+                    .id(index)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Image(systemName: "eye")
                     .foregroundStyle(.secondary)
-                Text(AwaySummary.title)
+                Text(title)
                     .font(.headline)
+                    .lineLimit(1)
                 Text(told)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -194,10 +268,18 @@ struct SummaryPlayerView: View {
                 .buttonStyle(.plain)
                 .help("Kapat")
             }
-            Text(player.highlighted)
-                .font(.body)
-                .fixedSize(horizontal: false, vertical: true)
-                .textSelection(.enabled)
+            if scrolls {
+                ScrollViewReader { proxy in
+                    ScrollView { paragraphs }
+                        .frame(height: Self.maxTextHeight)
+                        .onChange(of: player.currentParagraph) { _, paragraph in
+                            guard let paragraph else { return }
+                            withAnimation { proxy.scrollTo(paragraph, anchor: .top) }
+                        }
+                }
+            } else {
+                paragraphs
+            }
             HStack(spacing: 14) {
                 Button(action: player.back) { Image(systemName: "backward.fill") }
                     .help("\(SummaryPlayer.step) kelime geri")
@@ -223,8 +305,8 @@ struct SummaryPlayerView: View {
             .buttonStyle(.borderless)
             .font(.title3)
         }
-        .padding(16)
-        .frame(width: 400)
+        .padding(Self.padding)
+        .frame(width: Self.width)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
@@ -241,15 +323,27 @@ final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
 final class SummaryPanel {
     private var panel: NSPanel?
     private var player: SummaryPlayer?
+    private var onClose: (@MainActor () -> Void)?
 
-    func show(_ text: String, told: Date) async {
+    /// `autoplay`: start reading as soon as it is up. `onFinish` is told when
+    /// a reading gets to the end, `onClose` when the window goes, for whatever
+    /// reason.
+    func show(
+        _ text: String,
+        told: Date,
+        title: String = AwaySummary.title,
+        autoplay: Bool = false,
+        onFinish: (@MainActor () -> Void)? = nil,
+        onClose: (@MainActor () -> Void)? = nil
+    ) async {
         let voice = await TurkishVoice.current().identifier
         close()
         let player = SummaryPlayer(text: text, voiceIdentifier: voice)
+        player.onFinish = onFinish
         let clock = DateFormatter()
         clock.locale = Locale(identifier: "tr_TR")
         clock.dateFormat = "HH:mm"
-        let view = SummaryPlayerView(player: player, told: clock.string(from: told)) { [weak self] in self?.close() }
+        let view = SummaryPlayerView(player: player, title: title, told: clock.string(from: told)) { [weak self] in self?.close() }
         let host = FirstMouseHostingView(rootView: view)
         let size = host.fittingSize
         let panel = NSPanel(
@@ -274,14 +368,24 @@ final class SummaryPanel {
         panel.orderFrontRegardless()
         self.panel = panel
         self.player = player
+        self.onClose = onClose
+        guard autoplay else { return }
+        player.play()
+        // Nothing to say (no words in it): over already.
+        if !player.isPlaying { onFinish?() }
     }
 
     func close() {
+        player?.onFinish = nil
         player?.stop()
         player = nil
         panel?.orderOut(nil)
         panel = nil
+        let closed = onClose
+        onClose = nil
+        closed?()
     }
 
     var isShowing: Bool { panel != nil }
+    var isReading: Bool { player?.isPlaying ?? false }
 }

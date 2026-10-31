@@ -1010,6 +1010,13 @@ for dir in "$APP_DIR"/.Uykusuz.app.staging.*; do
   echo "artık çalışmayan bir install.sh çalıştırmasından kalan klasör kaldırıldı: $dir"
 done
 
+# A reply Claude finished with while the app was not running holds a piece of
+# a conversation: it goes with or without --purge.
+for f in "$APP_SUPPORT/claude-replies"/*.json; do
+  [[ -e "$f" || -L "$f" ]] && remove_owned "$f"
+done
+"$RMDIR" "$APP_SUPPORT/claude-replies" 2>/dev/null || true
+
 # $APP_SUPPORT/backstop.sh below is the writable copy of older installs; the
 # current one went with the bundle.
 if (( PURGE == 1 )); then

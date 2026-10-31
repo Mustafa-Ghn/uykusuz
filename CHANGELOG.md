@@ -4,6 +4,17 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.8.0 — 2026-10-31
+
+### Eklenenler
+
+- **Claude'un yanıtını dinleme.** Claude bir işi bitirince yalnızca size yazdığı son mesaj, ekranın sağ üstündeki küçük pencerede sesli okunur; önceki adımlar okunmaz. Kod blokları atlanır, bağlantı adresleri okunmaz, dosya yollarının yalnızca adı söylenir. Varsayılan olarak kapalıdır; göze sağ tıklayınca açılan menüdeki "Claude'un yanıtını sesli oku" ya da Ayarlar > Claude'un yanıtını dinle ile açılır. Claude Code hook'larının kurulu olması gerekir.
+- **Son yanıtı dinle.** Kapak kapalıyken ya da ekran kilitliyken okunmayan son yanıtı, göze sağ tıklayınca açılan menüden sonradan dinlersiniz.
+
+### Değişenler
+
+- **Okuma penceresi uzun metni kaydırır.** Pencereye sığmayan bir metin kaydırılır ve okunan paragrafı izler; kısa özetlerin görünümü aynı kalır.
+
 ## 0.7.5 — 2026-10-27
 
 ### Düzeltilenler

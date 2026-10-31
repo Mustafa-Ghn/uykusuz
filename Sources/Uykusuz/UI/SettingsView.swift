@@ -11,6 +11,8 @@ struct SettingsView: View {
     let loginItem: LoginItem
     /// "While you were away" (fork addition); nil leaves its section out.
     var awaySummary: AwaySummary? = nil
+    /// Claude's reply read aloud (fork addition); nil leaves its section out.
+    var replyReader: ClaudeReplyReader? = nil
     /// iMessage when Claude waits (fork addition); nil leaves it out.
     var waitingAlerts: WaitingAlerts? = nil
     /// Replies from the phone (fork addition); nil leaves them out.
@@ -50,6 +52,9 @@ struct SettingsView: View {
             agentModeSection
             if awaySummary != nil {
                 awaySummarySection
+            }
+            if replyReader != nil {
+                replyReadingSection
             }
             if pushGate != nil {
                 phoneRepliesSection
@@ -466,6 +471,17 @@ struct SettingsView: View {
                 .foregroundStyle(.secondary)
         }
         .task { await refreshAPIKeyStatus() }
+    }
+
+    private var replyReadingSection: some View {
+        Section("Claude'un yanıtını dinle") {
+            Toggle("Claude işini bitirince son yanıtını sesli oku", isOn: bind(\.readClaudeReplies))
+                .disabled(!claudeHooksInstalled)
+                .onChange(of: manager.config.readClaudeReplies) { replyReader?.settingChanged() }
+            Text("Claude bir işi bitirince yalnızca size yazdığı son mesaj, ekranın sağ üstündeki küçük pencerede okunur; önceki adımlar okunmaz. Kod blokları atlanır, bağlantı adresleri okunmaz, dosya yollarının yalnızca dosya adı söylenir. Okunan kelime vurgulanır; ❚❚ durdurur, çubuk ve ileri geri düğmeleriyle istediğiniz yere gidersiniz. O oturuma yeni bir istek gönderince okuma durur. Birkaç oturum art arda biterse yanıtlar sırayla okunur; pencereyi kapatınca okuma ve sıradakiler biter. Kapak kapalıyken ya da ekran kilitliyken okunmaz. Bu ayar ve son yanıtı yeniden dinlemek göze sağ tıklayınca açılan menüde de bulunur; toplantıya girmeden önce oradan kapatabilirsiniz. Claude Code hook'larının kurulu olması gerekir. Yanıt bu Mac'te okunur, hiçbir yere gönderilmez.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 
     private func refreshAPIKeyStatus() async {
