@@ -38,6 +38,7 @@ final class StatusItemController: NSObject {
     /// addition); nil when there is none.
     private let lastSummary: (@MainActor () -> (() -> Void)?)?
     private let replyReader: ClaudeReplyReader?
+    private let areaReader: AreaReader?
     /// What the projected countdown reads the time from. Tests inject the
     /// manager's fake clock so the text does not depend on when the tick
     /// happens to run.
@@ -85,6 +86,7 @@ final class StatusItemController: NSObject {
         presentPauseMenu: (@MainActor (NSMenu) -> Void)? = nil,
         lastSummary: (@MainActor () -> (() -> Void)?)? = nil,
         replyReader: ClaudeReplyReader? = nil,
+        areaReader: AreaReader? = nil,
         clock: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.manager = manager
@@ -96,6 +98,7 @@ final class StatusItemController: NSObject {
         self.presentPauseMenu = presentPauseMenu
         self.lastSummary = lastSummary
         self.replyReader = replyReader
+        self.areaReader = areaReader
         self.clock = clock
         Self.seedPreferredPositionIfNeeded()
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -725,7 +728,8 @@ final class StatusItemController: NSObject {
                 manager: manager,
                 status: status,
                 hasSummary: lastSummary?() != nil,
-                listenShortcut: replyReader == nil ? nil : manager.config.listenShortcut
+                listenShortcut: replyReader == nil ? nil : manager.config.listenShortcut,
+                listenAreaShortcut: areaReader == nil ? nil : manager.config.listenAreaShortcut
             ),
             target: self,
             settings: #selector(menuOpenSettings),
@@ -735,7 +739,8 @@ final class StatusItemController: NSObject {
             pauseChoice: #selector(menuPauseChoice(_:)),
             resumeAuto: #selector(menuResumeAuto),
             showSummary: #selector(menuShowSummary),
-            listenToReply: #selector(menuListenToReply)
+            listenToReply: #selector(menuListenToReply),
+            listenToArea: #selector(menuListenToArea)
         )
         menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.height + 4), in: button)
     }
@@ -746,7 +751,8 @@ final class StatusItemController: NSObject {
         manager: SessionManager,
         status: any StatusSource,
         hasSummary: Bool = false,
-        listenShortcut: Bool? = nil
+        listenShortcut: Bool? = nil,
+        listenAreaShortcut: Bool? = nil
     ) -> [StatusMenu.Item] {
         StatusMenu.items(
             sessionActive: manager.isActive,
@@ -757,6 +763,7 @@ final class StatusItemController: NSObject {
             autoPausedUntil: manager.config.autoPausedUntil,
             hasSummary: hasSummary,
             listenShortcut: listenShortcut,
+            listenAreaShortcut: listenAreaShortcut,
             machine: StatusLines.machine(
                 lidClosed: status.lidClosed,
                 watts: status.instantWatts(),
@@ -832,6 +839,10 @@ final class StatusItemController: NSObject {
 
     @objc private func menuListenToReply() {
         Task { await replyReader?.listen() }
+    }
+
+    @objc private func menuListenToArea() {
+        Task { await areaReader?.listen() }
     }
 
     @objc private func menuResumeAuto() {

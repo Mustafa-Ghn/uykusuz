@@ -72,10 +72,13 @@ Claude çalışırken bunu kendiliğinden de yapar.
 - **Claude'un yanıtını dinleme.** Baktığınız Claude sohbetinin son mesajını
   ⌃⌥D ile dinlersiniz; ara adımlar okunmaz ve siz istemeden hiçbir şey
   okunmaz.
-- **Doğal Türkçe ses.** Uyarıları, özeti ve Claude'un yanıtını Uykusuz'la gelen
-  yapay zekâ sesi okur; `README` ya da `commit` gibi teknik kelimeler Türkçe
-  okunuşuyla söylenir. Ses bu Mac'te çalışır, ağa çıkmaz ve yalnızca okurken
-  yüklenir.
+- **Seçilen alanı dinleme.** ⌃⌥S ile ekranda bir alan çizersiniz; o alandaki yazı
+  aynı küçük pencerede okunur. Yazı bu Mac'te tanınır, görüntü hiçbir yere
+  gönderilmez.
+- **Doğal Türkçe ses.** Uyarıları, özeti, Claude'un yanıtını ve seçtiğiniz alanı
+  Uykusuz'la gelen yapay zekâ sesi okur; `README` ya da `commit` gibi teknik
+  kelimeler Türkçe okunuşuyla söylenir. Ses bu Mac'te çalışır, ağa çıkmaz ve
+  yalnızca okurken yüklenir.
 - **Telefondan yanıt.** Claude oturumlarını iPhone'daki Claude uygulamasından
   yanıtlar ve onaylarsınız; Uykusuz, Claude'un telefon bildirimlerini yalnızca
   siz uzaktayken gönderir ve yanıtınız gelene kadar Mac'i uyanık tutar.
@@ -219,6 +222,7 @@ Ayarlar penceresi göze sağ tıklayınca açılan menüden (⌘,) açılır:
 | Claude, kod modu ve ekran | Claude Code hook'ları, izin isteklerini otomatik onaylama, otomatik oturum, yanıt beklerken bitirme ve bekleme süresi, kod modu, boşta siyah ekran süreleri ve kilitleme |
 | Sen yokken özeti | Kapak ya da kilit açılınca özet penceresi, Claude API anahtarı, özeti yazan model, son 2 saati şimdi özetle |
 | Claude'un yanıtını dinle | ⌃⌥D kısayolunu açıp kapatma |
+| Seçilen alanı dinle | ⌃⌥S kısayolunu açıp kapatma |
 | Telefondan yanıt | Claude'un telefon bildirimleri yalnızca uzaktayken, yanıt için Mac'in uyanık kalacağı süre |
 | Claude sizi beklerken iPhone'a haber ver | iMessage gönder, alıcı (telefon numarası ya da Apple ID e-postası), deneme mesajı, Docker kullanılırken de haber ver |
 | Ağ yedekleme | iPhone kişisel erişim noktası, bilinen Wi-Fi ağına geri dönüş, tmux dürtmesi |
@@ -470,9 +474,40 @@ kısayoluna basın ya da göze sağ tıklayınca açılan menüden **Son yanıt�
 - **Gizlilik.** Yanıt bu Mac'te okunur, diske yazılmaz ve hiçbir yere
   gönderilmez. Uykusuz başka hiçbir tuşu görmez ve bunun için izin istemez.
 
+### Seçilen alanı dinleme
+
+Ekranda yalnızca bir bölümü dinlemek için **⌃⌥S** kısayoluna basın ya da göze sağ
+tıklayınca açılan menüden **Alan seçip dinle** öğesini seçin. Ekran kararır;
+okunacak alanı fareyle çizin. Alandaki yazı, ekranın sağ üstündeki küçük
+pencerede okunur. Çizerken Esc ya da yeniden ⌃⌥S vazgeçer.
+
+- **Ne okunur.** Yazı alanın görüntüsünden tanındığı için tarayıcıda, PDF'te,
+  terminalde ya da bir resimde aynı şekilde çalışır. Türkçe ve İngilizce tanınır;
+  sütunlar, liste maddeleri ve tablo hücreleri sırayla, ayrı ayrı söylenir.
+  Bağlantı adresleri okunmaz, dosya yollarının yalnızca dosya adı söylenir.
+  Alanın sınırının ortasından geçtiği bir satır okunmayabilir; satırları tam içine
+  alacak şekilde çizin.
+- **Pencere.** [Claude'un yanıtını dinlerken](#claudeun-yanıtını-dinleme) açılan
+  penceredir: okunan kelime vurgulanır, ❚❚ durdurur, ◀◀ ve ▶▶ beşer kelime gider,
+  çubuk istediğiniz yere götürür. Okuma sürerken yeniden ⌃⌥S okumayı durdurur.
+- **İzin.** Görüntü için macOS ekran kaydı izni gerekir. İlk basışta macOS sorar;
+  Sistem Ayarları > Gizlilik ve Güvenlik > Ekran ve Sistem Sesi Kaydı bölümünden
+  Uykusuz'u açın ve Uykusuz'u yeniden başlatın. Uygulama her kurulumda yeniden
+  imzalandığı için bu izni yeni bir kurulumdan sonra yenilemek gerekir: Uykusuz
+  orada açık görünse de kapatıp yeniden açın. macOS bu izni zaman zaman yeniden
+  sorabilir. İzin yoksa pencere bunu söyler, Uykusuz'un geri kalanı etkilenmez.
+- **Gizlilik.** Uykusuz ekrana yalnızca siz alan çizdikten sonra bir kez bakar;
+  kendi pencereleri görüntüye girmez. Görüntü bellekte kalır, yazıyı macOS'un
+  metin tanıması bu Mac'te okur. Görüntü ve yazı diske ya da günlüğe yazılmaz,
+  hiçbir yere gönderilmez.
+- **Kısayol.** Hangi uygulamada olursanız olun çalışır; Ayarlar > Seçilen alanı
+  dinle bölümünden kapatılır. Başka bir uygulama ⌃⌥S kısayolunu kendine ayırmışsa
+  Ayarlar bunu söyler ve menü yine çalışır.
+
 ### Doğal Türkçe ses
 
-Uyarıları, özeti ve Claude'un yanıtını Uykusuz'la gelen yapay zekâ sesi okur.
+Uyarıları, özeti, Claude'un yanıtını ve seçtiğiniz alanı Uykusuz'la gelen yapay
+zekâ sesi okur.
 Ayarlar > Kapak kapanınca yapılacaklar bölümündeki **Doğal Türkçe ses** seçeneği
 varsayılan olarak açıktır; kapatınca Mac'in Türkçe sesi okur.
 

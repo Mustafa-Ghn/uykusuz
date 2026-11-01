@@ -35,6 +35,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// window, and the shortcut that asks for it.
     let replyReader: ClaudeReplyReader
     let listenHotKey = GlobalHotKey(keyCode: kVK_ANSI_D, modifiers: controlKey | optionKey)
+    /// An area the user draws on the screen read aloud on request, in the same
+    /// window, and the shortcut that asks for it.
+    let areaReader: AreaReader
+    let areaHotKey = GlobalHotKey(keyCode: kVK_ANSI_S, modifiers: controlKey | optionKey)
     /// "Claude is waiting for you" to the iPhone by iMessage (fork addition).
     let waitingAlerts: WaitingAlerts
     /// Claude's own phone pushes only while the user is away (fork addition).
@@ -74,6 +78,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             windowIsReading: { panel.isReading },
             setShortcut: { hotKey.set($0) },
             paths: paths
+        )
+        let areaKey = areaHotKey
+        let picker = AreaPicker()
+        let screenPermission = ScreenPermission()
+        areaReader = AreaReader(
+            config: { [manager] in manager.config },
+            hasPermission: { screenPermission.isGranted },
+            askPermission: { screenPermission.ask() },
+            read: {
+                guard let area = await picker.pick() else { return nil }
+                return try await ScreenText.read(area)
+            },
+            giveUp: { picker.cancel() },
+            present: { text, autoplay, onFinish, onClose in
+                await panel.show(text, told: Date(), title: AreaReader.title, autoplay: autoplay, onFinish: onFinish, onClose: onClose)
+            },
+            dismiss: { panel.close() },
+            windowIsReading: { panel.isReading },
+            setShortcut: { areaKey.set($0) }
         )
         waitingAlerts = WaitingAlerts(
             config: { [manager] in manager.config },
@@ -124,7 +147,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 Log.error("could not save config after the launch at login check: \(error.localizedDescription)")
             }
         }
-        let settings = SettingsWindow { [manager, secrets, locationPermission, loginItem, awaySummary, replyReader, waitingAlerts, pushGate] in
+        let settings = SettingsWindow { [manager, secrets, locationPermission, loginItem, awaySummary, replyReader, areaReader, waitingAlerts, pushGate] in
             AnyView(
                 SettingsView(
                     manager: manager,
@@ -133,6 +156,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     loginItem: loginItem,
                     awaySummary: awaySummary,
                     replyReader: replyReader,
+                    areaReader: areaReader,
                     waitingAlerts: waitingAlerts,
                     pushGate: pushGate
                 )
@@ -147,7 +171,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 guard awaySummary.last != nil else { return nil }
                 return { Task { await awaySummary.showLast() } }
             },
-            replyReader: replyReader
+            replyReader: replyReader,
+            areaReader: areaReader
         )
         autoSession.onAgentActivityChange = { [weak services = manager.services] active in
             services?.setAgentActive(active)
@@ -161,6 +186,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Task { await replyReader.listen() }
         }
         replyReader.start()
+        areaHotKey.onPress = { [areaReader] in
+            Task { await areaReader.listen() }
+        }
+        areaReader.start()
         waitingAlerts.start()
         pushGate.start()
         // Hooks an earlier build installed lack the events added since.

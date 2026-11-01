@@ -116,8 +116,11 @@ struct Config: Codable, Equatable, Sendable {
     /// A system-wide shortcut reads aloud what Claude last said in the chat
     /// the user is looking at (`ClaudeReplyReader`).
     var listenShortcut: Bool = true
-    /// Alerts, the summary and Claude's reply are read by the voice that ships
-    /// with the app (`NaturalVoice`); off, by the Mac's Turkish voice.
+    /// A system-wide shortcut lets the user draw an area of the screen and
+    /// hear what is written in it (`AreaReader`).
+    var listenAreaShortcut: Bool = true
+    /// Alerts, the summary, Claude's reply and a drawn area are read by the
+    /// voice that ships with the app (`NaturalVoice`); off, by the Mac's Turkish voice.
     var naturalVoice: Bool = true
     /// While the user is away, tell their iPhone by iMessage when a Claude
     /// session starts to wait on them or finishes (`WaitingAlerts`), to
@@ -266,6 +269,7 @@ struct Config: Codable, Equatable, Sendable {
         awaySummary = try c.decodeIfPresent(Bool.self, forKey: .awaySummary) ?? d.awaySummary
         summaryModel = try c.decodeIfPresent(String.self, forKey: .summaryModel) ?? d.summaryModel
         listenShortcut = try c.decodeIfPresent(Bool.self, forKey: .listenShortcut) ?? d.listenShortcut
+        listenAreaShortcut = try c.decodeIfPresent(Bool.self, forKey: .listenAreaShortcut) ?? d.listenAreaShortcut
         naturalVoice = try c.decodeIfPresent(Bool.self, forKey: .naturalVoice) ?? d.naturalVoice
         endWhileWaiting = try c.decodeIfPresent(Bool.self, forKey: .endWhileWaiting) ?? d.endWhileWaiting
         approvalWaitGrace = try c.decodeIfPresent(TimeInterval.self, forKey: .approvalWaitGrace) ?? d.approvalWaitGrace

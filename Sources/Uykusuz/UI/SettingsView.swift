@@ -13,6 +13,8 @@ struct SettingsView: View {
     var awaySummary: AwaySummary? = nil
     /// Claude's reply read aloud (fork addition); nil leaves its section out.
     var replyReader: ClaudeReplyReader? = nil
+    /// A drawn area of the screen read aloud; nil leaves its section out.
+    var areaReader: AreaReader? = nil
     /// iMessage when Claude waits (fork addition); nil leaves it out.
     var waitingAlerts: WaitingAlerts? = nil
     /// Replies from the phone (fork addition); nil leaves them out.
@@ -55,6 +57,9 @@ struct SettingsView: View {
             }
             if replyReader != nil {
                 replyReadingSection
+            }
+            if areaReader != nil {
+                areaReadingSection
             }
             if pushGate != nil {
                 phoneRepliesSection
@@ -440,7 +445,7 @@ struct SettingsView: View {
     /// What "Dinle" says, at the output's current volume.
     static let voiceSample = "Merhaba, ben Uykusuz. Kapak kapalıyken uyarıları bu sesle söylerim."
     static let naturalVoiceName = "Uykusuz sesi"
-    static let naturalVoiceNote = "Uyarıları, özeti ve Claude'un yanıtını Uykusuz'la gelen yapay zekâ sesi okur. Bu Mac'te çalışır, ağa çıkmaz ve yalnızca okurken yüklenir. Kapalıyken Mac'in Türkçe sesi okur."
+    static let naturalVoiceNote = "Uyarıları, özeti, Claude'un yanıtını ve seçtiğiniz alanı Uykusuz'la gelen yapay zekâ sesi okur. Bu Mac'te çalışır, ağa çıkmaz ve yalnızca okurken yüklenir. Kapalıyken Mac'in Türkçe sesi okur."
 
     private var awaySummarySection: some View {
         Section("Sen yokken özeti") {
@@ -494,6 +499,21 @@ struct SettingsView: View {
                     .foregroundStyle(.red)
             }
             Text("Claude uygulamasında baktığınız sohbetin son mesajı, \(ClaudeReplyReader.shortcutLabel) kısayoluna ya da göze sağ tıklayınca açılan menüdeki Son yanıtı dinle öğesine basınca ekranın sağ üstündeki küçük pencerede okunur; önceki adımlar okunmaz ve kendiliğinden hiçbir şey okunmaz. Aynı sohbette yeniden basınca okuma durur; başka bir sohbete geçip basınca o sohbetin yanıtı okunur. Kod blokları atlanır, bağlantı adresleri okunmaz, dosya yollarının yalnızca dosya adı söylenir. Okunan kelime vurgulanır; ❚❚ durdurur, çubuk ve ileri geri düğmeleriyle istediğiniz yere gidersiniz. Kısayol hangi uygulamada olursanız olun çalışır ve Uykusuz başka hiçbir tuşu görmez. Yanıt bu Mac'te okunur, hiçbir yere gönderilmez.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var areaReadingSection: some View {
+        Section("Seçilen alanı dinle") {
+            Toggle("\(AreaReader.shortcutLabel) ile alan seçip dinle", isOn: bind(\.listenAreaShortcut))
+                .onChange(of: manager.config.listenAreaShortcut) { areaReader?.settingChanged() }
+            if manager.config.listenAreaShortcut, areaReader?.shortcutTaken == true {
+                Text("\(AreaReader.shortcutLabel) kısayolunu başka bir uygulama kendine ayırmış. Alanı göze sağ tıklayınca açılan menüden seçebilirsiniz.")
+                    .font(.callout)
+                    .foregroundStyle(.red)
+            }
+            Text("\(AreaReader.shortcutLabel) kısayoluna ya da göze sağ tıklayınca açılan menüdeki Alan seçip dinle öğesine basınca ekran kararır; okunacak alanı fareyle çizersiniz, Esc vazgeçer. Alandaki yazı ekranın sağ üstündeki küçük pencerede okunur: okunan kelime vurgulanır, ❚❚ durdurur, çubuk ve ileri geri düğmeleriyle istediğiniz yere gidersiniz. Okuma sürerken yeniden basmak okumayı durdurur. macOS ekran kaydı izni ister; Uykusuz ekrana yalnızca siz alan çizince bir kez bakar. Görüntü diske yazılmaz, yazı bu Mac'te okunur ve hiçbir şey gönderilmez.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

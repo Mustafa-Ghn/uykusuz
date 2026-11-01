@@ -4,6 +4,17 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.12.0 — 2026-11-01
+
+### Eklenenler
+
+- **Seçilen alanı dinleme.** ⌃⌥S kısayoluna ya da göze sağ tıklayınca açılan menüdeki Alan seçip dinle öğesine basınca ekran kararır; fareyle çizdiğiniz alandaki yazı, ekranın sağ üstündeki küçük pencerede okunur. Okunan kelime vurgulanır, ❚❚ durdurur, çubuk ve ileri geri düğmeleri çalışır. Tarayıcıda, PDF'te, terminalde ya da bir resimde aynı şekilde çalışır; sütunlar, liste maddeleri ve tablo hücreleri sırayla, ayrı ayrı okunur.
+- **Ayarlar > Seçilen alanı dinle.** Kısayolu açıp kapatır; başka bir uygulama ⌃⌥S kısayolunu kendine ayırmışsa bunu söyler.
+
+### Değişenler
+
+- **Yeni izin: ekran kaydı.** Yalnızca bu özellik için gerekir ve ilk basışta sorulur. Uykusuz ekrana yalnızca siz alan çizdikten sonra bir kez bakar, kendi pencereleri görüntüye girmez; görüntü bellekte kalır, yazı bu Mac'te tanınır, hiçbir şey diske yazılmaz ya da gönderilmez. Uygulama her kurulumda yeniden imzalandığı için izni yeni bir kurulumdan sonra yenilemek gerekir.
+
 ## 0.11.0 — 2026-11-01
 
 ### Eklenenler

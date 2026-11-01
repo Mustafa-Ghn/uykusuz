@@ -98,9 +98,19 @@ Kısayol `RegisterEventHotKey` ile
 kaydedilir: sistem uygulamaya yalnızca bu tuş birleşimi basılınca haber verir,
 Uykusuz başka tuş görmez ve bunun için izin istemez.
 
-**Doğal Türkçe ses.** Uyarıları, özeti ve Claude'un yanıtını uygulama paketindeki
-`Contents/Resources/Voice` klasöründen yüklenen konuşma modeli okur; paket imzasının
-mührü bu dosyaları da kapsar. Model Core ML ile yalnızca işlemcide çalışır. Sayı ve
+**Seçilen alanı dinleme.** Yalnızca kullanıcı ⌃⌥S kısayoluna ya da menüdeki öğeye
+basıp fareyle bir alan çizince çalışır. macOS'un ekran kaydı iznini ister; izin
+verilmezse yalnızca bu özellik çalışmaz. İzin varken de Uykusuz ekrana kendiliğinden
+bakmaz: çizilen alanın `SCScreenshotManager` ile tek bir görüntüsü alınır, Uykusuz'un
+kendi pencereleri bu görüntüye girmez. Görüntü yalnızca bellekte tutulur, yazı
+macOS'un Vision çerçevesiyle bu Mac'te tanınır. Görüntü ve yazı diske ve günlüğe
+yazılmaz (günlüğe yalnızca karakter sayısı yazılır), ağa gitmez. Kısayol ⌃⌥D gibi
+`RegisterEventHotKey` ile kaydedilir.
+
+**Doğal Türkçe ses.** Uyarıları, özeti, Claude'un yanıtını ve seçilen alanı
+uygulama paketindeki `Contents/Resources/Voice` klasöründen yüklenen konuşma
+modeli okur; paket imzasının mührü bu dosyaları da kapsar. Model Core ML ile
+yalnızca işlemcide çalışır. Sayı ve
 tarih kuralları aynı klasördeki `trnorm.js` dosyasıdır ve sistemin JavaScriptCore
 çerçevesinde çalışır: bu bağlamda dosya ya da ağ erişimi yoktur ve kurallara
 yalnızca okunacak cümle verilir. Ses hiçbir şey indirmez, ağ isteği yapmaz, izin

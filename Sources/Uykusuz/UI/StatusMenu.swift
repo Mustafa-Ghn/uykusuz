@@ -32,6 +32,9 @@ enum StatusMenu {
             /// Read aloud what Claude last said in the chat in focus.
             /// `shortcut`: the system-wide shortcut is on, and the item says so.
             case listenToReply(shortcut: Bool)
+            /// Draw an area of the screen and hear what is written in it.
+            /// `shortcut`: the system-wide shortcut is on, and the item says so.
+            case listenToArea(shortcut: Bool)
         }
 
         let title: String
@@ -46,6 +49,7 @@ enum StatusMenu {
     }
     static let showSummaryTitle = "Son özeti göster"
     static let listenToReplyTitle = "Son yanıtı dinle"
+    static let listenToAreaTitle = "Alan seçip dinle"
     static let pauseTitle = "Otomatik oturumu duraklat"
     static let resumeTitle = "Otomatik oturumu sürdür"
 
@@ -133,6 +137,7 @@ enum StatusMenu {
         now: Date = Date(),
         hasSummary: Bool = false,
         listenShortcut: Bool? = nil,
+        listenAreaShortcut: Bool? = nil,
         machine: String?,
         actions: String?,
         throttledBrowsers: [ThrottledBrowser],
@@ -164,6 +169,9 @@ enum StatusMenu {
         }
         if let listenShortcut {
             out.append(Item(title: listenToReplyTitle, kind: .listenToReply(shortcut: listenShortcut)))
+        }
+        if let listenAreaShortcut {
+            out.append(Item(title: listenToAreaTitle, kind: .listenToArea(shortcut: listenAreaShortcut)))
         }
         if let machine = present(machine) {
             out.append(Item(title: machine, kind: .info))
@@ -234,7 +242,8 @@ enum StatusMenu {
         pauseChoice: Selector? = nil,
         resumeAuto: Selector? = nil,
         showSummary: Selector? = nil,
-        listenToReply: Selector? = nil
+        listenToReply: Selector? = nil,
+        listenToArea: Selector? = nil
     ) -> NSMenu {
         let menu = NSMenu()
         menu.autoenablesItems = false
@@ -280,6 +289,11 @@ enum StatusMenu {
             case let .listenToReply(shortcut):
                 guard let listenToReply else { continue }
                 let entry = action(title: item.title, selector: listenToReply, key: shortcut ? "d" : "", target: target)
+                if shortcut { entry.keyEquivalentModifierMask = [.control, .option] }
+                menu.addItem(entry)
+            case let .listenToArea(shortcut):
+                guard let listenToArea else { continue }
+                let entry = action(title: item.title, selector: listenToArea, key: shortcut ? "s" : "", target: target)
                 if shortcut { entry.keyEquivalentModifierMask = [.control, .option] }
                 menu.addItem(entry)
             }

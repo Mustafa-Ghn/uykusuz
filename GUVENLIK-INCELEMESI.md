@@ -94,8 +94,12 @@ Root olarak çalışan başka bir şey yoktur.
   satırına geçirilmez. Uygulama başka Anahtar Zinciri kayıtlarını okumaz.
 - **Konum izni:** Yalnızca macOS'un Wi-Fi adlarını gösterebilmesi için
   istenir. Konum verisi okunmaz ya da saklanmaz.
-- **Okunmayan veriler:** Pano, ekran içeriği, başka uygulamalara yazılanlar,
-  tarayıcı geçmişi ya da sekmeleri, SSH anahtarları ve kabuk geçmişi okunmaz.
+- **Ekran kaydı izni (0.12.0):** Yalnızca kullanıcı bir alan çizip dinlemek
+  istediğinde gerekir. Ekrana yalnızca o anda bir kez bakılır; ayrıntılar aşağıda
+  "Seçilen alanı dinleme" maddesindedir.
+- **Okunmayan veriler:** Pano, başka uygulamalara yazılanlar, tarayıcı geçmişi
+  ya da sekmeleri, SSH anahtarları ve kabuk geçmişi okunmaz. Ekran içeriği yalnızca
+  kullanıcı bir alan çizdiğinde ve yalnızca o alandan okunur (0.12.0).
 
 ### Diğer uygulamalar
 
@@ -230,6 +234,16 @@ macOS'un sorduğu Otomasyon (Mesajlar) iznidir.
   Çalışamazsa `say` ve `AVSpeechSynthesizer` devreye girer. Yeni izin, ağ isteği,
   `sudo` komutu ya da kalıcı bileşen yoktur. Bileşenlerin lisansları
   `Resources/Voice/NOTICE.md` dosyasındadır.
+- **Seçilen alanı dinleme (0.12.0):** Yalnızca kullanıcı ⌃⌥S kısayoluna ya da
+  menüdeki öğeye basıp fareyle bir alan çizince çalışır. Yeni izin: macOS ekran kaydı
+  (`CGRequestScreenCaptureAccess`); izin yoksa çizim açılmaz. Çizim bitince
+  `SCScreenshotManager` ile yalnızca çizilen dikdörtgenin tek bir görüntüsü alınır,
+  uygulamanın kendi pencereleri süzgeçle dışarıda bırakılır ve sürekli bir yakalama
+  akışı açılmaz. Görüntü bellekte kalır, yazıyı Vision (`RecognizeDocumentsRequest`) bu
+  Mac'te tanır. Görüntü ve yazı diske ve günlüğe yazılmaz, ağa gitmez; okuma doğal
+  sesle ya da Mac'in sesiyle yerelde yapılır. Kısayol `RegisterEventHotKey` ile
+  kaydedilir, başka tuş görülmez; her kısayolun işleyicisi yalnızca kendi kimliğine
+  yanıt verir. Yeni ağ isteği, `sudo` komutu ya da kalıcı bileşen yoktur.
 - **Bilinen Wi-Fi ağına geri dönüş (0.6.0):** Oturum sürerken hotspot'tayken
   CoreWLAN ile tarar ve bilinen ağ listesinden yalnızca adları ve parolalı olup
   olmadıklarını okur; Wi-Fi parolalarını okumaz ve hiçbir ağa kendisi katılmaz.
