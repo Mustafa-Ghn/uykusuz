@@ -598,9 +598,23 @@ final class UIStatusTests: XCTestCase {
             return max(StatusItemController.makeHostingView(root).fittingSize.width.rounded(.up), 24)
         }
 
-        /// Let the layout report and the pills stagger in.
-        func settleOpen() async {
+        /// Let the layout report and the pills stagger in, at the pace the
+        /// tests after it were written against. The focus glow is the last
+        /// thing an open does, and its timer starts only once the last
+        /// pill's step has run, so a main queue served late pushes it past
+        /// any fixed sleep: then wait for the glow itself. One that never
+        /// comes fails here.
+        func settleOpen(file: StaticString = #filePath, line: UInt = #line) async {
             try? await Task.sleep(for: .milliseconds(300))
+            let deadline = Date().addingTimeInterval(5)
+            while !openHasLanded, Date() < deadline {
+                try? await Task.sleep(for: .milliseconds(5))
+            }
+            XCTAssertTrue(openHasLanded, "the open never landed: \(model.visiblePills) pills, glow \(model.focusVisible)", file: file, line: line)
+        }
+
+        private var openHasLanded: Bool {
+            model.visiblePills == DurationInput.Field.allCases.count && model.focusVisible
         }
 
         /// Wait out a close: the fold's stagger and settle, then the
