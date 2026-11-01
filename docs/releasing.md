@@ -261,7 +261,7 @@ below cover what only a real Mac shows.
 - Docker Desktop idle/busy behavior with another Docker context selected
 - Docker rule off on a fresh config.json (no `docker ps`, Docker untouched) and on with a container started between the two idle checks (Docker untouched, both checks logged with their answers)
 - Docker rule on, lid opened while an idle check is still running (Docker never paused, the display and frozen apps restored without waiting for `docker ps`, uykusuz.log says the lid opened during that check), and a session started with the lid already closed (no countdown redraw until the lid opens)
-- Docker rule on, no container, a `docker pull` and then a BuildKit `docker build` running at lid close (Docker never paused, the command finishes with the lid closed, uykusuz.log says the first check found it at work)
+- Docker rule on, no container, a `docker pull` and then a BuildKit `docker build` running at lid close (Docker never paused, the command finishes with the lid closed, uykusuz.log says the first check found it at work); the same with a `docker run` and a `docker compose up` fetching an image they do not have yet, and with a `docker load`
 - tmux cancellation with a dedicated disposable pane
 - tmux nudge on the user's own tmux server: marked pane gets `continue` only, Enter toggle submits it, unmarked pane untouched
 - Headed-browser throttling with the lid closed

@@ -4,6 +4,13 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.10.3 — 2026-11-01
+
+### Düzeltilenler
+
+- **Docker kuralı, kapsayıcısını bekleyen işi dondurmaz.** "Çalışan kapsayıcı yokken Docker Desktop'ı duraklat" açıkken, imajını indirdiği için kapsayıcısını henüz açmamış bir `docker run` ya da `docker compose up` sürerken kapak kapanırsa Docker duraklatılıyor ve iş kapak açılana kadar asılı kalıyordu. Artık iki denetim de `docker ps -q` boş döndüğünde bu komutlara bakar; biri sürüyorsa Docker çalışır durumda kalır.
+- **Kapsayıcı olarak görünmeyen diğer uzun işler.** `docker create`, `start`, `restart`, `load`, `import`, `save`, `export`, `commit`, `cp`, `prune`, `rm`, `rmi` ile `docker compose scale`, `watch` ve `down` sürerken de Docker duraklatılmaz. iPhone'a giden Docker mesajları değişmedi: yine yalnızca `build`, `pull` ve `push` komutlarını iş sayar, günlerce açık kalan bir `docker compose up` için mesaj gitmez.
+
 ## 0.10.2 — 2026-11-01
 
 ### Düzeltilenler

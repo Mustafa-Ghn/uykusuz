@@ -1995,6 +1995,87 @@ final class LidActionsTests: XCTestCase {
         XCTAssertEqual(try h.store.loadState()?.frozenProcesses, [])
     }
 
+    private func dockerProcess(_ pid: pid_t, _ name: String = "docker") -> BashToolWatcher.Process {
+        BashToolWatcher.Process(pid: pid, ppid: 1, name: name, started: Date(timeIntervalSince1970: 1_000_000))
+    }
+
+    /// The real command check over a made-up process table.
+    private func tableProbe(
+        _ table: @escaping @Sendable () -> [BashToolWatcher.Process],
+        _ arguments: [pid_t: [String]]
+    ) -> DockerRule.CommandProbe {
+        DockerRule.makeCommandProbe(processes: table, arguments: { arguments[$0] }, isGone: { _ in false })
+    }
+
+    /// A `docker run` still fetching its image: no container for `docker ps`
+    /// to list. Docker never reaches the journal and the rest of the close
+    /// goes on.
+    func testDockerRunFetchingItsImageLeavesDockerAlone() async throws {
+        let table = [dockerProcess(10, "com.docker.backe"), dockerProcess(20)]
+        let (m, actions) = await make(dockerCommands: tableProbe({ table }, [20: ["docker", "run", "ornek/imaj"]]))
+        await m.start(duration: 3600)
+
+        await actions.onClose()
+
+        XCTAssertEqual(h.procs.suspended, [[100, 101, 102]], "Docker was stopped while a docker run fetched its image")
+        let s = try XCTUnwrap(try h.store.loadState())
+        XCTAssertEqual(s.frozenPids, [100, 101, 102])
+        XCTAssertFalse(s.dockerFrozen)
+        let log = logText()
+        XCTAssertTrue(log.contains("docker rule: first check found docker run at work, Docker left alone"), log)
+        XCTAssertFalse(log.contains("second check"), log)
+    }
+
+    /// A `docker compose up` that starts after the first check, with no
+    /// container at either: its journal entries go away again.
+    func testDockerComposeUpStartedBetweenTheChecksLeavesDockerAlone() async throws {
+        let reads = Locked(0)
+        let engine = dockerProcess(10, "com.docker.backe")
+        let compose = dockerProcess(20, "docker-compose")
+        let (m, actions) = await make(dockerCommands: tableProbe({
+            reads.value += 1
+            return reads.value == 1 ? [engine] : [engine, compose]
+        }, [20: ["docker-compose", "compose", "up"]]))
+        await m.start(duration: 3600)
+
+        await actions.onClose()
+
+        XCTAssertEqual(reads.value, 2)
+        XCTAssertEqual(h.procs.suspended, [[100, 101, 102]], "Docker was stopped although a docker compose up had started")
+        let s = try XCTUnwrap(try h.store.loadState())
+        XCTAssertEqual(s.frozenPids, [100, 101, 102])
+        XCTAssertFalse(s.dockerFrozen)
+        let log = logText()
+        XCTAssertTrue(log.contains("docker rule: second check found docker compose up at work, Docker left alone"), log)
+        XCTAssertTrue(log.contains("Docker left running: the check before the signal said no"), log)
+    }
+
+    /// `docker load` runs no container at any point.
+    func testDockerLoadLeavesDockerAlone() async throws {
+        let table = [dockerProcess(20)]
+        let (m, actions) = await make(dockerCommands: tableProbe({ table }, [20: ["docker", "load", "-i", "ornek.tar"]]))
+        await m.start(duration: 3600)
+
+        await actions.onClose()
+
+        XCTAssertEqual(h.procs.suspended, [[100, 101, 102]], "Docker was stopped in the middle of a docker load")
+        let log = logText()
+        XCTAssertTrue(log.contains("docker rule: first check found docker load at work, Docker left alone"), log)
+    }
+
+    /// The tests above cannot pass just because this fixture never pauses: a
+    /// `docker logs` left open in the same table does not hold Docker.
+    func testACommandThatOnlyWatchesDoesNotHoldDocker() async throws {
+        let table = [dockerProcess(20)]
+        let (m, actions) = await make(dockerCommands: tableProbe({ table }, [20: ["docker", "logs", "-f", "ornek"]]))
+        await m.start(duration: 3600)
+
+        await actions.onClose()
+
+        XCTAssertEqual(h.procs.suspended, [[100, 101, 102], [400, 401]])
+        XCTAssertTrue(try XCTUnwrap(try h.store.loadState()).dockerFrozen)
+    }
+
     /// Commands that cannot be known count as a failed probe does, and the
     /// log says why.
     private func assertUnknownCommandsLeaveDockerAlone(atRead failingRead: Int, check: String, file: StaticString = #filePath, line: UInt = #line) async throws {

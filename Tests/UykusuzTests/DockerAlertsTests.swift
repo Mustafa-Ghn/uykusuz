@@ -158,6 +158,12 @@ final class DockerWatcherTests: XCTestCase {
             ("docker", ["docker", "run", "-it", "x"], nil),
             ("docker", ["docker", "logs", "-f", "db"], nil),
             ("docker-compose", ["docker-compose", "compose", "up"], nil),
+            // These hold Docker at lid close only (`DockerRule.unseenVerbs`).
+            ("docker", ["docker", "load", "-i", "ornek.tar"], nil),
+            ("docker", ["docker", "save", "ornek/imaj"], nil),
+            ("docker", ["docker", "commit", "ornek"], nil),
+            ("docker", ["docker", "create", "ornek/imaj"], nil),
+            ("docker", ["docker", "system", "prune"], nil),
             ("docker", nil, nil),
             // The program's own name is no verb.
             ("docker", ["build"], nil),
@@ -177,6 +183,20 @@ final class DockerWatcherTests: XCTestCase {
         let watcher = make()
         let activity = await watcher.look(now: now)
         XCTAssertEqual(activity?.working, ["docker build", "docker pull"])
+    }
+
+    /// A `docker compose up` left open for days keeps Docker running at lid
+    /// close, and is no news for the phone: its containers answer for it.
+    func testACommandThatHoldsDockerAtLidCloseIsNoUse() async {
+        table = engine + [process(20, "docker"), process(21, "docker-compose"), process(22, "docker")]
+        argumentsByPID = [20: ["docker", "compose", "up"], 21: ["docker-compose", "compose", "up"], 22: ["docker", "run", "ornek/imaj"]]
+        running = [container("db")]
+        let watcher = make()
+        var activity = await watcher.look(now: now)
+        XCTAssertEqual(activity, DockerActivity(working: [], idle: ["db"]))
+        advance(3 * 24 * 60 * 60)
+        activity = await watcher.look(now: now)
+        XCTAssertEqual(activity, DockerActivity(working: [], idle: ["db"]))
     }
 
     func testTheAnswerOfDockerStats() {

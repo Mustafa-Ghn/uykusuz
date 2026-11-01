@@ -90,20 +90,31 @@ Varsayılanları bilmekte yarar var:
   dondurmak, kapak kapanınca görüşmeyi, kaydı ya da toplantı notlarını
   sonlandırır. Birini dondurma listesine elle eklemek onu yine de dondurur;
   bunun tek istisnası bir Apple uygulaması olan FaceTime'dır.
-- **Docker kuralı:** kapalı. Hiçbir kapsayıcı çalışmıyorken ve `docker build`,
-  `docker pull` ya da `docker push` sürmüyorken Docker Desktop'ı kapak kapanınca
-  duraklatmak için açın. Bu komutlar kapsayıcı olarak görünmediği için Uykusuz
-  onları süreç tablosunda, `docker`, `docker-buildx` ve `docker-compose`
-  süreçlerinin argümanlarına bakarak bulur; argümanları saklamaz. Yerel Desktop
-  soketine ve süreç tablosuna bir kez Docker'ı seçmek için, bir kez de
+- **Docker kuralı:** kapalı. Hiçbir kapsayıcı çalışmıyorken ve süren bir docker
+  işi yokken Docker Desktop'ı kapak kapanınca duraklatmak için açın. Şu komutlar
+  iş sayılır: `build`, `bake`, `pull` ve `push`; kapsayıcı oluşturan ya da açan
+  `run`, `create`, `start`, `restart`, `docker compose up`, `scale` ve `watch`;
+  imajları ve durmuş kapsayıcıların dosyalarını taşıyan `load`, `import`, `save`,
+  `export`, `commit` ve `cp`; silen `prune`, `rm`, `rmi` ve `docker compose down`.
+  Bunlar kapsayıcı olarak görünmediği için Uykusuz onları süreç tablosunda,
+  `docker`, `docker-buildx` ve `docker-compose` süreçlerinin argümanlarına bakarak
+  bulur; argümanları saklamaz. Bu liste kapak kapanışı içindir; iPhone'a giden
+  Docker mesajları yalnızca `build`, `pull` ve `push` komutlarına bakar. Süreç
+  tablosuna yalnızca `docker ps -q` boş döndüyse bakılır: bu durumda süren bir
+  `docker run` ya da `docker compose up` kapsayıcısını henüz açmamıştır, çoğu
+  zaman imajını indiriyordur. Kapsayıcısı açılınca onu `docker ps` gösterir. Yerel
+  Desktop soketine ve süreç tablosuna bir kez Docker'ı seçmek için, bir kez de
   duraklatmadan hemen önce bakılır. Bu iki noktadan birinde meşgul yanıtı, süren
   bir komut, başarısız bir `docker ps`, zaman aşımı, okunamayan bir süreç tablosu
   ya da argümanları okunamayan bir docker süreci (örneğin `sudo docker build`)
   Docker'ı çalışır durumda bırakır. Docker o kapanışta yeniden denetlenmez: iş
-  kapak kapalıyken bitse de Docker bir sonraki kapanışa kadar çalışır. Denetim
-  yalnızca `docker` komut satırını görür: henüz kapsayıcısını açmamış bir
-  `docker run` ya da `docker compose up` imaj indirirken veya bir araç Docker'ı
-  doğrudan API'si üzerinden kullanırken Docker yine duraklatılabilir. İkinci
+  kapak kapalıyken bitse de Docker bir sonraki kapanışa kadar çalışır. Komutun
+  hangi Docker'a bağlandığına bakılmaz ve bu kelimeler argümanların neresinde
+  olursa olsun sayılır: başka bir makinedeki Docker'a bağlı bir
+  `docker compose up` ya da kapsayıcısı olmayan bir `docker mcp gateway run`, açık
+  kaldığı sürece Docker'ı çalışır bırakır. Denetim yalnızca `docker` komut
+  satırını görür: bir araç Docker'ı doğrudan API'si üzerinden kullanırken ya da
+  bu listede olmayan bir komut sürerken Docker yine duraklatılabilir. İkinci
   denetim ile duraklatma arasında başlayan bir kapsayıcı ya da komut da Desktop
   ile birlikte duraklatılır; Docker duraklatıldıktan sonra başlatılan bir komut da
   kapak açılana kadar bekler. Bu yüzden beklenmedik bir duraklatmanın zarar

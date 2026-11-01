@@ -6,8 +6,9 @@ import Foundation
 ///
 /// A BuildKit `docker build`, a `docker pull` and a `docker push` run no
 /// container, so `docker ps` answers empty through all of them and a SIGSTOP
-/// would hang them until the lid opens. The process table shows them
-/// (`DockerWatcher.commandsAtWork`).
+/// would hang them until the lid opens. So does a `docker run` still fetching
+/// its image, a `docker load` and more (`unseenVerbs`). The process table
+/// shows them (`DockerWatcher.commandsAtWork`).
 ///
 /// The rule only *decides*; `LidActions` journals `dockerFrozen` and the
 /// pids before the group is actually stopped.
@@ -145,6 +146,25 @@ struct DockerRule: Sendable {
         }
     }
 
+    /// What also keeps Docker running, on top of `DockerWatcher.workingVerbs`:
+    /// commands that can take minutes with nothing in `docker ps`. They stay
+    /// out of that list because it also tells the phone about work, and `up`
+    /// and `run` stay open for days. That cannot mislead this rule: it reads
+    /// the process table only after `docker ps -q` answered empty, so a live
+    /// `docker run` has not opened its container yet. Any `run` counts, so
+    /// `docker model run` and `docker mcp gateway run` do too: they have no
+    /// container either, and a stopped Docker would hang them.
+    static let unseenVerbs: [(argument: String, label: String)] = [
+        // Opening a container: the image comes first.
+        ("run", "docker run"), ("create", "docker create"), ("start", "docker start"), ("restart", "docker restart"),
+        ("up", "docker compose up"), ("scale", "docker compose scale"), ("watch", "docker compose watch"),
+        // Images and the files of stopped containers, on their way in or out.
+        ("load", "docker load"), ("import", "docker import"), ("save", "docker save"), ("export", "docker export"),
+        ("commit", "docker commit"), ("cp", "docker cp"),
+        // Removing images and volumes.
+        ("prune", "docker prune"), ("rmi", "docker rmi"), ("rm", "docker rm"), ("down", "docker compose down"),
+    ]
+
     /// The commands at work on this Mac, whichever daemon they talk to: a
     /// process's environment is not read, and leaving Docker running is the
     /// safe side.
@@ -170,7 +190,7 @@ struct DockerRule: Sendable {
                 throw CommandsUnknownError(reason: "the process table could not be read")
             }
             var unread: [pid_t] = []
-            let atWork = DockerWatcher.commandsAtWork(table) { pid in
+            let atWork = DockerWatcher.commandsAtWork(table, verbs: DockerWatcher.workingVerbs + unseenVerbs) { pid in
                 let words = arguments(pid)
                 if words == nil { unread.append(pid) }
                 return words

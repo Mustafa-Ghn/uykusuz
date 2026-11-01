@@ -833,14 +833,136 @@ final class DockerRuleCommandTests: XCTestCase {
         }
     }
 
+    /// Each process alone in the table next to Docker's own: the name it is
+    /// logged by, and neither check lets the SIGSTOP go ahead.
+    private func assertKeepsDockerRunning(
+        _ cases: [(name: String, arguments: [String], label: String)],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async throws {
+        for (name, arguments, label) in cases {
+            let probe = commands([process(10, "com.docker.backe"), process(20, name)], [20: arguments])
+            XCTAssertEqual(try probe(), [label], "\(arguments)", file: file, line: line)
+            let found = await answers(rule(commands: probe))
+            XCTAssertEqual(found, [false, false], "\(arguments)", file: file, line: line)
+        }
+    }
+
+    /// The defect: `docker ps -q` answers empty while `docker run` or
+    /// `docker compose up` fetches its image, and Docker was stopped in the
+    /// middle of it. The same goes for every command that opens a container.
+    func testACommandThatHasNotOpenedItsContainerKeepsDockerRunning() async throws {
+        try await assertKeepsDockerRunning([
+            ("docker", ["docker", "run", "--rm", "-it", "ornek/imaj"], "docker run"),
+            ("docker", ["docker", "--host", "unix:///s", "container", "run", "ornek/imaj"], "docker run"),
+            ("docker-compose", ["docker-compose", "compose", "run", "web"], "docker run"),
+            ("docker", ["docker", "compose", "up"], "docker compose up"),
+            ("docker-compose", ["docker-compose", "compose", "up"], "docker compose up"),
+            ("docker-compose", ["docker-compose", "compose", "-f", "ornek.yml", "up", "-d"], "docker compose up"),
+            ("docker-compose", ["docker-compose", "up"], "docker compose up"),
+            ("docker", ["docker", "create", "ornek/imaj"], "docker create"),
+            ("docker", ["docker", "container", "create", "ornek/imaj"], "docker create"),
+            ("docker-compose", ["docker-compose", "compose", "create"], "docker create"),
+            ("docker", ["docker", "start", "ornek"], "docker start"),
+            ("docker-compose", ["docker-compose", "compose", "start"], "docker start"),
+            ("docker", ["docker", "restart", "ornek"], "docker restart"),
+            ("docker-compose", ["docker-compose", "compose", "scale", "web=3"], "docker compose scale"),
+            ("docker-compose", ["docker-compose", "compose", "watch"], "docker compose watch"),
+        ])
+    }
+
+    /// Commands that are never a container: images and the files of stopped
+    /// containers going in or out, and what can take minutes to remove.
+    func testALongCommandThatIsNoContainerKeepsDockerRunning() async throws {
+        try await assertKeepsDockerRunning([
+            ("docker", ["docker", "load", "-i", "ornek.tar"], "docker load"),
+            ("docker", ["docker", "image", "load"], "docker load"),
+            ("docker", ["docker", "save", "-o", "ornek.tar", "ornek/imaj"], "docker save"),
+            ("docker", ["docker", "image", "save", "ornek/imaj"], "docker save"),
+            ("docker", ["docker", "commit", "ornek", "ornek/imaj"], "docker commit"),
+            ("docker", ["docker", "container", "commit", "ornek", "ornek/imaj"], "docker commit"),
+            ("docker-compose", ["docker-compose", "compose", "commit", "web"], "docker commit"),
+            ("docker", ["docker", "import", "ornek.tar"], "docker import"),
+            ("docker", ["docker", "image", "import", "ornek.tar"], "docker import"),
+            ("docker", ["docker", "export", "-o", "ornek.tar", "ornek"], "docker export"),
+            ("docker-compose", ["docker-compose", "compose", "export", "web"], "docker export"),
+            ("docker", ["docker", "cp", "ornek:/veri", "."], "docker cp"),
+            ("docker", ["docker", "system", "prune", "-a"], "docker prune"),
+            ("docker", ["docker", "image", "prune"], "docker prune"),
+            ("docker-buildx", ["docker-buildx", "buildx", "prune"], "docker prune"),
+            ("docker", ["docker", "rmi", "ornek/imaj"], "docker rmi"),
+            ("docker", ["docker", "image", "rm", "ornek/imaj"], "docker rm"),
+            ("docker", ["docker", "volume", "rm", "ornek"], "docker rm"),
+            ("docker-compose", ["docker-compose", "compose", "down", "--rmi", "all"], "docker compose down"),
+        ])
+    }
+
+    /// Docker's plugins run things with nothing in `docker ps` either, and a
+    /// stopped Docker would hang them. Any `run` counts, so these are kept
+    /// running for as long as they stay open; that is the safe side.
+    func testAPluginThatRunsSomethingKeepsDockerRunning() async throws {
+        try await assertKeepsDockerRunning([
+            ("docker", ["docker", "model", "run", "ornek/model"], "docker run"),
+            ("docker", ["docker", "mcp", "gateway", "run"], "docker run"),
+        ])
+    }
+
+    /// One `docker run` from start to end, over the same made-up table. The
+    /// container's answer takes over from the process table's, and once the
+    /// command ended nothing holds Docker any more.
+    func testADockerRunHoldsDockerUntilItEnds() async {
+        let containerOpen = Locked(false)
+        let table = Locked([process(10, "com.docker.backe"), process(20, "docker")])
+        let probe = DockerRule.makeCommandProbe(
+            processes: { table.value },
+            arguments: { $0 == 20 ? ["docker", "run", "ornek/imaj"] : nil },
+            isGone: { _ in false }
+        )
+        let run = rule(probe: { !containerOpen.value }, commands: probe)
+
+        var found = await answers(run)
+        XCTAssertEqual(found, [false, false], "fetching its image")
+        containerOpen.value = true
+        found = await answers(run)
+        XCTAssertEqual(found, [false, false], "its container is open")
+        containerOpen.value = false
+        table.value = [process(10, "com.docker.backe")]
+        found = await answers(run)
+        XCTAssertEqual(found, [true, true], "it ended")
+    }
+
     /// The same fixture with nothing at work lets both checks through, so
     /// the test above cannot pass just because the fixture never pauses.
     /// `build` is no docker process: its arguments are not asked for, or the
-    /// answer would be an error.
+    /// answer would be an error. Neither is `docker-sandbox`, a helper Docker
+    /// Desktop keeps open with `start` among its arguments.
     func testOtherCommandsAndProcessesDoNotKeepDockerRunning() async {
-        let table = [process(20, "docker"), process(21, "docker"), process(22, "com.docker.backe"), process(23, "build")]
+        let table = [
+            process(20, "docker"), process(21, "docker"), process(22, "com.docker.backe"), process(23, "build"),
+            process(24, "docker-sandbox"),
+        ]
         let found = await answers(rule(commands: commands(table, [20: ["docker", "ps", "-q"], 21: ["docker", "logs", "-f", "db"]])))
         XCTAssertEqual(found, [true, true])
+    }
+
+    /// Commands that stay open or only read while nothing is at work. A word
+    /// inside an argument is no command: a window left on `docker events` for
+    /// containers starting must not keep Docker running for days.
+    func testCommandsThatOnlyWatchOrReadDoNotKeepDockerRunning() async {
+        let cases: [[String]] = [
+            ["docker", "events", "--filter", "event=start"],
+            ["docker", "stats", "--all", "--no-stream", "--format", "{{.Name}}"],
+            ["docker", "ps", "--all", "--filter", "status=created"],
+            ["docker", "images"],
+            ["docker", "inspect", "ornek"],
+            ["docker", "system", "df"],
+            ["docker", "version"],
+            ["docker", "stop", "ornek"],
+        ]
+        for arguments in cases {
+            let found = await answers(rule(commands: commands([process(20, "docker")], [20: arguments])))
+            XCTAssertEqual(found, [true, true], "\(arguments)")
+        }
     }
 
     /// `docker ps` can take seconds, so the table is read after its answer.
