@@ -4,6 +4,12 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.12.4 — 2026-11-01
+
+### Düzeltilenler
+
+- **Testler menü çubuğunda göz yakıp söndürmez.** Uygulamanın testleri çalışırken menü çubuğuna gerçek bir Uykusuz simgesi koyuyordu; testler art arda çalışınca göz iki saniyede bir belirip kaybolduğu için uygulama açılıp kapanıyor gibi görünüyordu. Test sürecinde simge artık gizlidir; uygulamanın kendisinde bir şey değişmedi.
+
 ## 0.12.3 — 2026-11-01
 
 ### Değişenler
