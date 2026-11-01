@@ -200,7 +200,7 @@ enum AwayDigestCommand {
         let minutes = arguments.dropFirst().first.flatMap(Double.init) ?? 60
         let from = now.addingTimeInterval(-minutes * 60)
         guard var digest = ClaudeDigest.build(from: from, to: now, status: { AwaySummary.status(ofSession: $0, paths: paths, now: now) }) else {
-            print("Son \(Int(minutes)) dakikada Claude'un yaptığı bir iş yok.")
+            print("Son \(SessionMath.formatSpanLocative(minutes * 60)) Claude'un yaptığı bir iş yok.")
             return 0
         }
         digest.away = false

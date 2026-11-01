@@ -732,6 +732,8 @@ final class VoiceAnnouncerTests: XCTestCase {
     func testWaitingSentences() {
         XCTAssertEqual(VoiceAnnouncer.waitingSentence(endsAfter: 300),
                        "Claude sizi bekliyor. 5 dakika içinde yanıt vermezseniz oturum biter ve Mac uyur.")
+        XCTAssertEqual(VoiceAnnouncer.waitingSentence(endsAfter: 3 * 3600),
+                       "Claude sizi bekliyor. 3 saat içinde yanıt vermezseniz oturum biter ve Mac uyur.")
         XCTAssertEqual(VoiceAnnouncer.waitingSentence(endsAfter: nil), "Claude sizi bekliyor. Onay ya da yanıt istiyor.")
     }
 }

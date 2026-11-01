@@ -72,6 +72,30 @@ enum SessionMath {
         return "\(minutes)dk"
     }
 
+    /// A stretch of time in words, for messages that may be read aloud:
+    /// "1 gün 2 saat 5 dakika", "9 saat 4 dakika", "2 saat", "40 dakika".
+    /// To the nearest minute and at least one; zero units are dropped.
+    static func formatSpan(_ interval: TimeInterval) -> String {
+        let (days, hours, minutes) = spanUnits(interval)
+        var parts: [String] = []
+        if days > 0 { parts.append("\(days) gün") }
+        if hours > 0 { parts.append("\(hours) saat") }
+        if minutes > 0 { parts.append("\(minutes) dakika") }
+        return parts.joined(separator: " ")
+    }
+
+    /// `formatSpan` with the ending "Son ..." needs, which follows the last
+    /// unit: "9 saat 4 dakikada", "2 saatte", "1 günde".
+    static func formatSpanLocative(_ interval: TimeInterval) -> String {
+        let (_, hours, minutes) = spanUnits(interval)
+        return formatSpan(interval) + (minutes > 0 ? "da" : hours > 0 ? "te" : "de")
+    }
+
+    private static func spanUnits(_ interval: TimeInterval) -> (days: Int, hours: Int, minutes: Int) {
+        let total = max(Int((interval / 60).rounded()), 1)
+        return (total / (24 * 60), (total % (24 * 60)) / 60, total % 60)
+    }
+
     /// Live menu bar countdown, ticking every second in a fixed `shape`.
     ///
     /// Partial seconds round *up*, so a fresh 30-minute session opens on

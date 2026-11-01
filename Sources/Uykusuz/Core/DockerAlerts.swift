@@ -108,7 +108,7 @@ final class DockerAlerts {
 
     static func finishedText(_ activity: DockerActivity, lasted: TimeInterval) -> String {
         let rest = activity.idle.isEmpty ? "Çalışan kapsayıcı kalmadı." : "Açık ama boşta: \(names(activity.idle))."
-        return lead + "iş bitti, \(ClaudeDigest.minutes(lasted)) dakika sürdü. \(rest)"
+        return lead + "iş bitti, \(SessionMath.formatSpan(lasted)) sürdü. \(rest)"
     }
 
     private static func names(_ all: [String]) -> String {

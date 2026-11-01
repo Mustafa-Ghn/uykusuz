@@ -131,6 +131,21 @@ final class ClaudeDigestTests: XCTestCase {
         XCTAssertTrue(asked.promptText.hasPrefix("Özetlenen süre: son 40 dakika."), asked.promptText)
     }
 
+    func testALongSpanIsToldInDaysHoursAndMinutes() {
+        var digest = ClaudeDigest(from: from, to: from.addingTimeInterval(544 * 60), sessions: [])
+        XCTAssertEqual(digest.localSummary, "Kapak kapalıyken (9 saat 4 dakika) Claude bir şey yapmadı.")
+        XCTAssertTrue(digest.promptText.hasPrefix("Kullanıcı 9 saat 4 dakika uzaktaydı (kapak kapalıydı)."), digest.promptText)
+        digest.away = false
+        XCTAssertEqual(digest.localSummary, "Son 9 saat 4 dakikada Claude bir şey yapmadı.")
+        XCTAssertTrue(digest.promptText.hasPrefix("Özetlenen süre: son 9 saat 4 dakika."), digest.promptText)
+
+        let twoHours = ClaudeDigest(from: from, to: from.addingTimeInterval(2 * 3600), sessions: [], away: false)
+        XCTAssertEqual(twoHours.localSummary, "Son 2 saatte Claude bir şey yapmadı.", "the Settings button's span")
+
+        let days = ClaudeDigest(from: from, to: from.addingTimeInterval(86400 + 2 * 3600 + 5 * 60), sessions: [])
+        XCTAssertEqual(days.localSummary, "Kapak kapalıyken (1 gün 2 saat 5 dakika) Claude bir şey yapmadı.")
+    }
+
     func testAQuietStretchAndAnOlderTranscriptAreNothing() throws {
         XCTAssertNil(ClaudeDigest.build(from: from, to: to, projects: projects))
         let old = try transcript("old", session)

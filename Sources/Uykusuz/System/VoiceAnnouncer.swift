@@ -122,8 +122,7 @@ final class VoiceAnnouncer {
     /// which the automatic session ends, nil when it does not.
     static func waitingSentence(endsAfter grace: TimeInterval?) -> String {
         guard let grace else { return "Claude sizi bekliyor. Onay ya da yanıt istiyor." }
-        let minutes = max(Int((grace / 60).rounded()), 1)
-        return "Claude sizi bekliyor. \(minutes) dakika içinde yanıt vermezseniz oturum biter ve Mac uyur."
+        return "Claude sizi bekliyor. \(SessionMath.formatSpan(grace)) içinde yanıt vermezseniz oturum biter ve Mac uyur."
     }
 
     /// What is said before a session ends with the lid closed, or nil for

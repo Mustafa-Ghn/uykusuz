@@ -4,6 +4,12 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.9.4 — 2026-11-01
+
+### Değişenler
+
+- **Uzun süreler.** Sen yokken özetinde, Docker mesajında ve sesli uyarıda süre yalnızca dakikayla yazılıyordu ("544 dakika"). Artık gün, saat ve dakikayla yazılır: "9 saat 4 dakika", "1 gün 2 saat 5 dakika". Özeti Claude yazıyorsa ona verilen süre de böyledir.
+
 ## 0.9.3 — 2026-11-01
 
 ### Düzeltilenler

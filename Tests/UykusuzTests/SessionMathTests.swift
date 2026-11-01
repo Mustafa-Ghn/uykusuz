@@ -68,6 +68,33 @@ final class SessionMathTests: XCTestCase {
         XCTAssertEqual(SessionMath.formatRemaining(60), "1dk")
     }
 
+    func testFormatSpanInDaysHoursAndMinutes() {
+        XCTAssertEqual(SessionMath.formatSpan(544 * 60), "9 saat 4 dakika")
+        XCTAssertEqual(SessionMath.formatSpan(86400 + 2 * 3600 + 5 * 60), "1 gün 2 saat 5 dakika")
+        XCTAssertEqual(SessionMath.formatSpan(40 * 60), "40 dakika")
+    }
+
+    func testFormatSpanDropsZeroUnits() {
+        XCTAssertEqual(SessionMath.formatSpan(2 * 3600), "2 saat")
+        XCTAssertEqual(SessionMath.formatSpan(3 * 86400), "3 gün")
+        XCTAssertEqual(SessionMath.formatSpan(86400 + 5 * 60), "1 gün 5 dakika")
+    }
+
+    func testFormatSpanRoundsToAMinuteAndNeverToZero() {
+        XCTAssertEqual(SessionMath.formatSpan(0), "1 dakika")
+        XCTAssertEqual(SessionMath.formatSpan(-5), "1 dakika")
+        XCTAssertEqual(SessionMath.formatSpan(3599), "1 saat", "never \"60 dakika\"")
+        XCTAssertEqual(SessionMath.formatSpan(86399), "1 gün", "never \"24 saat\"")
+    }
+
+    func testFormatSpanLocativeFollowsTheLastUnit() {
+        XCTAssertEqual(SessionMath.formatSpanLocative(40 * 60), "40 dakikada")
+        XCTAssertEqual(SessionMath.formatSpanLocative(544 * 60), "9 saat 4 dakikada")
+        XCTAssertEqual(SessionMath.formatSpanLocative(2 * 3600), "2 saatte")
+        XCTAssertEqual(SessionMath.formatSpanLocative(86400), "1 günde")
+        XCTAssertEqual(SessionMath.formatSpanLocative(86400 + 3600), "1 gün 1 saatte")
+    }
+
     func testNextMinuteBoundary() {
         let d = Date(timeIntervalSinceReferenceDate: 1234.5)
         XCTAssertEqual(SessionMath.nextMinuteBoundary(after: d).timeIntervalSinceReferenceDate, 1260)

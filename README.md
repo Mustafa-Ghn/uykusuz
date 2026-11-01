@@ -370,7 +370,8 @@ bildirimi de gelir; ikisini birden istemiyorsanız iMessage'ı kapatın.
   Desktop'ta bir iş sürüyorsa bir mesaj, iş bitince bir mesaj daha gelir:
   "Uykusuz · Docker: aktif kullanılıyor (kapsayıcının adı). İş bitince yine haber
   vereceğim." ve "Uykusuz · Docker: iş bitti, 12 dakika sürdü. Çalışan kapsayıcı
-  kalmadı." İş sayılanlar: yeni açılan bir kapsayıcı (ilk 15 dakika), bir
+  kalmadı." Süre uzunsa gün, saat ve dakikayla yazılır: "9 saat 4 dakika sürdü".
+  İş sayılanlar: yeni açılan bir kapsayıcı (ilk 15 dakika), bir
   çekirdeğin %10'undan fazlasını kullanan bir kapsayıcı ve sürmekte olan
   `docker build`, `docker pull` ya da `docker push`. Boşta açık duran bir
   veritabanı iş sayılmaz. İş en az 45 saniye sürmeli; bitmiş sayılması için 2
@@ -415,7 +416,8 @@ Ayarlar > Sen yokken özeti bölümündeki **Son 2 saati şimdi özetle** düğm
 
 - **Anahtarsız.** Claude API anahtarı kayıtlı değilse özet bu Mac'te sayılarla
   yazılır (hangi oturum, kaç dosya, kaç komut, şu anki durum) ve hiçbir yere
-  gönderilmez.
+  gönderilmez. Geçen süre gün, saat ve dakikayla yazılır: "Kapak kapalıyken (9
+  saat 4 dakika) Claude ... üzerinde çalıştı."
 - **Anahtarla.** Anahtar kayıtlıysa özeti Claude yazar (varsayılan Claude Opus
   5.5; Ayarlar'dan Sonnet 5.5 ya da Haiku 5.5 seçilebilir). Uykusuz
   `api.anthropic.com`'a tek bir istek gönderir. İstekte yalnızca oturum

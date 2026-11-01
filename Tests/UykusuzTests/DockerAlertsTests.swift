@@ -398,6 +398,8 @@ final class DockerAlertsTests: XCTestCase {
                        "Uykusuz · Docker: iş bitti, 1 dakika sürdü. Çalışan kapsayıcı kalmadı.")
         XCTAssertEqual(DockerAlerts.finishedText(DockerActivity(idle: ["db", "cache"]), lasted: 12 * 60),
                        "Uykusuz · Docker: iş bitti, 12 dakika sürdü. Açık ama boşta: db, cache.")
+        XCTAssertEqual(DockerAlerts.finishedText(DockerActivity(), lasted: 544 * 60),
+                       "Uykusuz · Docker: iş bitti, 9 saat 4 dakika sürdü. Çalışan kapsayıcı kalmadı.")
     }
 
     func testAnOldConfigGetsTheMessages() throws {

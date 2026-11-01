@@ -38,8 +38,8 @@ struct ClaudeDigest: Equatable, Sendable {
     var to: Date
     var sessions: [Session]
     /// The span is the lid closed (the summary at a lid open); false for a
-    /// span asked for (Settings, `--away-digest`), which is told as the
-    /// last minutes instead.
+    /// span asked for (Settings, `--away-digest`), which is told as "son ..."
+    /// instead.
     var away = true
 
     /// The newest transcript bytes read from each file: enough for any time
@@ -179,8 +179,8 @@ struct ClaudeDigest: Equatable, Sendable {
 
     /// What the API is given: a plain text account of the sessions.
     var promptText: String {
-        let span = Self.minutes(to.timeIntervalSince(from))
-        var lines = [away ? "Kullanıcı \(span) dakika uzaktaydı (kapak kapalıydı)." : "Özetlenen süre: son \(span) dakika."]
+        let span = SessionMath.formatSpan(to.timeIntervalSince(from))
+        var lines = [away ? "Kullanıcı \(span) uzaktaydı (kapak kapalıydı)." : "Özetlenen süre: son \(span)."]
         for (index, s) in sessions.enumerated() {
             lines.append("")
             lines.append("Oturum \(index + 1): \(s.title)")
@@ -199,8 +199,8 @@ struct ClaudeDigest: Equatable, Sendable {
 
     /// The summary without the API: counts, in at most two sentences.
     var localSummary: String {
-        let span = Self.minutes(to.timeIntervalSince(from))
-        let lead = away ? "Kapak kapalıyken (\(span) dakika)" : "Son \(span) dakikada"
+        let span = to.timeIntervalSince(from)
+        let lead = away ? "Kapak kapalıyken (\(SessionMath.formatSpan(span)))" : "Son \(SessionMath.formatSpanLocative(span))"
         guard let first = sessions.first else { return "\(lead) Claude bir şey yapmadı." }
         let others = sessions.count - 1
         var sentence = "\(lead) Claude \"\(first.title)\" üzerinde çalıştı"
@@ -230,10 +230,6 @@ struct ClaudeDigest: Equatable, Sendable {
         case .waiting: "kullanıcıdan onay ya da yanıt bekliyor"
         case .working: "hâlâ çalışıyor"
         }
-    }
-
-    static func minutes(_ interval: TimeInterval) -> Int {
-        max(Int((interval / 60).rounded()), 1)
     }
 
     /// One line of at most `limit` characters. `keepingEnd`: a message's end
