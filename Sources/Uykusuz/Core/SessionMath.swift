@@ -96,6 +96,18 @@ enum SessionMath {
         return (total / (24 * 60), (total % (24 * 60)) / 60, total % 60)
     }
 
+    /// A past moment for a message: a fixed Turkish 24-hour clock, with the
+    /// day once the clock alone could mean a later one: "01:33", "30 Ekim
+    /// 01:33". No case suffix goes after it, which would depend on how the
+    /// number is read.
+    static func formatMoment(_ date: Date, now: Date, timeZone: TimeZone = .current) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "tr_TR")
+        f.timeZone = timeZone
+        f.dateFormat = now.timeIntervalSince(date) < 24 * 3600 ? "HH:mm" : "d MMMM HH:mm"
+        return f.string(from: date)
+    }
+
     /// Live menu bar countdown, ticking every second in a fixed `shape`.
     ///
     /// Partial seconds round *up*, so a fresh 30-minute session opens on

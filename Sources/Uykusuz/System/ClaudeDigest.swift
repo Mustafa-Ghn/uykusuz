@@ -37,9 +37,10 @@ struct ClaudeDigest: Equatable, Sendable {
     var from: Date
     var to: Date
     var sessions: [Session]
-    /// The span is the lid closed (the summary at a lid open); false for a
-    /// span asked for (Settings, `--away-digest`), which is told as "son ..."
-    /// instead.
+    /// The span is the user's absence, the lid closed or the screen locked
+    /// (the summary on their return), not how long Claude worked; false for
+    /// a span asked for (Settings, `--away-digest`), which is told as
+    /// "son ..." instead.
     var away = true
 
     /// The newest transcript bytes read from each file: enough for any time
@@ -180,7 +181,7 @@ struct ClaudeDigest: Equatable, Sendable {
     /// What the API is given: a plain text account of the sessions.
     var promptText: String {
         let span = SessionMath.formatSpan(to.timeIntervalSince(from))
-        var lines = [away ? "Kullanıcı \(span) uzaktaydı (kapak kapalıydı)." : "Özetlenen süre: son \(span)."]
+        var lines = [away ? "Kullanıcı \(span) uzaktaydı (kapak kapalı ya da ekran kilitli). Bu, Claude'un çalışma süresi değildir." : "Özetlenen süre: son \(span)."]
         for (index, s) in sessions.enumerated() {
             lines.append("")
             lines.append("Oturum \(index + 1): \(s.title)")
@@ -197,10 +198,12 @@ struct ClaudeDigest: Equatable, Sendable {
         return lines.joined(separator: "\n")
     }
 
-    /// The summary without the API: counts, in at most two sentences.
+    /// The summary without the API: counts, in a few short sentences. The
+    /// absence gets a sentence of its own and the last work its clock, so the
+    /// span never reads as how long Claude worked.
     var localSummary: String {
         let span = to.timeIntervalSince(from)
-        let lead = away ? "Kapak kapalıyken (\(SessionMath.formatSpan(span)))" : "Son \(SessionMath.formatSpanLocative(span))"
+        let lead = away ? "\(SessionMath.formatSpan(span)) uzaktaydınız. Bu sürede" : "Son \(SessionMath.formatSpanLocative(span))"
         guard let first = sessions.first else { return "\(lead) Claude bir şey yapmadı." }
         let others = sessions.count - 1
         var sentence = "\(lead) Claude \"\(first.title)\" üzerinde çalıştı"
@@ -212,6 +215,7 @@ struct ClaudeDigest: Equatable, Sendable {
         sentence += others > 0 ? "; \(others) oturumda daha çalıştı." : "."
         let waiting = sessions.filter { $0.status == .waiting }.count
         let working = sessions.filter { $0.status == .working }.count
+        if working == 0 { sentence += " En son çalıştığı saat: \(SessionMath.formatMoment(first.lastActivity, now: to))." }
         if waiting > 0 {
             sentence += waiting == 1 ? " Bir oturum yanıtınızı bekliyor." : " \(waiting) oturum yanıtınızı bekliyor."
         } else if working > 0 {

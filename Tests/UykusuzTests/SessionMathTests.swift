@@ -87,6 +87,13 @@ final class SessionMathTests: XCTestCase {
         XCTAssertEqual(SessionMath.formatSpan(86399), "1 gün", "never \"24 saat\"")
     }
 
+    func testFormatMomentAddsTheDayOnceTheClockIsAmbiguous() throws {
+        let zone = try XCTUnwrap(TimeZone(secondsFromGMT: 3 * 3600))
+        let night = Date(timeIntervalSince1970: 1_793_485_980) // 2026-11-01 01:33 at +03
+        XCTAssertEqual(SessionMath.formatMoment(night, now: night.addingTimeInterval(8 * 3600), timeZone: zone), "01:33")
+        XCTAssertEqual(SessionMath.formatMoment(night, now: night.addingTimeInterval(24 * 3600), timeZone: zone), "1 Kasım 01:33")
+    }
+
     func testFormatSpanLocativeFollowsTheLastUnit() {
         XCTAssertEqual(SessionMath.formatSpanLocative(40 * 60), "40 dakikada")
         XCTAssertEqual(SessionMath.formatSpanLocative(544 * 60), "9 saat 4 dakikada")

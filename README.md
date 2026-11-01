@@ -277,7 +277,8 @@ Claude Code hook'larını kurar. Kuruluyken Claude yalnızca bir görev yürüt�
 çalışıyor sayılır: bir istek başlayıp Claude yanıtını bitirene kadar ya da
 Claude'un başlattığı bir komut (arka planda bile) iş yaptığı sürece. Açık
 bırakılıp boşta bekleyen bir komut, örneğin bir veritabanı bağlantı aracı ya da
-geliştirme sunucusu, son 5 dakikada işlemci kullanmadıysa sayılmaz; derleme ve
+geliştirme sunucusu, son 5 dakikada işlemci kullanmadıysa sayılmaz; Mac uykudan
+uyandıktan sonraki ilk 2 dakikadaki işlemci kullanımı da iş sayılmaz. Derleme ve
 test gibi işler sayılır. Hook'lar ayrıca
 Claude'un bir onay penceresi açtığını, soru sorduğunu ya da plan onayı
 beklediğini bildirir. Hiçbir çıktı vermezler, bu yüzden bir izne yanıt vermez ve
@@ -416,8 +417,10 @@ Ayarlar > Sen yokken özeti bölümündeki **Son 2 saati şimdi özetle** düğm
 
 - **Anahtarsız.** Claude API anahtarı kayıtlı değilse özet bu Mac'te sayılarla
   yazılır (hangi oturum, kaç dosya, kaç komut, şu anki durum) ve hiçbir yere
-  gönderilmez. Geçen süre gün, saat ve dakikayla yazılır: "Kapak kapalıyken (9
-  saat 4 dakika) Claude ... üzerinde çalıştı."
+  gönderilmez. Yazan süre Claude'un çalışma süresi değil, sizin uzakta kaldığınız
+  süredir; gün, saat ve dakikayla yazılır, Claude'un en son çalıştığı saat de
+  belirtilir: "9 saat 4 dakika uzaktaydınız. Bu sürede Claude ... üzerinde
+  çalıştı. En son çalıştığı saat: 01:33."
 - **Anahtarla.** Anahtar kayıtlıysa özeti Claude yazar (varsayılan Claude Opus
   5.5; Ayarlar'dan Sonnet 5.5 ya da Haiku 5.5 seçilebilir). Uykusuz
   `api.anthropic.com`'a tek bir istek gönderir. İstekte yalnızca oturum

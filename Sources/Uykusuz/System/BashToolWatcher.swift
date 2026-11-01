@@ -7,7 +7,9 @@ import Foundation
 /// mostly sleeps, and must not keep the Mac awake for days. So a tool
 /// command counts while it is new (`newGrace`), or while its process tree
 /// used at least `cpuThreshold` of CPU time between two readings within
-/// `activeWindow`.
+/// `activeWindow`. CPU time is not counted for `wakeSettle` after the Mac
+/// slept: what a server used over those hours, or to reconnect on waking, is
+/// not work, and would start a session in a dark wake with the lid closed.
 ///
 /// Read-only and local: the process table and each process's CPU time,
 /// for this user's processes. Called once per `AgentAutoSession` tick.
@@ -18,6 +20,10 @@ final class BashToolWatcher {
     /// CPU seconds between two readings (15 s apart) that mean work: about
     /// 1.7 % of one core on average.
     static let cpuThreshold: TimeInterval = 0.25
+    /// The wall clock running this far past the awake clock between two
+    /// readings means the Mac slept; a timer App Nap held back moves both.
+    static let sleepGap: TimeInterval = 60
+    static let wakeSettle: TimeInterval = 2 * 60
 
     struct Process: Equatable, Sendable {
         var pid: pid_t
@@ -35,8 +41,10 @@ final class BashToolWatcher {
     private let isToolShell: (Process) -> Bool
     private let cpuTime: (pid_t) -> TimeInterval?
     private var lastReading: Date?
+    private var lastUptime: TimeInterval?
     private var lastCPU: [Key: TimeInterval] = [:]
     private var lastBusy: [Key: Date] = [:]
+    private var settlesAt: Date?
 
     init(
         read: @escaping () -> [Process] = BashToolWatcher.liveProcesses,
@@ -48,7 +56,8 @@ final class BashToolWatcher {
         self.cpuTime = cpuTime
     }
 
-    func isWorking(now: Date) -> Bool {
+    /// `uptime`: the awake clock, which stands still while the Mac sleeps.
+    func isWorking(now: Date, uptime: TimeInterval = ProcessInfo.processInfo.systemUptime) -> Bool {
         let all = read()
         var children: [pid_t: [Process]] = [:]
         for process in all { children[process.ppid, default: []].append(process) }
@@ -56,6 +65,11 @@ final class BashToolWatcher {
         let shellPIDs = Set(shells.map(\.pid))
         // The top of each command: a tool shell whose parent is not one.
         let tops = shells.filter { !shellPIDs.contains($0.ppid) }
+
+        if let lastReading, let lastUptime, now.timeIntervalSince(lastReading) - (uptime - lastUptime) > Self.sleepGap {
+            settlesAt = now.addingTimeInterval(Self.wakeSettle)
+        }
+        let settling = settlesAt.map { now < $0 } ?? false
 
         var cpuNow: [Key: TimeInterval] = [:]
         var busyNow: [Key: Date] = [:]
@@ -79,7 +93,7 @@ final class BashToolWatcher {
                 // after launch): only a baseline, so days of a proxy's CPU
                 // are not taken for work just done.
             }
-            let busy = used >= Self.cpuThreshold ? now : lastBusy[topKey]
+            let busy = !settling && used >= Self.cpuThreshold ? now : lastBusy[topKey]
             if let busy { busyNow[topKey] = busy }
             let isNew = now.timeIntervalSince(top.started) < Self.newGrace
             let recentlyBusy = busy.map { now.timeIntervalSince($0) < Self.activeWindow } ?? false
@@ -88,6 +102,7 @@ final class BashToolWatcher {
         lastCPU = cpuNow
         lastBusy = busyNow
         lastReading = now
+        lastUptime = uptime
         return working
     }
 

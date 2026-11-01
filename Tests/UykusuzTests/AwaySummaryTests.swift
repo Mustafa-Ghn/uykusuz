@@ -122,9 +122,10 @@ final class ClaudeDigestTests: XCTestCase {
         }
         XCTAssertTrue(prompt.contains("Düzenlenen dosyalar: AgentAutoSession.swift"), prompt)
         XCTAssertTrue(prompt.contains("kullanıcıdan onay ya da yanıt bekliyor"), prompt)
+        let lastWorked = SessionMath.formatMoment(s.lastActivity, now: to)
         XCTAssertEqual(digest.localSummary,
-                       "Kapak kapalıyken (40 dakika) Claude \"Uykusuz özeti\" üzerinde çalıştı: 1 dosya düzenledi, 1 komut çalıştırdı. Bir oturum yanıtınızı bekliyor.")
-        XCTAssertTrue(prompt.hasPrefix("Kullanıcı 40 dakika uzaktaydı (kapak kapalıydı)."), prompt)
+                       "40 dakika uzaktaydınız. Bu sürede Claude \"Uykusuz özeti\" üzerinde çalıştı: 1 dosya düzenledi, 1 komut çalıştırdı. En son çalıştığı saat: \(lastWorked). Bir oturum yanıtınızı bekliyor.")
+        XCTAssertTrue(prompt.hasPrefix("Kullanıcı 40 dakika uzaktaydı (kapak kapalı ya da ekran kilitli). Bu, Claude'un çalışma süresi değildir."), prompt)
         var asked = digest
         asked.away = false
         XCTAssertTrue(asked.localSummary.hasPrefix("Son 40 dakikada Claude \"Uykusuz özeti\" üzerinde çalıştı"), asked.localSummary)
@@ -133,8 +134,8 @@ final class ClaudeDigestTests: XCTestCase {
 
     func testALongSpanIsToldInDaysHoursAndMinutes() {
         var digest = ClaudeDigest(from: from, to: from.addingTimeInterval(544 * 60), sessions: [])
-        XCTAssertEqual(digest.localSummary, "Kapak kapalıyken (9 saat 4 dakika) Claude bir şey yapmadı.")
-        XCTAssertTrue(digest.promptText.hasPrefix("Kullanıcı 9 saat 4 dakika uzaktaydı (kapak kapalıydı)."), digest.promptText)
+        XCTAssertEqual(digest.localSummary, "9 saat 4 dakika uzaktaydınız. Bu sürede Claude bir şey yapmadı.")
+        XCTAssertTrue(digest.promptText.hasPrefix("Kullanıcı 9 saat 4 dakika uzaktaydı (kapak kapalı ya da ekran kilitli)."), digest.promptText)
         digest.away = false
         XCTAssertEqual(digest.localSummary, "Son 9 saat 4 dakikada Claude bir şey yapmadı.")
         XCTAssertTrue(digest.promptText.hasPrefix("Özetlenen süre: son 9 saat 4 dakika."), digest.promptText)
@@ -143,7 +144,23 @@ final class ClaudeDigestTests: XCTestCase {
         XCTAssertEqual(twoHours.localSummary, "Son 2 saatte Claude bir şey yapmadı.", "the Settings button's span")
 
         let days = ClaudeDigest(from: from, to: from.addingTimeInterval(86400 + 2 * 3600 + 5 * 60), sessions: [])
-        XCTAssertEqual(days.localSummary, "Kapak kapalıyken (1 gün 2 saat 5 dakika) Claude bir şey yapmadı.")
+        XCTAssertEqual(days.localSummary, "1 gün 2 saat 5 dakika uzaktaydınız. Bu sürede Claude bir şey yapmadı.")
+    }
+
+    func testTheAbsenceDoesNotReadAsHowLongClaudeWorked() {
+        // Away for 544 minutes; Claude stopped after 56 of them.
+        let end = from.addingTimeInterval(544 * 60)
+        let last = from.addingTimeInterval(56 * 60)
+        var session = ClaudeDigest.Session(id: "s", title: "Görev", lastActivity: last)
+        let told = "9 saat 4 dakika uzaktaydınız. Bu sürede Claude \"Görev\" üzerinde çalıştı."
+        let clock = "En son çalıştığı saat: \(SessionMath.formatMoment(last, now: end))."
+        XCTAssertEqual(ClaudeDigest(from: from, to: end, sessions: [session]).localSummary, "\(told) \(clock) Şu an bitmiş durumda.")
+
+        session.status = .waiting
+        XCTAssertEqual(ClaudeDigest(from: from, to: end, sessions: [session]).localSummary, "\(told) \(clock) Bir oturum yanıtınızı bekliyor.")
+
+        session.status = .working
+        XCTAssertEqual(ClaudeDigest(from: from, to: end, sessions: [session]).localSummary, "\(told) Hâlâ çalışıyor.", "not over, so no last clock")
     }
 
     func testAQuietStretchAndAnOlderTranscriptAreNothing() throws {
@@ -162,7 +179,8 @@ final class ClaudeDigestTests: XCTestCase {
         ])
         let digest = try XCTUnwrap(ClaudeDigest.build(from: from, to: to, projects: projects))
         XCTAssertEqual(digest.sessions.map(\.title), ["other-app", "insomnia-tr"])
-        XCTAssertTrue(digest.localSummary.hasSuffix("; 1 oturumda daha çalıştı. Şu an bitmiş durumda."), digest.localSummary)
+        let lastWorked = SessionMath.formatMoment(from.addingTimeInterval(300), now: to)
+        XCTAssertTrue(digest.localSummary.hasSuffix("; 1 oturumda daha çalıştı. En son çalıştığı saat: \(lastWorked). Şu an bitmiş durumda."), digest.localSummary)
     }
 
     func testLongWordsAreClipped() {
@@ -527,6 +545,51 @@ final class BashToolWatcherTests: XCTestCase {
         XCTAssertTrue(w.isWorking(now: t0.addingTimeInterval(30)), "a burst of work")
         XCTAssertTrue(w.isWorking(now: t0.addingTimeInterval(30 + 240)), "still within the window")
         XCTAssertFalse(w.isWorking(now: t0.addingTimeInterval(31 + BashToolWatcher.activeWindow)))
+    }
+
+    func testASleepAndItsWakingAreNotWorkForAServerLeftRunning() {
+        processes = [process(10, parent: 1, "zsh", startedAgo: 17 * 86400), process(11, parent: 10, "cloud-sql-proxy", startedAgo: 17 * 86400)]
+        toolShells = [10]
+        cpu = [10: 0.5, 11: 300]
+        let w = watcher()
+        XCTAssertFalse(w.isWorking(now: t0, uptime: 1000))
+        // Seven hours on the wall clock, a minute of it awake.
+        let woke = t0.addingTimeInterval(7 * 3600)
+        cpu[11] = 300.4
+        XCTAssertFalse(w.isWorking(now: woke, uptime: 1060), "what it used over the sleep")
+        cpu[11] = 301
+        XCTAssertFalse(w.isWorking(now: woke.addingTimeInterval(15), uptime: 1075), "reconnecting on waking")
+        cpu[11] = 301.01
+        XCTAssertFalse(w.isWorking(now: woke.addingTimeInterval(BashToolWatcher.wakeSettle), uptime: 1060 + BashToolWatcher.wakeSettle))
+        cpu[11] = 303
+        XCTAssertTrue(w.isWorking(now: woke.addingTimeInterval(BashToolWatcher.wakeSettle + 15), uptime: 1075 + BashToolWatcher.wakeSettle), "work, once the Mac has settled")
+    }
+
+    func testATimerHeldBackIsNotASleep() {
+        processes = [process(10, parent: 1, "zsh", startedAgo: 86400), process(11, parent: 10, "swift-build", startedAgo: 86400)]
+        toolShells = [10]
+        cpu = [10: 0, 11: 300]
+        let w = watcher()
+        XCTAssertFalse(w.isWorking(now: t0, uptime: 1000))
+        cpu[11] = 340
+        XCTAssertTrue(w.isWorking(now: t0.addingTimeInterval(300), uptime: 1300), "App Nap held the timer back; the Mac was awake all along")
+    }
+
+    func testAWakeDoesNotHideANewCommandOrWorkJustBeforeTheSleep() {
+        processes = [process(60, parent: 1, "zsh", startedAgo: 3600), process(61, parent: 60, "swift-test", startedAgo: 3600)]
+        toolShells = [60]
+        cpu = [60: 0, 61: 10]
+        let w = watcher()
+        XCTAssertFalse(w.isWorking(now: t0))
+        cpu[61] = 12
+        XCTAssertTrue(w.isWorking(now: t0.addingTimeInterval(15)))
+        XCTAssertTrue(w.isWorking(now: t0.addingTimeInterval(15 + BashToolWatcher.sleepGap + 1)), "a short sleep inside the window")
+
+        let woke = t0.addingTimeInterval(7 * 3600)
+        processes.append(process(62, parent: 1, "zsh", startedAgo: -woke.timeIntervalSince(t0)))
+        toolShells.insert(62)
+        cpu[62] = 0
+        XCTAssertTrue(w.isWorking(now: woke), "a command started just now is new, whatever the clock did")
     }
 
     func testANewCommandCountsUntilItHasHadTimeToWork() {

@@ -4,6 +4,13 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.10.1 — 2026-11-01
+
+### Düzeltilenler
+
+- **Sen yokken özeti süreleri karıştırmaz.** Özet, uzakta kaldığınız süreyi Claude'un çalışma süresi gibi gösteriyor, kapak hiç kapanmamış olsa bile "Kapak kapalıyken" diyordu. Artık "9 saat 4 dakika uzaktaydınız. Bu sürede Claude ... üzerinde çalıştı." der ve Claude'un en son çalıştığı saati yazar. Özeti Claude yazıyorsa ona da bu sürenin çalışma süresi olmadığı söylenir.
+- **Uyanışta gereksiz oturum açılmaz.** Açık bırakılmış bir komut (örneğin bir veritabanı bağlantı aracı) Mac uykudan uyanırken birkaç an işlemci kullanınca Claude çalışıyor sayılıyor, kapak kapalıyken bile otomatik oturum açılabiliyordu. Artık Mac uyandıktan sonraki ilk 2 dakikada böyle bir komutun işlemci kullanımı sayılmaz; yeni başlayan komutlar ve Claude'un yürüttüğü görevler bundan etkilenmez.
+
 ## 0.10.0 — 2026-11-01
 
 ### Değişenler
