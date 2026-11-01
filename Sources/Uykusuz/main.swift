@@ -26,6 +26,10 @@ if let status = AwayDigestCommand.run(Array(CommandLine.arguments.dropFirst())) 
 if let status = LastReplyCommand.run(Array(CommandLine.arguments.dropFirst())) {
     exit(status)
 }
+// Whether the natural voice works here (fork addition): local, nothing is spoken.
+if let status = VoiceCheckCommand.run(Array(CommandLine.arguments.dropFirst())) {
+    exit(status)
+}
 if let output = ResumeFrozenCommand.run(Array(CommandLine.arguments.dropFirst()), endAfter: ResumeFrozenCommand.endProcess) {
     for line in output.lines { print(line) }
     exit(output.status)

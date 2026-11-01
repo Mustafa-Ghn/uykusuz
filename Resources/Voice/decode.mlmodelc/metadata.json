@@ -1,0 +1,69 @@
+[
+  {
+    "metadataOutputVersion" : "3.0",
+    "storagePrecision" : "Float32",
+    "outputSchema" : [
+      {
+        "hasShapeFlexibility" : "0",
+        "isOptional" : "0",
+        "dataType" : "Float32",
+        "formattedType" : "MultiArray (Float32)",
+        "shortDescription" : "",
+        "shape" : "[]",
+        "name" : "audio",
+        "type" : "MultiArray"
+      }
+    ],
+    "modelParameters" : [
+
+    ],
+    "specificationVersion" : 9,
+    "mlProgramOperationTypeHistogram" : {
+      "Ios18.tanh" : 1,
+      "Ios18.mul" : 6,
+      "Ios18.leakyRelu" : 103,
+      "Ios18.sliceByIndex" : 1,
+      "Ios18.conv" : 110,
+      "Ios18.add" : 66,
+      "Ios18.convTranspose" : 6
+    },
+    "computePrecision" : "Mixed (Float32, Int32)",
+    "isUpdatable" : "0",
+    "stateSchema" : [
+
+    ],
+    "availability" : {
+      "macOS" : "15.0",
+      "tvOS" : "18.0",
+      "visionOS" : "2.0",
+      "watchOS" : "11.0",
+      "iOS" : "18.0",
+      "macCatalyst" : "18.0"
+    },
+    "modelType" : {
+      "name" : "MLModelType_mlProgram"
+    },
+    "userDefinedMetadata" : {
+      "com.github.apple.coremltools.conversion_date" : "2026-11-01",
+      "com.github.apple.coremltools.source" : "torch==2.7.1",
+      "com.github.apple.coremltools.version" : "9.0",
+      "com.github.apple.coremltools.source_dialect" : "TorchScript"
+    },
+    "inputSchema" : [
+      {
+        "dataType" : "Float32",
+        "hasShapeFlexibility" : "1",
+        "isOptional" : "0",
+        "shapeFlexibility" : "1 × 64 × 1...3000",
+        "shapeRange" : "[[1, 1], [64, 64], [1, 3000]]",
+        "formattedType" : "MultiArray (Float32 1 × 64 × 64)",
+        "type" : "MultiArray",
+        "shape" : "[1, 64, 64]",
+        "name" : "z",
+        "shortDescription" : ""
+      }
+    ],
+    "generatedClassName" : "decode",
+    "method" : "predict"
+  }
+]

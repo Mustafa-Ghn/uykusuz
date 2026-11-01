@@ -321,6 +321,8 @@ final class PackagingTests: XCTestCase {
         for name in ["Info.plist", "AppIcon.icns"] {
             try fm.copyItem(at: Self.repoRoot.appendingPathComponent("Resources/\(name)"), to: checkout.appendingPathComponent("Resources/\(name)"))
         }
+        try fm.createDirectory(at: checkout.appendingPathComponent("Resources/Voice"), withIntermediateDirectories: true)
+        try Data("stand-in".utf8).write(to: checkout.appendingPathComponent("Resources/Voice/NOTICE.md"))
         try fm.copyItem(at: Self.repoRoot.appendingPathComponent("scripts/backstop.sh"), to: checkout.appendingPathComponent("scripts/backstop.sh"))
         try fm.copyItem(atPath: "/usr/bin/true", toPath: binroot.appendingPathComponent("Uykusuz").path)
 
@@ -383,7 +385,7 @@ final class PackagingTests: XCTestCase {
         XCTAssertEqual(r.status, 0, r.output)
         let bundle = out.appendingPathComponent("Uykusuz.app")
         XCTAssertEqual(r.output.components(separatedBy: "\n").filter { !$0.isEmpty }.last, bundle.path, "the bundle path is printed last")
-        for rel in ["Contents/MacOS/Uykusuz", "Contents/Info.plist", "Contents/Resources/AppIcon.icns", "Contents/Resources/backstop.sh", "Contents/_CodeSignature/CodeResources"] {
+        for rel in ["Contents/MacOS/Uykusuz", "Contents/Info.plist", "Contents/Resources/AppIcon.icns", "Contents/Resources/backstop.sh", "Contents/Resources/Voice/NOTICE.md", "Contents/_CodeSignature/CodeResources"] {
             XCTAssertTrue(FileManager.default.fileExists(atPath: bundle.appendingPathComponent(rel).path), rel)
         }
         let perms = try FileManager.default.attributesOfItem(atPath: Paths.backstopScript(inBundle: bundle).path)[.posixPermissions] as? Int
@@ -487,6 +489,7 @@ final class PackagingTests: XCTestCase {
             "cp \(checkout)/Resources/AppIcon.icns \(app)/Contents/Resources/AppIcon.icns",
             "cp \(checkout)/scripts/backstop.sh \(app)/Contents/Resources/backstop.sh",
             "chmod 755 \(app)/Contents/Resources/backstop.sh",
+            "cp -R \(checkout)/Resources/Voice \(app)/Contents/Resources/Voice",
         ] {
             XCTAssertTrue(recorded.contains(call), "\(call) not in \(recorded)")
         }

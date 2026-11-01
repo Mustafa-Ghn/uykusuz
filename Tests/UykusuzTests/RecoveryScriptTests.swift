@@ -4574,6 +4574,7 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(fx.exists(fx.sudoers))
         XCTAssertTrue(fx.exists(fx.app.appendingPathComponent("Contents/Info.plist")))
         XCTAssertTrue(fx.exists(fx.app.appendingPathComponent("Contents/Resources/AppIcon.icns")), "the app icon is bundled")
+        XCTAssertTrue(fx.exists(fx.app.appendingPathComponent("Contents/Resources/Voice/caps.txt")), "the voice is bundled")
         XCTAssertTrue(r.stdout.contains("==> Kuruldu"), r.stdout)
         XCTAssertEqual(try fx.contents(of: fx.plist.deletingLastPathComponent()), ["com.mustafaghn.uykusuz.backstop.plist"])
     }
@@ -6541,8 +6542,8 @@ private final class ScriptFixture {
     }
 
     /// What install.sh's build and bundle steps need from the "repo":
-    /// Resources/Info.plist, Resources/AppIcon.icns and a binary at the fake
-    /// swift's bin path.
+    /// Resources/Info.plist, Resources/AppIcon.icns, Resources/Voice and a
+    /// binary at the fake swift's bin path.
     func prepareInstall() throws {
         // An install test starts with nothing at $APP unless it writes a
         // bundle there: the Info.plist written for the backstop's binary
@@ -6556,6 +6557,9 @@ private final class ScriptFixture {
         <plist version="1.0"><dict><key>CFBundleIdentifier</key><string>com.mustafaghn.uykusuz</string></dict></plist>
         """.write(to: resources.appendingPathComponent("Info.plist"), atomically: true, encoding: .utf8)
         try "icns".write(to: resources.appendingPathComponent("AppIcon.icns"), atomically: true, encoding: .utf8)
+        let voice = resources.appendingPathComponent("Voice", isDirectory: true)
+        try fm.createDirectory(at: voice, withIntermediateDirectories: true)
+        try "voice".write(to: voice.appendingPathComponent("caps.txt"), atomically: true, encoding: .utf8)
         let binroot = root.appendingPathComponent("binroot", isDirectory: true)
         try fm.createDirectory(at: binroot, withIntermediateDirectories: true)
         let binary = binroot.appendingPathComponent("Uykusuz")

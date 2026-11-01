@@ -1,19 +1,20 @@
 import AppKit
-import AVFoundation
 import SwiftUI
 
 /// Reads the away summary aloud on request (fork addition): play and pause,
 /// the word being read highlighted, and a bar to move back and forth.
 /// Nothing is spoken until the user presses play, or asks for Claude's reply
-/// (`ClaudeReplyReader`), which starts as it comes up.
-///
-/// AVSpeechSynthesizer reports each word as it reads it
-/// (`willSpeakRangeOfSpeechString`), with every system voice; it cannot
-/// jump inside an utterance, so a move stops the reading and starts it
-/// again from the chosen word.
+/// (`ClaudeReplyReader`), which starts as it comes up. The natural voice
+/// (`NaturalReading`) reads it; if it cannot, the system's does (`SystemReading`).
 @MainActor
 @Observable
-final class SummaryPlayer: NSObject, AVSpeechSynthesizerDelegate {
+final class SummaryPlayer {
+    /// Which voice a window reads with.
+    enum Voice: Equatable {
+        case natural
+        case system(identifier: String?)
+    }
+
     /// How many words the back and forward buttons move.
     static let step = 5
 
@@ -28,22 +29,32 @@ final class SummaryPlayer: NSObject, AVSpeechSynthesizerDelegate {
     /// The word being read, or the one a move landed on.
     private(set) var currentWord: Int?
 
-    @ObservationIgnored private let synthesizer = AVSpeechSynthesizer()
-    @ObservationIgnored private let voiceIdentifier: String?
-    /// Where in `text` the utterance being read starts.
-    @ObservationIgnored private var offset = 0
-    /// The utterance whose reports count; an earlier one's late reports
-    /// after a move are dropped.
-    @ObservationIgnored private var active: ObjectIdentifier?
+    @ObservationIgnored private var backend: any ReadingBackend
     @ObservationIgnored private var paused = false
 
-    init(text: String, voiceIdentifier: String?) {
+    convenience init(text: String, voiceIdentifier: String?) {
+        self.init(text: text, voice: .system(identifier: voiceIdentifier))
+    }
+
+    init(text: String, voice: Voice, naturalOutput: (@MainActor () -> any ReadingOutput)? = nil, naturalVoice: NaturalVoice = .shared) {
         self.text = text
-        self.voiceIdentifier = voiceIdentifier
-        words = Self.words(in: text)
-        paragraphs = Self.paragraphs(in: text)
-        super.init()
-        synthesizer.delegate = self
+        let words = Self.words(in: text)
+        let paragraphs = Self.paragraphs(in: text)
+        self.words = words
+        self.paragraphs = paragraphs
+        switch voice {
+        case .natural:
+            backend = NaturalReading(text: text, words: words, paragraphs: paragraphs, voice: naturalVoice, makeOutput: naturalOutput ?? { EngineOutput() })
+        case let .system(identifier):
+            backend = SystemReading(text: text, words: words, voiceIdentifier: identifier)
+        }
+        connect()
+    }
+
+    private func connect() {
+        backend.onWord = { [weak self] in self?.currentWord = $0 }
+        backend.onFinish = { [weak self] in self?.finished() }
+        backend.onFailure = { [weak self] in self?.fallBack() }
     }
 
     /// 0...1: how far into the text the reading is.
@@ -57,24 +68,25 @@ final class SummaryPlayer: NSObject, AVSpeechSynthesizerDelegate {
     }
 
     func play() {
-        if paused, synthesizer.isPaused {
+        if paused {
             paused = false
-            isPlaying = synthesizer.continueSpeaking()
-            return
+            if backend.resume() {
+                isPlaying = true
+                return
+            }
         }
         speak(fromWord: currentWord ?? 0)
     }
 
     func pause() {
         guard isPlaying else { return }
-        paused = synthesizer.pauseSpeaking(at: .word)
+        paused = backend.pause()
         isPlaying = false
     }
 
     func stop() {
-        active = nil
         paused = false
-        synthesizer.stopSpeaking(at: .immediate)
+        backend.stop()
         isPlaying = false
     }
 
@@ -147,39 +159,20 @@ final class SummaryPlayer: NSObject, AVSpeechSynthesizerDelegate {
     private func move(to index: Int) {
         guard !words.isEmpty else { return }
         let target = min(max(index, 0), words.count - 1)
-        let wasPlaying = isPlaying
-        stop()
         currentWord = target
-        if wasPlaying { speak(fromWord: target) }
+        // A pause ends here: the next play starts from the chosen word.
+        paused = false
+        if isPlaying { speak(fromWord: target) }
     }
 
     private func speak(fromWord index: Int) {
         guard words.indices.contains(index) else { return }
-        stop()
-        offset = words[index].location
         currentWord = index
-        let utterance = AVSpeechUtterance(string: (text as NSString).substring(from: offset))
-        if let voiceIdentifier, let voice = AVSpeechSynthesisVoice(identifier: voiceIdentifier) {
-            utterance.voice = voice
-        } else {
-            utterance.voice = AVSpeechSynthesisVoice(language: "tr-TR")
-        }
-        utterance.rate = AVSpeechUtteranceDefaultSpeechRate
-        active = ObjectIdentifier(utterance)
         isPlaying = true
-        synthesizer.speak(utterance)
+        backend.start(fromWord: index)
     }
 
-    private func spoke(_ range: NSRange, of utterance: ObjectIdentifier) {
-        guard utterance == active else { return }
-        if let index = Self.wordIndex(containing: offset + range.location, in: words) {
-            currentWord = index
-        }
-    }
-
-    private func finished(_ utterance: ObjectIdentifier) {
-        guard utterance == active else { return }
-        active = nil
+    private func finished() {
         paused = false
         isPlaying = false
         // Read to the end: the next play starts over.
@@ -187,14 +180,12 @@ final class SummaryPlayer: NSObject, AVSpeechSynthesizerDelegate {
         onFinish?()
     }
 
-    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, willSpeakRangeOfSpeechString characterRange: NSRange, utterance: AVSpeechUtterance) {
-        let id = ObjectIdentifier(utterance)
-        Task { @MainActor in self.spoke(characterRange, of: id) }
-    }
-
-    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
-        let id = ObjectIdentifier(utterance)
-        Task { @MainActor in self.finished(id) }
+    /// The natural voice could not read here: the system's goes on from the same word.
+    private func fallBack() {
+        guard backend is NaturalReading else { return }
+        backend = SystemReading(text: text, words: words, voiceIdentifier: nil)
+        connect()
+        if isPlaying { backend.start(fromWord: currentWord ?? 0) }
     }
 }
 
@@ -323,6 +314,8 @@ final class SummaryPanel {
     private var panel: NSPanel?
     private var player: SummaryPlayer?
     private var onClose: (@MainActor () -> Void)?
+    /// Whether the settings ask for the natural voice (`Config.naturalVoice`).
+    var naturalVoice: @MainActor () -> Bool = { false }
 
     /// `autoplay`: start reading as soon as it is up. `onFinish` is told when
     /// a reading gets to the end, `onClose` when the window goes, for whatever
@@ -335,9 +328,9 @@ final class SummaryPanel {
         onFinish: (@MainActor () -> Void)? = nil,
         onClose: (@MainActor () -> Void)? = nil
     ) async {
-        let voice = await TurkishVoice.current().identifier
+        let voice: SummaryPlayer.Voice = naturalVoice() ? .natural : .system(identifier: await TurkishVoice.current().identifier)
         close()
-        let player = SummaryPlayer(text: text, voiceIdentifier: voice)
+        let player = SummaryPlayer(text: text, voice: voice)
         player.onFinish = onFinish
         let clock = DateFormatter()
         clock.locale = Locale(identifier: "tr_TR")

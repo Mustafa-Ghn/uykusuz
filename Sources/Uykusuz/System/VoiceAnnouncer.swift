@@ -39,6 +39,20 @@ struct SaySpeech: SpeechSynthesizing {
     }
 }
 
+/// The voice the settings ask for: the natural one, or `say` when that is off
+/// or cannot speak (no model, no output).
+struct AppSpeech: SpeechSynthesizing {
+    /// `Config.naturalVoice`.
+    let natural: @Sendable () async -> Bool
+    var voice: NaturalVoice = .shared
+    var fallback: any SpeechSynthesizing = SaySpeech()
+
+    func speak(_ text: String) async {
+        if await natural(), await voice.speak(text) { return }
+        await fallback.speak(text)
+    }
+}
+
 /// Spoken alerts while the lid is closed (fork addition). With the lid
 /// closed a notification is never seen and the lid-close mute
 /// (`LidActions`) silences the output, so the alert turns the default

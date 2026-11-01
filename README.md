@@ -72,6 +72,10 @@ Claude çalışırken bunu kendiliğinden de yapar.
 - **Claude'un yanıtını dinleme.** Baktığınız Claude sohbetinin son mesajını
   ⌃⌥D ile dinlersiniz; ara adımlar okunmaz ve siz istemeden hiçbir şey
   okunmaz.
+- **Doğal Türkçe ses.** Uyarıları, özeti ve Claude'un yanıtını Uykusuz'la gelen
+  yapay zekâ sesi okur; `README` ya da `commit` gibi teknik kelimeler Türkçe
+  okunuşuyla söylenir. Ses bu Mac'te çalışır, ağa çıkmaz ve yalnızca okurken
+  yüklenir.
 - **Telefondan yanıt.** Claude oturumlarını iPhone'daki Claude uygulamasından
   yanıtlar ve onaylarsınız; Uykusuz, Claude'un telefon bildirimlerini yalnızca
   siz uzaktayken gönderir ve yanıtınız gelene kadar Mac'i uyanık tutar.
@@ -86,8 +90,7 @@ Claude çalışırken bunu kendiliğinden de yapar.
   çalışıyorsa Düşük Güç Modu açılır; bir süre girdi olmazsa ekran tamamen
   kararır ve bir tuşla geri gelir.
 - **Türkçe sesli uyarılar.** Kapak kapalıyken bildirimler görünmediği için pil,
-  ısı ve oturum sonu uyarıları sesli söylenir; Mac'te kurulu en iyi Türkçe ses
-  kullanılır.
+  ısı ve oturum sonu uyarıları sesli söylenir.
 - **Pil ve ısı korumaları.** Pil %30'un altına inince Düşük Güç Modu açılır,
   %20'nin altında oturum biter; Mac aşırı ısınırsa oturum kendiliğinden kapanır.
 - **Güvenli geri alma.** Her değişiklik önce diske kaydedilir. Uygulama çökse
@@ -210,7 +213,7 @@ Ayarlar penceresi göze sağ tıklayınca açılan menüden (⌘,) açılır:
 | Bölüm | İçindekiler |
 | --- | --- |
 | Oturum | Hazır süreler, varsayılan süre, açılışta odaklanan alan, en uzun oturum |
-| Kapak kapanınca yapılacaklar | Ekran ve klavye ışığı, dondurma listesi, diğer tüm uygulamalar, Docker, ses, Düşük Güç Modu, sesli uyarı, kullanılan ses ve Dinle |
+| Kapak kapanınca yapılacaklar | Ekran ve klavye ışığı, dondurma listesi, diğer tüm uygulamalar, Docker, ses, Düşük Güç Modu, sesli uyarı, doğal Türkçe ses, kullanılan ses ve Dinle |
 | Ajan uygulamaları | Hiçbir zaman dondurulmayan ya da kısıtlanmayan uygulamalar, App Nap |
 | Pil ve ısı | Düşük Güç Modu ve oturum sonu eşikleri, ısı kuralları |
 | Claude, kod modu ve ekran | Claude Code hook'ları, izin isteklerini otomatik onaylama, otomatik oturum, yanıt beklerken bitirme ve bekleme süresi, kod modu, boşta siyah ekran süreleri ve kilitleme |
@@ -413,7 +416,7 @@ Ayarlar > Sen yokken özeti bölümündeki **Son 2 saati şimdi özetle** düğm
   okunan kelime metinde vurgulanır; ❚❚ durdurur, ◀◀ ve ▶▶ beşer kelime geri ve
   ileri gider, çubuğu sürükleyince okuma o kelimeden sürer. Pencere öndeki
   uygulamanın odağını almaz; kapak yeniden kapanınca okuma durur ve pencere
-  kapanır. Ses, sesli uyarılardaki gibi Mac'te kurulu en iyi Türkçe sestir.
+  kapanır. Okuyan, sesli uyarılardaki gibi [doğal Türkçe sestir](#doğal-türkçe-ses).
 
 - **Anahtarsız.** Claude API anahtarı kayıtlı değilse özet bu Mac'te sayılarla
   yazılır (hangi oturum, kaç dosya, kaç komut, şu anki durum) ve hiçbir yere
@@ -454,7 +457,7 @@ kısayoluna basın ya da göze sağ tıklayınca açılan menüden **Son yanıt�
   bir şey yazdıysa yenisi okunur.
 - **Ne okunur.** Markdown işaretleri okunmaz. Kod blokları "Kod bloğu atlandı"
   diye geçilir, bağlantı adresleri okunmaz, dosya yollarının yalnızca dosya adı
-  söylenir.
+  söylenir. Parantez içindeki kod adları atlanır.
 - **Pencere.** [Sen yokken özetinin](#sen-yokken-özeti) penceresidir: okunan
   kelime vurgulanır, ❚❚ durdurur, ◀◀ ve ▶▶ beşer kelime gider, çubuk istediğiniz
   yere götürür. Sığmayan metin kaydırılır ve okunan paragrafı izler. Okuma bitince
@@ -466,6 +469,28 @@ kısayoluna basın ya da göze sağ tıklayınca açılan menüden **Son yanıt�
   verebilir.
 - **Gizlilik.** Yanıt bu Mac'te okunur, diske yazılmaz ve hiçbir yere
   gönderilmez. Uykusuz başka hiçbir tuşu görmez ve bunun için izin istemez.
+
+### Doğal Türkçe ses
+
+Uyarıları, özeti ve Claude'un yanıtını Uykusuz'la gelen yapay zekâ sesi okur.
+Ayarlar > Kapak kapanınca yapılacaklar bölümündeki **Doğal Türkçe ses** seçeneği
+varsayılan olarak açıktır; kapatınca Mac'in Türkçe sesi okur.
+
+- **Bu Mac'te çalışır.** Ses uygulamanın içindedir (yaklaşık 33 MB). Hiçbir şey
+  indirilmez ve okunan metin ağa gitmez.
+- **Yalnızca okurken yüklenir.** Arka planda çalışan bir şey yoktur: ses, okuma
+  başlayınca yaklaşık yarım saniyede yüklenir ve okuma bittikten 30 saniye sonra
+  bellekten çıkar.
+- **Mac'i yormaz.** Bir saniyelik konuşma, M5 Pro'da yaklaşık 0,01 saniye
+  işlemci harcar. Ses üretmek okumaktan çok daha hızlıdır.
+- **Teknik metni düzgün okur.** `README` "ridmi", `commit` "komit", `API` "Ey Pi
+  Ay" diye söylenir; `Keychain'den` gibi eklerin sesi de okunuşa uyar. Sayılar,
+  tarihler ve saatler ekleriyle okunur: `14:30'da` "on dört otuzda" olur.
+- **Okuyamazsa.** Ses yüklenemez ya da ses çıkışı açılamazsa okumayı Mac'in Türkçe
+  sesi sürdürür. Kulaklık takıp çıkarınca okuma aynı kelimeden devam eder.
+- **Deneme.** Ayarlar'daki **Dinle** düğmesi sesi çalar;
+  `~/Applications/Uykusuz.app/Contents/MacOS/Uykusuz --voice-check` çalışıp
+  çalışmadığını ses çıkarmadan söyler.
 
 ## Kapak kapanınca neler olur
 
@@ -495,9 +520,10 @@ bunları geri almaya çalışır. Kapak kapalıyken zamanlayıcı geri saymayı 
   kapak açılınca kapanır.
 - **Uyarılar sesli söylenir.** Kapak kapalıyken bildirimler görünmediği için
   pil eşiği, ısınma ve oturum sonu Türkçe sesle söylenir: Uykusuz sesi bir an
-  açar, uyarıyı söyler ve eski ses ayarını geri koyar. Mac'te kurulu en iyi
+  açar, uyarıyı söyler ve eski ses ayarını geri koyar. Uyarıyı
+  [doğal Türkçe ses](#doğal-türkçe-ses) söyler. O kapalıysa Mac'te kurulu en iyi
   Türkçe ses kullanılır: Premium, yoksa Gelişmiş, yoksa macOS ile gelen basit
-  Yelda. Daha doğal bir ses için Sistem Ayarları > Erişilebilirlik >
+  Yelda. Bu durumda daha iyi bir ses için Sistem Ayarları > Erişilebilirlik >
   Seslendirilen İçerik > Sistem sesi bölümünden "Yelda (Gelişmiş)" sesini
   indirin; Uykusuz onu yeniden başlatmadan kullanmaya başlar. Ayarlar'da
   kullanılan ses görünür ve **Dinle** düğmesi onu çalar.
@@ -669,4 +695,5 @@ yetkileri, kalıcı bileşenleri ve tuttuğu veriler
 ## Lisans
 
 [MIT](LICENSE). Uykusuz, Krish Garg'ın MIT lisanslı Insomnia projesi üzerine
-geliştirildi.
+geliştirildi. Doğal Türkçe sesin bileşenleri kendi lisanslarıyla gelir:
+[Resources/Voice/NOTICE.md](Resources/Voice/NOTICE.md).

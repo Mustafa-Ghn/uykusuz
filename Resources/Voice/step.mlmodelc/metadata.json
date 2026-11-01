@@ -1,0 +1,111 @@
+[
+  {
+    "metadataOutputVersion" : "3.0",
+    "storagePrecision" : "Float32",
+    "outputSchema" : [
+      {
+        "hasShapeFlexibility" : "0",
+        "isOptional" : "0",
+        "dataType" : "Float32",
+        "formattedType" : "MultiArray (Float32)",
+        "shortDescription" : "",
+        "shape" : "[]",
+        "name" : "x1",
+        "type" : "MultiArray"
+      }
+    ],
+    "modelParameters" : [
+
+    ],
+    "specificationVersion" : 9,
+    "mlProgramOperationTypeHistogram" : {
+      "Ios18.linear" : 36,
+      "Ios18.cos" : 2,
+      "Ios18.expandDims" : 4,
+      "Ios18.sin" : 2,
+      "Ios18.matmul" : 12,
+      "Ios18.sub" : 1,
+      "Ios18.concat" : 14,
+      "Ios18.add" : 58,
+      "Ios18.silu" : 8,
+      "Ios18.softmax" : 6,
+      "Ios18.layerNorm" : 13,
+      "Ios18.transpose" : 24,
+      "Ios18.reshape" : 25,
+      "Split" : 25,
+      "Ios18.mul" : 77
+    },
+    "computePrecision" : "Mixed (Float32, Int32)",
+    "isUpdatable" : "0",
+    "stateSchema" : [
+
+    ],
+    "availability" : {
+      "macOS" : "15.0",
+      "tvOS" : "18.0",
+      "visionOS" : "2.0",
+      "watchOS" : "11.0",
+      "iOS" : "18.0",
+      "macCatalyst" : "18.0"
+    },
+    "modelType" : {
+      "name" : "MLModelType_mlProgram"
+    },
+    "userDefinedMetadata" : {
+      "com.github.apple.coremltools.conversion_date" : "2026-11-01",
+      "com.github.apple.coremltools.source" : "torch==2.7.1",
+      "com.github.apple.coremltools.version" : "9.0",
+      "com.github.apple.coremltools.source_dialect" : "TorchScript"
+    },
+    "inputSchema" : [
+      {
+        "dataType" : "Float32",
+        "hasShapeFlexibility" : "1",
+        "isOptional" : "0",
+        "shapeFlexibility" : "1 × 1...3000 × 64",
+        "shapeRange" : "[[1, 1], [1, 3000], [64, 64]]",
+        "formattedType" : "MultiArray (Float32 1 × 64 × 64)",
+        "type" : "MultiArray",
+        "shape" : "[1, 64, 64]",
+        "name" : "x",
+        "shortDescription" : ""
+      },
+      {
+        "dataType" : "Float32",
+        "hasShapeFlexibility" : "1",
+        "isOptional" : "0",
+        "shapeFlexibility" : "1 × 1...3000 × 224",
+        "shapeRange" : "[[1, 1], [1, 3000], [224, 224]]",
+        "formattedType" : "MultiArray (Float32 1 × 64 × 224)",
+        "type" : "MultiArray",
+        "shape" : "[1, 64, 224]",
+        "name" : "cond",
+        "shortDescription" : ""
+      },
+      {
+        "hasShapeFlexibility" : "0",
+        "isOptional" : "0",
+        "dataType" : "Float32",
+        "formattedType" : "MultiArray (Float32 1)",
+        "shortDescription" : "",
+        "shape" : "[1]",
+        "name" : "t",
+        "type" : "MultiArray"
+      },
+      {
+        "dataType" : "Float32",
+        "hasShapeFlexibility" : "1",
+        "isOptional" : "0",
+        "shapeFlexibility" : "1 × 1...3000",
+        "shapeRange" : "[[1, 1], [1, 3000]]",
+        "formattedType" : "MultiArray (Float32 1 × 64)",
+        "type" : "MultiArray",
+        "shape" : "[1, 64]",
+        "name" : "pos",
+        "shortDescription" : ""
+      }
+    ],
+    "generatedClassName" : "step",
+    "method" : "predict"
+  }
+]

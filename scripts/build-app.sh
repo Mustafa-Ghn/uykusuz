@@ -127,6 +127,9 @@ step "Assembling $APP"
 # bundle and only then runs this copy; an edited script fails that check.
 "$CP" "$ROOT/scripts/backstop.sh" "$APP/Contents/Resources/backstop.sh"
 "$CHMOD" 755 "$APP/Contents/Resources/backstop.sh"
+# The natural voice: the speech model and its word lists, data only, sealed the
+# same way. Nothing in it runs except through the app (Sources/Uykusuz/Voice).
+"$CP" -R "$ROOT/Resources/Voice" "$APP/Contents/Resources/Voice"
 "$PLUTIL" -lint "$APP/Contents/Info.plist" >/dev/null
 
 # 3. Sign --------------------------------------------------------------------

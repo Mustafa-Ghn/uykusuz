@@ -238,17 +238,22 @@ struct SettingsView: View {
             Text("Kapak kapalıyken bildirimler görünmez. Uykusuz sesi bir an açar, uyarıyı Türkçe söyler ve eski ses ayarını geri koyar.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
+            Toggle("Doğal Türkçe ses", isOn: bind(\.naturalVoice))
+            Text(Self.naturalVoiceNote)
+                .font(.callout)
+                .foregroundStyle(.secondary)
             LabeledContent("Ses") {
                 HStack {
-                    Text(voiceChoice?.label ?? "\u{2026}")
+                    Text(manager.config.naturalVoice ? Self.naturalVoiceName : (voiceChoice?.label ?? "\u{2026}"))
                         .foregroundStyle(.secondary)
                     Button("Dinle") {
-                        Task { await SaySpeech().speak(Self.voiceSample) }
+                        let natural = manager.config.naturalVoice
+                        Task { await AppSpeech(natural: { natural }).speak(Self.voiceSample) }
                     }
                 }
             }
             .task { voiceChoice = await TurkishVoice.current(fresh: true) }
-            if voiceChoice?.quality == .basic {
+            if !manager.config.naturalVoice, voiceChoice?.quality == .basic {
                 Text("Daha doğal bir ses için Sistem Ayarları > Erişilebilirlik > Seslendirilen İçerik > Sistem sesi bölümünden Türkçe \"Yelda (Gelişmiş)\" sesini indirin. Uykusuz kurulu en iyi Türkçe sesi kendiliğinden kullanır.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -434,6 +439,8 @@ struct SettingsView: View {
 
     /// What "Dinle" says, at the output's current volume.
     static let voiceSample = "Merhaba, ben Uykusuz. Kapak kapalıyken uyarıları bu sesle söylerim."
+    static let naturalVoiceName = "Uykusuz sesi"
+    static let naturalVoiceNote = "Uyarıları, özeti ve Claude'un yanıtını Uykusuz'la gelen yapay zekâ sesi okur. Bu Mac'te çalışır, ağa çıkmaz ve yalnızca okurken yüklenir. Kapalıyken Mac'in Türkçe sesi okur."
 
     private var awaySummarySection: some View {
         Section("Sen yokken özeti") {

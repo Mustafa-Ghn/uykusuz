@@ -213,12 +213,23 @@ macOS'un sorduğu Otomasyon (Mesajlar) iznidir.
   Claude uygulamasının `claude-code-sessions` kayıtlarından yalnızca `lastFocusedAt`
   ve `cliSessionId`, o oturumun `~/.claude/projects` kaydının son 8 MB'ından da
   başlık, klasör adı ve son mesaj alınır; dosyalar yalnızca okunur. Metin diske ve
-  günlüğe yazılmaz, ağa gitmez ve bu Mac'te `AVSpeechSynthesizer` ile okunur. Kısayol
+  günlüğe yazılmaz, ağa gitmez ve bu Mac'te okunur (aşağıda "Doğal Türkçe ses"). Kısayol
   `RegisterEventHotKey` ile kaydedilir: sistem yalnızca bu birleşim basılınca haber
   verir, başka tuş görülmez, Erişilebilirlik ya da Girdi İzleme izni gerekmez.
   0.8.0 ile 0.9.x'in `Stop` hook'una eklediği, yanıtı geçici olarak `claude-replies`
   klasörüne yazan yol kaldırıldı; uygulama açılışta bu klasörden kalanı siler. Yeni
   izin, ağ isteği ya da kalıcı bileşen yoktur.
+- **Doğal Türkçe ses (0.11.0):** Uyarıları, özeti ve Claude'un yanıtını paketteki
+  `Contents/Resources/Voice` klasöründen yüklenen konuşma modeli okur; imzanın mührü
+  bu dosyaları da kapsar. Model Core ML ile yalnızca işlemcide çalışır. Sayı ve tarih
+  kuralları (`trnorm.js`) JavaScriptCore bağlamında, dosya ve ağ erişimi olmadan
+  çalışır; kurallara yalnızca okunacak cümle verilir. `Package.swift` yine dış
+  bağımlılık içermez. Model okuma başlayınca yüklenir, okuma bittikten 30 saniye sonra
+  bellekten çıkar. `AVAudioEngine` yalnızca çıkış için kullanılır; giriş düğümüne
+  dokunulmadığı için mikrofon izni istenmez. Metin ve ses diske ya da günlüğe yazılmaz.
+  Çalışamazsa `say` ve `AVSpeechSynthesizer` devreye girer. Yeni izin, ağ isteği,
+  `sudo` komutu ya da kalıcı bileşen yoktur. Bileşenlerin lisansları
+  `Resources/Voice/NOTICE.md` dosyasındadır.
 - **Bilinen Wi-Fi ağına geri dönüş (0.6.0):** Oturum sürerken hotspot'tayken
   CoreWLAN ile tarar ve bilinen ağ listesinden yalnızca adları ve parolalı olup
   olmadıklarını okur; Wi-Fi parolalarını okumaz ve hiçbir ağa kendisi katılmaz.

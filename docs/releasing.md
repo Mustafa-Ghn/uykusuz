@@ -38,8 +38,8 @@ Silicon Macs only: the release notes and the README say so, and
 read 1.
 
 The bundle is the one `scripts/build-app.sh` makes: the release binary,
-`Resources/Info.plist`, the icon, and `backstop.sh` sealed under
-`Contents/Resources` before signing. `install.sh` runs the same script for
+`Resources/Info.plist`, the icon, and `backstop.sh` and the voice's files
+(`Resources/Voice`) sealed under `Contents/Resources` before signing. `install.sh` runs the same script for
 a source install, so a downloaded app and a source-built app have the same
 bundle layout and are both ad-hoc signed. Their contents can still differ,
 because a source build may use another checkout, toolchain or architecture,

@@ -48,6 +48,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.manager = manager
         autoSession = AgentAutoSession(manager: manager)
         let panel = summaryPanel
+        panel.naturalVoice = { [manager] in manager.config.naturalVoice }
         awaySummary = AwaySummary(
             config: { [manager] in manager.config },
             present: { text, told in await panel.show(text, told: told) },

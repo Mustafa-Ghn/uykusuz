@@ -4,6 +4,19 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.11.0 — 2026-11-01
+
+### Eklenenler
+
+- **Doğal Türkçe ses.** Uyarıları, özeti ve Claude'un yanıtını artık Uykusuz'la gelen yapay zekâ sesi okur. Ses bu Mac'te çalışır, ağa çıkmaz, hiçbir şey indirmez ve yalnızca okurken yüklenir; okuma bittikten 30 saniye sonra bellekten çıkar.
+- **Teknik metin düzgün okunur.** `README`, `commit`, `API` ya da `Keychain` gibi kelimeler Türkçe okunuşuyla söylenir ve ekleri okunuşa uyar; sayılar, tarihler ve saatler ekleriyle okunur, `SummaryPlayer` gibi adlar parçalarına ayrılır, parantez içindeki kod adları ve `>` gibi işaretler okunmaz.
+- **`Uykusuz --voice-check`** sesin çalışıp çalışmadığını ses çıkarmadan söyler.
+
+### Değişenler
+
+- **Varsayılan ses değişti.** Ayarlar > Kapak kapanınca yapılacaklar bölümündeki Doğal Türkçe ses seçeneği varsayılan olarak açıktır; kapatınca Mac'in Türkçe sesi okur. Ses yüklenemez ya da ses çıkışı açılamazsa okumayı yine Mac'in sesi sürdürür.
+- **Uygulama büyüdü.** Ses dosyaları uygulamaya yaklaşık 33 MB ekler.
+
 ## 0.10.4 — 2026-11-01
 
 ### Düzeltilenler

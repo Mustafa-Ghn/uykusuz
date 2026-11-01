@@ -1,0 +1,91 @@
+[
+  {
+    "metadataOutputVersion" : "3.0",
+    "storagePrecision" : "Float32",
+    "outputSchema" : [
+      {
+        "hasShapeFlexibility" : "0",
+        "isOptional" : "0",
+        "dataType" : "Float32",
+        "formattedType" : "MultiArray (Float32)",
+        "shortDescription" : "",
+        "shape" : "[]",
+        "name" : "h",
+        "type" : "MultiArray"
+      },
+      {
+        "hasShapeFlexibility" : "0",
+        "isOptional" : "0",
+        "dataType" : "Float32",
+        "formattedType" : "MultiArray (Float32)",
+        "shortDescription" : "",
+        "shape" : "[]",
+        "name" : "dur",
+        "type" : "MultiArray"
+      }
+    ],
+    "modelParameters" : [
+
+    ],
+    "specificationVersion" : 9,
+    "mlProgramOperationTypeHistogram" : {
+      "Ios18.linear" : 9,
+      "Ios18.conv" : 6,
+      "Ios18.sub" : 3,
+      "Select" : 1,
+      "Ios18.gelu" : 4,
+      "Ios18.gather" : 1,
+      "Ios18.clip" : 2,
+      "Ios18.add" : 9,
+      "Ios18.realDiv" : 2,
+      "Ios16.reduceMean" : 4,
+      "Ios18.silu" : 2,
+      "Ios18.pow" : 2,
+      "Ios18.layerNorm" : 5,
+      "Ios18.transpose" : 10,
+      "Ios18.squeeze" : 1,
+      "Ios18.greaterEqual" : 1,
+      "Ios18.sqrt" : 2,
+      "Ios18.exp" : 1,
+      "Ios18.mul" : 6
+    },
+    "computePrecision" : "Mixed (Float32, Int32)",
+    "isUpdatable" : "0",
+    "stateSchema" : [
+
+    ],
+    "availability" : {
+      "macOS" : "15.0",
+      "tvOS" : "18.0",
+      "visionOS" : "2.0",
+      "watchOS" : "11.0",
+      "iOS" : "18.0",
+      "macCatalyst" : "18.0"
+    },
+    "modelType" : {
+      "name" : "MLModelType_mlProgram"
+    },
+    "userDefinedMetadata" : {
+      "com.github.apple.coremltools.conversion_date" : "2026-11-01",
+      "com.github.apple.coremltools.source" : "torch==2.7.1",
+      "com.github.apple.coremltools.version" : "9.0",
+      "com.github.apple.coremltools.source_dialect" : "TorchScript"
+    },
+    "inputSchema" : [
+      {
+        "dataType" : "Int32",
+        "hasShapeFlexibility" : "1",
+        "isOptional" : "0",
+        "shapeFlexibility" : "1 × 1...3000",
+        "shapeRange" : "[[1, 1], [1, 3000]]",
+        "formattedType" : "MultiArray (Int32 1 × 64)",
+        "type" : "MultiArray",
+        "shape" : "[1, 64]",
+        "name" : "ids",
+        "shortDescription" : ""
+      }
+    ],
+    "generatedClassName" : "text",
+    "method" : "predict"
+  }
+]

@@ -662,7 +662,7 @@ final class SessionManager {
             processControl: processControl,
             display: display,
             keyboard: keyboard,
-            speech: SaySpeech(),
+            speech: AppSpeech(natural: { @MainActor [weak m] in m?.config.naturalVoice ?? true }),
             displayAwake: DisplayAwakeAssertion(),
             screenLock: LoginScreenLock(),
             othersHoldDisplay: { DisplayHolds.liveOthersHold() }

@@ -93,10 +93,22 @@ menüdeki öğeye basınca çalışır. `~/Library/Application Support/Claude/cl
 altındaki Claude uygulaması kayıtlarından yalnızca `lastFocusedAt` ve `cliSessionId`
 alanları, o oturumun `~/.claude/projects` altındaki kaydından da başlık, klasör
 adı ve son mesaj alınır. Bu dosyalar yalnızca okunur. Metin diske ve günlüğe
-yazılmaz, ağa gitmez; okuma macOS'in konuşma sentezleyicisiyle
-(`AVSpeechSynthesizer`) bu Mac'te yapılır. Kısayol `RegisterEventHotKey` ile
+yazılmaz, ağa gitmez; okuma bu Mac'te yapılır (aşağıdaki "Doğal Türkçe ses").
+Kısayol `RegisterEventHotKey` ile
 kaydedilir: sistem uygulamaya yalnızca bu tuş birleşimi basılınca haber verir,
 Uykusuz başka tuş görmez ve bunun için izin istemez.
+
+**Doğal Türkçe ses.** Uyarıları, özeti ve Claude'un yanıtını uygulama paketindeki
+`Contents/Resources/Voice` klasöründen yüklenen konuşma modeli okur; paket imzasının
+mührü bu dosyaları da kapsar. Model Core ML ile yalnızca işlemcide çalışır. Sayı ve
+tarih kuralları aynı klasördeki `trnorm.js` dosyasıdır ve sistemin JavaScriptCore
+çerçevesinde çalışır: bu bağlamda dosya ya da ağ erişimi yoktur ve kurallara
+yalnızca okunacak cümle verilir. Ses hiçbir şey indirmez, ağ isteği yapmaz, izin
+istemez ve mikrofona dokunmaz (`AVAudioEngine` yalnızca çıkış için kullanılır).
+Okunan metin ve üretilen ses diske ya da günlüğe yazılmaz. Arka planda çalışan bir
+bileşen yoktur: model okuma başlayınca yüklenir, okuma bittikten 30 saniye sonra
+bellekten çıkar. Ayarlar'dan kapatılabilir. Bileşenlerin kaynakları ve lisansları
+`Resources/Voice/NOTICE.md` dosyasındadır.
 
 **Ekran ve girdi.** Boşta siyah ekran yalnızca son girdiden geçen süreyi
 okur (`CGEventSource.secondsSinceLastEventType`); bunun için tuş vuruşlarını
@@ -109,10 +121,11 @@ hotspot katılma ayarını okumak için CoreWiFi, kararmış ekranı kilitlemek 
 login çerçeveleri sabit sistem yollarından `dlopen` ile yüklenir; bunların
 dışında dışarıdan kod yüklenmez. Kilitleme, Denetim Merkezi'ndeki Ekranı Kilitle
 ile aynı çağrıdır (`SACLockScreenImmediate`) ve yalnızca ekran karardıktan sonra
-Ayarlar'daki süre (varsayılan 15 dakika) boyunca girdi olmazsa yapılır. Sesli uyarılar `/usr/bin/say` ile söylenir; metin
-tek bir argüman olarak, `--` ayıracından sonra verilir. Ses, Mac'te kurulu
-sesler arasından seçilen en iyi Türkçe sestir; listesi sistemden
-(`AVSpeechSynthesisVoice`) yalnızca okunur.
+Ayarlar'daki süre (varsayılan 15 dakika) boyunca girdi olmazsa yapılır. Doğal ses
+kapalıysa ya da çalışamazsa uyarılar `/usr/bin/say` ile söylenir, özet ve yanıt
+`AVSpeechSynthesizer` ile okunur; metin `say` komutuna tek bir argüman olarak, `--`
+ayıracından sonra verilir. Bu durumda ses, Mac'te kurulu sesler arasından seçilen
+en iyi Türkçe sestir; listesi sistemden (`AVSpeechSynthesisVoice`) yalnızca okunur.
 
 ## iPhone'a iMessage
 
