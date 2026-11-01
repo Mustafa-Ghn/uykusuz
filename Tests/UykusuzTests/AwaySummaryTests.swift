@@ -183,6 +183,80 @@ final class ClaudeDigestTests: XCTestCase {
         XCTAssertTrue(digest.localSummary.hasSuffix("; 1 oturumda daha çalıştı. En son çalıştığı saat: \(lastWorked). Şu an bitmiş durumda."), digest.localSummary)
     }
 
+    func testEverySessionIsCountedHoweverManyAreToldInDetail() throws {
+        let total = ClaudeDigest.maxSessions + 3
+        for index in 0..<total {
+            try transcript("s\(index)", [
+                ["type": "custom-title", "customTitle": "Oturum \(index)", "sessionId": "s\(index)"],
+                assistant(100 + Double(index), [["type": "text", "text": "mesaj-\(index)"]]),
+            ])
+        }
+        let digest = try XCTUnwrap(ClaudeDigest.build(from: from, to: to, projects: projects) { _ in .working })
+        XCTAssertEqual(digest.sessions.count, ClaudeDigest.maxSessions)
+        XCTAssertEqual(digest.others.map(\.id).sorted(), ["s0", "s1", "s2"], "the oldest")
+        let prompt = digest.promptText
+        XCTAssertTrue(prompt.contains("Toplam \(total) oturum var: \(total) hâlâ çalışıyor, 0 kullanıcıdan onay ya da yanıt bekliyor, 0 bitti."), prompt)
+        XCTAssertTrue(prompt.contains("Oturum 0: hâlâ çalışıyor"), "named, with its state: \(prompt)")
+        XCTAssertFalse(prompt.contains("mesaj-0"), "no detail: \(prompt)")
+        XCTAssertTrue(prompt.contains("mesaj-\(total - 1)"), prompt)
+        XCTAssertTrue(digest.localSummary.contains("\(total - 1) oturumda daha çalıştı."), digest.localSummary)
+        XCTAssertTrue(digest.localSummary.hasSuffix(" \(total) oturum hâlâ çalışıyor."), digest.localSummary)
+    }
+
+    func testASessionWaitingOnTheUserIsNeverLeftOut() throws {
+        try transcript("asked", [assistant(10, [["type": "text", "text": "onayınız gerekiyor"]])])
+        for index in 0..<ClaudeDigest.maxSessions {
+            try transcript("s\(index)", [assistant(100 + Double(index), [["type": "text", "text": "newer"]])])
+        }
+        let digest = try XCTUnwrap(ClaudeDigest.build(from: from, to: to, projects: projects) { $0 == "asked" ? .waiting : .done })
+        XCTAssertEqual(digest.sessions.count, ClaudeDigest.maxSessions)
+        XCTAssertEqual(digest.sessions.last?.id, "asked", "still newest first")
+        XCTAssertEqual(digest.others.map(\.id), ["s0"])
+        XCTAssertTrue(digest.promptText.contains("onayınız gerekiyor"), digest.promptText)
+        XCTAssertTrue(digest.promptText.contains("Toplam \(ClaudeDigest.maxSessions + 1) oturum var: 0 hâlâ çalışıyor, 1 kullanıcıdan onay ya da yanıt bekliyor, \(ClaudeDigest.maxSessions) bitti."), digest.promptText)
+        let lastWorked = SessionMath.formatMoment(from.addingTimeInterval(100 + Double(ClaudeDigest.maxSessions - 1)), now: to)
+        XCTAssertTrue(digest.localSummary.hasSuffix("En son çalıştığı saat: \(lastWorked). Bir oturum yanıtınızı bekliyor."), digest.localSummary)
+    }
+
+    func testASessionAtWorkOrWaitingCountsWithNothingWrittenInTheSpan() throws {
+        func quiet(_ id: String, title: String) throws {
+            let file = try transcript(id, [
+                ["type": "custom-title", "customTitle": title, "sessionId": id],
+                assistant(-600, [["type": "text", "text": "before the lid closed"]]),
+            ])
+            try FileManager.default.setAttributes([.modificationDate: from.addingTimeInterval(-60)], ofItemAtPath: file.path)
+        }
+        try quiet("build", title: "Uzun derleme")
+        try quiet("question", title: "Soru soran")
+        try quiet("over", title: "Biten oturum")
+        let states: [String: ClaudeDigest.Status] = ["build": .working, "question": .waiting]
+        let digest = try XCTUnwrap(ClaudeDigest.build(from: from, to: to, projects: projects) { states[$0] ?? .done })
+        XCTAssertEqual(Set(digest.sessions.map(\.id)), ["build", "question"], "not the one that is over")
+        XCTAssertEqual(digest.others, [])
+        XCTAssertTrue(digest.sessions.allSatisfy(\.quiet))
+        XCTAssertFalse(digest.promptText.contains("before the lid"), digest.promptText)
+        XCTAssertTrue(digest.promptText.contains("Toplam 2 oturum var: 1 hâlâ çalışıyor, 1 kullanıcıdan onay ya da yanıt bekliyor, 0 bitti."), digest.promptText)
+        XCTAssertEqual(digest.localSummary, "40 dakika uzaktaydınız. Bu sürede Claude'dan yeni bir haber yok. Bir oturum hâlâ çalışıyor. Bir oturum yanıtınızı bekliyor.")
+
+        var alone = digest
+        alone.sessions.removeAll { $0.id == "question" }
+        XCTAssertEqual(alone.localSummary, "40 dakika uzaktaydınız. Bu sürede Claude'dan yeni bir haber yok. Hâlâ çalışıyor.")
+    }
+
+    func testASessionWithATranscriptInTwoFoldersCountsOnce() throws {
+        try transcript("moved", in: "-Users-me-old", [assistant(100, [["type": "text", "text": "eski klasörde"]])])
+        try transcript("moved", in: "-Users-me-new", [assistant(300, [["type": "text", "text": "yeni klasörde"]])])
+        let digest = try XCTUnwrap(ClaudeDigest.build(from: from, to: to, projects: projects))
+        XCTAssertEqual(digest.sessions.map(\.id), ["moved"])
+        XCTAssertEqual(digest.sessions.first?.lastTexts, ["yeni klasörde"], "the one with the latest work")
+        XCTAssertEqual(digest.others, [])
+    }
+
+    func testOneSessionNeedsNoTotal() throws {
+        try transcript("s1", session)
+        XCTAssertFalse(try XCTUnwrap(ClaudeDigest.build(from: from, to: to, projects: projects)).promptText.contains("Toplam"))
+    }
+
     func testLongWordsAreClipped() {
         XCTAssertEqual(ClaudeDigest.clip("abcdef", to: 3, keepingEnd: true), "\u{2026}def")
         XCTAssertEqual(ClaudeDigest.clip("abcdef", to: 3, keepingEnd: false), "abc\u{2026}")
@@ -448,6 +522,14 @@ final class AwaySummaryTests: XCTestCase {
         XCTAssertEqual(AwaySummary.status(ofSession: "b", paths: paths, now: t0.addingTimeInterval(60)), .working)
         XCTAssertEqual(AwaySummary.status(ofSession: "gone", paths: paths, now: t0.addingTimeInterval(60)), .done)
         XCTAssertEqual(AwaySummary.status(ofSession: "b", paths: paths, now: t0.addingTimeInterval(ClaudeActivity.markerMaxAge + 1)), .done, "stale")
+
+        try encoder.encode(ClaudeTaskMarker(pid: 4242, identity: nil, event: "PostToolUse", updatedAt: t0))
+            .write(to: dir.appendingPathComponent("closed.json"))
+        XCTAssertEqual(AwaySummary.status(ofSession: "closed", paths: paths, now: t0.addingTimeInterval(60)) { _ in .absent }, .done, "its process is gone")
+    }
+
+    func testTheWriterIsToldToUseTheTotal() {
+        XCTAssertTrue(AnthropicSummaryClient.system.contains("\"Toplam\" satırındaki sayıları kullan"), AnthropicSummaryClient.system)
     }
 }
 

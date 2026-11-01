@@ -414,6 +414,10 @@ pencerede bir iki cümleyle anlatılır. Döndüğünüz an, kapağın açık ve
 açılmış olduğu andır; kapağı kilit ekranında açarsanız özet kilidi açınca gelir.
 Boşta siyah ekranın kilidinde süre, Mac'e son dokunduğunuz andan sayılır.
 Oturumun hâlâ sürmesi gerekmez; Uykusuz kapağı ve kilidi her zaman izler.
+Özet o sırada çalışan ve sizi bekleyen oturumların hepsini sayar; uzun bir komutu
+bekleyen ya da siz gitmeden soru sormuş oturumlar da bu sayıya girer. En çok 8
+oturumun ayrıntısına bakılır; önce sizi bekleyenler seçilir, kalanlar adı ve
+durumuyla sayılır.
 Ayarlar > Sen yokken özeti bölümündeki **Son 2 saati şimdi özetle** düğmesi
 özeti hemen dener; göze sağ tıklayınca açılan menüdeki **Son özeti göster** son
 özeti yeniden açar.

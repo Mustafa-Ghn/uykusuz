@@ -173,11 +173,18 @@ final class AwaySummary {
         return text
     }
 
-    /// A session's state now, from its hook marker (`ClaudeHookCommand`).
-    nonisolated static func status(ofSession id: String, paths: Paths, now: Date) -> ClaudeDigest.Status {
+    /// A session's state now, from its hook marker (`ClaudeHookCommand`). A
+    /// marker its `claude` process has left behind says nothing.
+    nonisolated static func status(
+        ofSession id: String,
+        paths: Paths,
+        now: Date,
+        lookup: (Int32) -> ProcessLookup = SignalProcessControl.processTableState
+    ) -> ClaudeDigest.Status {
         guard let name = ClaudeHookCommand.markerName(id),
               let marker = ClaudeHookCommand.readMarker(ClaudeHookCommand.markerDirectory(paths).appendingPathComponent(name)),
-              now.timeIntervalSince(marker.updatedAt) < ClaudeActivity.markerMaxAge else { return .done }
+              now.timeIntervalSince(marker.updatedAt) < ClaudeActivity.markerMaxAge,
+              ClaudeActivity.isRunning(marker, lookup: lookup) else { return .done }
         return marker.waitingSince == nil ? .working : .waiting
     }
 

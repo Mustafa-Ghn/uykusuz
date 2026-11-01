@@ -4,6 +4,14 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.12.2 — 2026-11-01
+
+### Düzeltilenler
+
+- **Sen yokken özeti bütün oturumları sayar.** Özet yalnızca en yeni dört oturumu gördüğü için daha fazlası çalışırken "dört oturum" diyordu. Artık çalışan ve sizi bekleyen oturumların tamamı sayılır; uzun bir komutu bekleyen ya da siz gitmeden soru sormuş oturumlar da buna dahildir ve aynı oturum iki kez sayılmaz.
+- **Sizi bekleyen oturum özetin dışında kalmaz.** Daha yeni oturumlar varken onayınızı bekleyen bir oturum özette hiç geçmeyebiliyor, özet "onay bekleyen yok" diyebiliyordu. Artık ayrıntısına önce sizi bekleyen oturumlar için bakılır; ayrıntısına bakılan oturum sayısı dörtten sekize çıktı, kalanlar adı ve durumuyla özete girer.
+- **Kapanmış oturum çalışıyor görünmez.** Süreci biten bir oturum özette "hâlâ çalışıyor" diye geçmez.
+
 ## 0.12.1 — 2026-11-01
 
 ### Düzeltilenler

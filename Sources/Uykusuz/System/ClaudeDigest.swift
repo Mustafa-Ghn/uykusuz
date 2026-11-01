@@ -30,13 +30,19 @@ struct ClaudeDigest: Equatable, Sendable {
         /// Prompts the user (or a schedule) sent in the window.
         var prompts = 0
         var lastActivity: Date
+        /// Claude did nothing in the window: the session is here only for
+        /// being at work or waiting now.
+        var quiet = false
 
         var toolUses: Int { toolCounts.values.reduce(0, +) }
     }
 
     var from: Date
     var to: Date
+    /// The sessions told in detail, newest first.
     var sessions: [Session]
+    /// The sessions past `maxSessions`: counted and named, nothing more.
+    var others: [Session] = []
     /// The span is the user's absence, the lid closed or the screen locked
     /// (the summary on their return), not how long Claude worked; false for
     /// a span asked for (Settings, `--away-digest`), which is told as
@@ -46,7 +52,8 @@ struct ClaudeDigest: Equatable, Sendable {
     /// The newest transcript bytes read from each file: enough for any time
     /// away worth a summary, and a bound on a long session's file.
     static let tailBytes = 8 << 20
-    static let maxSessions = 4
+    /// How many sessions are told in detail, not how many are counted.
+    static let maxSessions = 8
     static let maxFiles = 12
     static let maxCommands = 8
     static let maxTexts = 2
@@ -57,9 +64,12 @@ struct ClaudeDigest: Equatable, Sendable {
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude/projects", isDirectory: true)
     }
 
-    /// The sessions with something done between `from` and `to`, newest
-    /// first; nil when there is none. `status` tells each session's state
-    /// now from its id.
+    /// The sessions with something done between `from` and `to`, and those
+    /// at work or waiting now even with nothing written in the span (a long
+    /// command, a question asked before it); nil when there is none. `status`
+    /// tells each session's state now from its id. Every one is counted; the
+    /// newest `maxSessions` are told in detail, those waiting on the user
+    /// before any other.
     static func build(
         from: Date,
         to: Date,
@@ -68,26 +78,38 @@ struct ClaudeDigest: Equatable, Sendable {
     ) -> ClaudeDigest? {
         let fm = FileManager.default
         guard let folders = try? fm.contentsOfDirectory(at: projects, includingPropertiesForKeys: nil) else { return nil }
-        var sessions: [Session] = []
+        var found: [Session] = []
         for folder in folders {
             guard let files = try? fm.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey, .isRegularFileKey]) else { continue }
             for file in files where file.pathExtension == "jsonl" {
                 let values = try? file.resourceValues(forKeys: [.contentModificationDateKey, .isRegularFileKey])
-                guard values?.isRegularFile == true, let modified = values?.contentModificationDate, modified >= from else { continue }
+                guard values?.isRegularFile == true, let modified = values?.contentModificationDate else { continue }
                 let id = file.deletingPathExtension().lastPathComponent
-                guard var session = read(file, id: id, from: from, to: to) else { continue }
-                session.status = status(id)
-                sessions.append(session)
+                let state = status(id)
+                guard modified >= from || state != .done,
+                      var session = read(file, id: id, from: from, to: to, requiringWork: state == .done) else { continue }
+                session.status = state
+                found.append(session)
             }
         }
-        guard !sessions.isEmpty else { return nil }
-        sessions.sort { $0.lastActivity > $1.lastActivity }
-        return ClaudeDigest(from: from, to: to, sessions: Array(sessions.prefix(maxSessions)))
+        guard !found.isEmpty else { return nil }
+        found.sort { $0.lastActivity > $1.lastActivity }
+        // A session continued from another folder has a transcript in both.
+        var seen = Set<String>()
+        let sessions = found.filter { seen.insert($0.id).inserted }
+        let ranked = sessions.filter { $0.status == .waiting } + sessions.filter { $0.status != .waiting }
+        let detailed = Set(ranked.prefix(maxSessions).map(\.id))
+        return ClaudeDigest(
+            from: from,
+            to: to,
+            sessions: sessions.filter { detailed.contains($0.id) },
+            others: sessions.filter { !detailed.contains($0.id) }
+        )
     }
 
     /// One session between `from` and `to`, by the name its marker goes by
     /// (`ClaudeHookCommand.markerName`), however many others ran in the span:
-    /// `build` keeps only the newest `maxSessions`. Nil when it has no
+    /// `build` tells only `maxSessions` in detail. Nil when it has no
     /// transcript; one where Claude did nothing in the span still gives its
     /// title, since a message has to say which session it is about.
     static func session(
@@ -174,14 +196,26 @@ struct ClaudeDigest: Equatable, Sendable {
             }
         }
         guard assistantEntries > 0 || !requiringWork else { return nil }
+        session.quiet = assistantEntries == 0
         session.title = title ?? generatedTitle ?? folder ?? id
         return session
     }
 
-    /// What the API is given: a plain text account of the sessions.
+    /// Every session of the span, told in detail or not.
+    private var everySession: [Session] { sessions + others }
+
+    private func count(_ status: Status) -> Int {
+        everySession.filter { $0.status == status }.count
+    }
+
+    /// What the API is given: a plain text account of the sessions. The
+    /// counts are spelled out, or the writer counts only those in detail.
     var promptText: String {
         let span = SessionMath.formatSpan(to.timeIntervalSince(from))
         var lines = [away ? "Kullanıcı \(span) uzaktaydı (kapak kapalı ya da ekran kilitli). Bu, Claude'un çalışma süresi değildir." : "Özetlenen süre: son \(span)."]
+        if everySession.count > 1 {
+            lines.append("Toplam \(everySession.count) oturum var: \(count(.working)) hâlâ çalışıyor, \(count(.waiting)) kullanıcıdan onay ya da yanıt bekliyor, \(count(.done)) bitti.")
+        }
         for (index, s) in sessions.enumerated() {
             lines.append("")
             lines.append("Oturum \(index + 1): \(s.title)")
@@ -195,6 +229,11 @@ struct ClaudeDigest: Equatable, Sendable {
             if s.prompts > 0 { lines.append("Bu sürede gelen istek: \(s.prompts)") }
             for text in s.lastTexts { lines.append("Claude'un mesajı: \(text)") }
         }
+        if !others.isEmpty {
+            lines.append("")
+            lines.append("Toplama dahil, ayrıntısı verilmeyen oturumlar:")
+            for s in others { lines.append("\(s.title): \(Self.statusText(s.status))") }
+        }
         return lines.joined(separator: "\n")
     }
 
@@ -204,25 +243,32 @@ struct ClaudeDigest: Equatable, Sendable {
     var localSummary: String {
         let span = to.timeIntervalSince(from)
         let lead = away ? "\(SessionMath.formatSpan(span)) uzaktaydınız. Bu sürede" : "Son \(SessionMath.formatSpanLocative(span))"
-        guard let first = sessions.first else { return "\(lead) Claude bir şey yapmadı." }
-        let others = sessions.count - 1
-        var sentence = "\(lead) Claude \"\(first.title)\" üzerinde çalıştı"
-        var details: [String] = []
-        if !first.editedFiles.isEmpty { details.append("\(first.editedFiles.count) dosya düzenledi") }
-        let commands = first.toolCounts["Bash"] ?? 0
-        if commands > 0 { details.append("\(commands) komut çalıştırdı") }
-        if !details.isEmpty { sentence += ": " + details.joined(separator: ", ") }
-        sentence += others > 0 ? "; \(others) oturumda daha çalıştı." : "."
-        let waiting = sessions.filter { $0.status == .waiting }.count
-        let working = sessions.filter { $0.status == .working }.count
-        if working == 0 { sentence += " En son çalıştığı saat: \(SessionMath.formatMoment(first.lastActivity, now: to))." }
+        guard !everySession.isEmpty else { return "\(lead) Claude bir şey yapmadı." }
+        let worked = everySession.filter { !$0.quiet }
+        var sentence: String
+        if let first = worked.first {
+            sentence = "\(lead) Claude \"\(first.title)\" üzerinde çalıştı"
+            var details: [String] = []
+            if !first.editedFiles.isEmpty { details.append("\(first.editedFiles.count) dosya düzenledi") }
+            let commands = first.toolCounts["Bash"] ?? 0
+            if commands > 0 { details.append("\(commands) komut çalıştırdı") }
+            if !details.isEmpty { sentence += ": " + details.joined(separator: ", ") }
+            sentence += worked.count > 1 ? "; \(worked.count - 1) oturumda daha çalıştı." : "."
+        } else {
+            sentence = "\(lead) Claude'dan yeni bir haber yok."
+        }
+        let waiting = count(.waiting)
+        let working = count(.working)
+        if working == 0, let last = worked.map(\.lastActivity).max() {
+            sentence += " En son çalıştığı saat: \(SessionMath.formatMoment(last, now: to))."
+        }
+        if working > 0 {
+            sentence += everySession.count == 1 ? " Hâlâ çalışıyor." : working == 1 ? " Bir oturum hâlâ çalışıyor." : " \(working) oturum hâlâ çalışıyor."
+        }
         if waiting > 0 {
             sentence += waiting == 1 ? " Bir oturum yanıtınızı bekliyor." : " \(waiting) oturum yanıtınızı bekliyor."
-        } else if working > 0 {
-            sentence += " Hâlâ çalışıyor."
-        } else {
-            sentence += " Şu an bitmiş durumda."
         }
+        if working == 0, waiting == 0 { sentence += " Şu an bitmiş durumda." }
         return sentence
     }
 
