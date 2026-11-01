@@ -280,6 +280,7 @@ final class LidActions {
             Log.error("display darken on lid close skipped: \(error.localizedDescription)")
         }
 
+        var backlightAlreadyOff = false
         do {
             if let current = try keyboard.readBrightness() {
                 let value: Float?
@@ -306,6 +307,7 @@ final class LidActions {
                         Log.error("keyboard backlight off failed: \(error.localizedDescription)")
                     }
                 } else if value != nil {
+                    backlightAlreadyOff = true
                     // Off already (macOS turns it off in daylight): nothing to
                     // put back, and a 0 written back on open would pin it off,
                     // so it could not come on by itself in the evening. A
@@ -332,14 +334,27 @@ final class LidActions {
         }
 
         // The wake that undoes this request runs on open, and on reconcile
-        // after a relaunch, only for a journaled brightness. With nothing
-        // journaled (both devices refused or unreadable) nothing would wake
-        // a panel this put to sleep, so it is not asked to sleep.
-        // With the owed edits applied: an entry this process already
+        // after a relaunch, only for a journaled brightness or a journaled
+        // request. With the owed edits applied: an entry this process already
         // settled is not restored, so the open would not wake for it.
-        guard manager.effectiveState.brightnessJournaled else {
-            Log.info("display sleep not requested: no display or keyboard brightness is journaled, so nothing would wake the display on open")
-            return
+        if !manager.effectiveState.displayWakeOwed {
+            // Neither level is known (both devices refused or unreadable, no
+            // backlight, or one macOS holds down with no trusted sample):
+            // nothing would wake a panel this put to sleep, so it is not
+            // asked to sleep. A backlight already off is a known level with
+            // no entry, and with the display not read, this request is the
+            // only thing that turns the panel off: it is journaled on its
+            // own, and if that write fails it does not go out.
+            guard backlightAlreadyOff else {
+                Log.info("display sleep not requested: no display or keyboard brightness is journaled, so nothing would wake the display on open")
+                return
+            }
+            do {
+                try manager.journal { $0.displaySleepRequested = true }
+            } catch {
+                Log.error("display sleep not requested: the request could not be journaled, so nothing would wake the display on open: \(error.localizedDescription)")
+                return
+            }
         }
         do {
             try display.requestSleep()

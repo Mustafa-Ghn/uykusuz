@@ -504,6 +504,8 @@ final class FakeDisplayDimmer: DisplayDimming, @unchecked Sendable {
     /// Called synchronously inside `setBrightness`, so a test can inspect
     /// disk at the moment the side effect happens.
     var onSet: (@Sendable (Float) -> Void)?
+    /// Called synchronously inside `requestSleep`, for the same reason.
+    var onSleepRequest: (@Sendable () -> Void)?
 
     init(brightness: Float = 0.7) {
         _brightness = brightness
@@ -547,6 +549,7 @@ final class FakeDisplayDimmer: DisplayDimming, @unchecked Sendable {
     func requestSleep() throws {
         if throwOnSleep { throw DisplayPowerError(what: "IORequestIdle") }
         lock.withLock { _sleepRequests += 1 }
+        onSleepRequest?()
     }
 
     func wake() {

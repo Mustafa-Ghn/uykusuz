@@ -26,7 +26,15 @@ yazmak ışığı kapalıya sabitler ve akşam kendiliğinden yanmasını engell
 çalışır. Klavye çağrıları, macOS sürümü ne olursa olsun, yalnızca özel klavye
 sınıfı macOS 26 üzerinde ölçülen yöntem imzalarına sahipken çalışır. Bu
 denetimlerden biri bir aygıtı reddederse Uykusuz o aygıta dokunmaz ve Ayarlar
-nedenini anahtarın altında söyler. Bir güncellemeden önce kaydedilmiş ve
+nedenini anahtarın altında söyler.
+Ekran reddedildiğinde ya da parlaklığı okunamadığında Uykusuz ekranı
+karartamaz, yalnızca uyumasını ister ve kapak açılınca uyandırır; klavye
+ışığının zaten kapalı olması bunu değiştirmez. Ekranı açık tutan bir uygulama
+varken macOS bu isteği yok sayar. Klavye ışığının düzeyi de bilinmiyorsa
+(klavye reddedildiyse ya da okunamadıysa, klavye ışığı yoksa ya da macOS ışığı
+kısmışken kayıtlı bir değer yoksa) Uykusuz ekranın uyumasını istemez; ekran o
+anda uyumuyorsa kapak kapalıyken yanık kalır.
+Bir güncellemeden önce kaydedilmiş ve
 denetimin artık reddettiği bir düzey, onu geri yükleyebilecek bir sürüm için
 kayıtlı kalır; menü de bu arada düzeyi parlaklık tuşlarıyla ayarlamanızı
 söyler. O sürüm, elle ayarladığınız bir düzeye dokunmaz ve kararını yalnızca

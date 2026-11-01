@@ -445,6 +445,64 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertEqual(try fx.stateJSON()["savedKeyboardBrightness"] as? Double, 0.4)
     }
 
+    /// A display sleep request is the app's to wake for: the rest is undone,
+    /// the key stays as the app wrote it, and the run succeeds.
+    func testADisplaySleepRequestIsKeptWithoutKeepingTheJournalDirty() throws {
+        try fx.writeSession(endsAt: Date(timeIntervalSinceNow: -60))
+        try fx.writeState(#"{"sleepDisabledByUs":true,"lowPowerSetByUs":false,"frozenProcesses":[],"dockerFrozen":false,"displaySleepRequested":true}"#)
+
+        let r = try fx.run(fx.backstop)
+
+        XCTAssertEqual(r.status, 0, r.stderr + fx.log())
+        XCTAssertEqual(fx.calls().count, 1, fx.calls().description)
+        XCTAssertTrue(fx.calls().first?.hasSuffix("pmset -a disablesleep 0") ?? false, fx.calls().description)
+        let s = try fx.stateJSON()
+        XCTAssertEqual(s["sleepDisabledByUs"] as? Bool, false)
+        XCTAssertEqual(s["displaySleepRequested"] as? Bool, true)
+        XCTAssertFalse(fx.exists(fx.session))
+        XCTAssertFalse(fx.log().contains("Open Uykusuz"), fx.log())
+        XCTAssertFalse(fx.log().contains("[error]"), fx.log())
+    }
+
+    /// Only the request left: the journal counts as clean, an expired
+    /// session is removed, nothing privileged runs, the file is not
+    /// rewritten, and with no session the periodic run exits 0 without a word.
+    func testADisplaySleepRequestAloneIsNotDirty() throws {
+        let json = #"{"sleepDisabledByUs":false,"lowPowerSetByUs":false,"frozenProcesses":[],"dockerFrozen":false,"displaySleepRequested":true}"#
+        try fx.writeSession(endsAt: Date(timeIntervalSinceNow: -60))
+        try fx.writeState(json)
+
+        let expired = try fx.run(fx.backstop)
+
+        XCTAssertEqual(expired.status, 0, expired.stderr + fx.log())
+        XCTAssertEqual(fx.calls(), [])
+        XCTAssertFalse(fx.exists(fx.session))
+        XCTAssertEqual(try String(contentsOf: fx.state, encoding: .utf8), json, "the journal is not rewritten")
+
+        let before = fx.log()
+        let periodic = try fx.run(fx.backstop)
+
+        XCTAssertEqual(periodic.status, 0, periodic.stderr + fx.log())
+        XCTAssertEqual(fx.calls(), [])
+        XCTAssertEqual(fx.log(), before, "nothing to report on a run with nothing to do")
+    }
+
+    /// With the app going away nothing can wake the display for the request,
+    /// and it changed no setting: it does not stop the uninstall, and it goes
+    /// with state.json.
+    func testUninstallCompletesPastADisplaySleepRequestAndRemovesTheJournal() throws {
+        try fx.installMachinery()
+        try fx.writeConfig(#"{"agentList":[]}"#)
+        try fx.writeState(#"{"sleepDisabledByUs":false,"lowPowerSetByUs":false,"frozenProcesses":[],"dockerFrozen":false,"displaySleepRequested":true}"#)
+
+        let r = try fx.run(fx.uninstall)
+
+        XCTAssertEqual(r.status, 0, r.stderr + r.stdout)
+        XCTAssertFalse(fx.exists(fx.plist))
+        XCTAssertFalse(fx.exists(fx.app))
+        XCTAssertFalse(fx.exists(fx.state))
+    }
+
     // MARK: App Nap
 
     /// `NSAppSleepDisabled` the app set for agent apps is put back with the
@@ -2431,6 +2489,7 @@ final class RecoveryScriptTests: XCTestCase {
             #"{"sleepDisabledByUs":false,"savedKeyboardBrightness":true}"#,
             #"{"sleepDisabledByUs":false,"savedDisplayBrightness":0.5,"displayRestoreRefused":"yes"}"#,
             #"{"sleepDisabledByUs":false,"savedKeyboardBrightness":0.5,"keyboardRestoreRefused":1}"#,
+            #"{"sleepDisabledByUs":false,"displaySleepRequested":"yes"}"#,
             #"{"sleepDisabledByUs":false,"appNapOverrides":"com.google.Chrome"}"#,
             #"{"sleepDisabledByUs":false,"appNapOverrides":["com.google.Chrome"]}"#,
             #"{"sleepDisabledByUs":false,"appNapOverrides":[{"previous":true}]}"#,
@@ -2470,7 +2529,7 @@ final class RecoveryScriptTests: XCTestCase {
     func testNullOptionalFieldsCountAsAbsent() throws {
         // Swift's decodeIfPresent treats null as nil; the shell must agree.
         try fx.writeSession(endsAt: Date(timeIntervalSinceNow: -60))
-        let json = #"{"sleepDisabledByUs":false,"lowPowerSetByUs":null,"frozenProcesses":[],"dockerFrozen":false,"savedOutputVolume":null,"savedMuted":null,"savedDisplayBrightness":null,"savedKeyboardBrightness":null,"frozenPids":null,"appNapOverrides":null,"savedAudioOutputs":null,"displayRestoreRefused":null,"keyboardRestoreRefused":null,"displayRestoredUnderLowPower":null,"keptDisplayUnderLowPower":null,"keptDisplayUnderLowPowerBoot":null,"keptDisplayReadLit":null}"#
+        let json = #"{"sleepDisabledByUs":false,"lowPowerSetByUs":null,"frozenProcesses":[],"dockerFrozen":false,"savedOutputVolume":null,"savedMuted":null,"savedDisplayBrightness":null,"savedKeyboardBrightness":null,"frozenPids":null,"appNapOverrides":null,"savedAudioOutputs":null,"displayRestoreRefused":null,"keyboardRestoreRefused":null,"displaySleepRequested":null,"displayRestoredUnderLowPower":null,"keptDisplayUnderLowPower":null,"keptDisplayUnderLowPowerBoot":null,"keptDisplayReadLit":null}"#
         try fx.writeState(json)
 
         let r = try fx.run(fx.backstop)
@@ -2506,6 +2565,7 @@ final class RecoveryScriptTests: XCTestCase {
             #"{"sleepDisabledByUs":false,"frozenProcesses":"garbage"}"#,
             #"{"sleepDisabledByUs":false,"savedDisplayBrightness":"bright"}"#,
             #"{"sleepDisabledByUs":false,"savedDisplayBrightness":0.5,"displayRestoreRefused":"yes"}"#,
+            #"{"sleepDisabledByUs":false,"displaySleepRequested":1}"#,
             #"{"sleepDisabledByUs":false,"appNapOverrides":[{"previous":true}]}"#,
         ] + Self.corruptOutputJournals {
             let f = try ScriptFixture()
@@ -8107,6 +8167,7 @@ final class AppEncodedJournalScriptTests: XCTestCase {
             s.keptDisplayUnderLowPower = 0.8
             s.keptDisplayUnderLowPowerBoot = "boot A"
             s.keptDisplayReadLit = 0.8
+            s.displaySleepRequested = true
         }
         try h.store.saveState(s)
         let data = try Data(contentsOf: h.home.paths.stateFile)
@@ -8132,6 +8193,7 @@ final class AppEncodedJournalScriptTests: XCTestCase {
         XCTAssertEqual(after.frozenProcesses, [], label)
         XCTAssertEqual(after.savedAudioOutputs, wrote.savedAudioOutputs, label)
         XCTAssertEqual(after.keptDisplayUnderLowPowerBoot, wrote.keptDisplayUnderLowPower == nil ? nil : f.bootUUID, label)
+        XCTAssertEqual(after.displaySleepRequested, wrote.displaySleepRequested, label)
     }
 
     /// The agent on an expired session: the same outcome for each name or

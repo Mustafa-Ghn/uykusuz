@@ -28,7 +28,9 @@
 # found twice at the top level of the file, or text the check cannot follow
 # makes the journal malformed: the same text check as backstop.sh
 # (record_text_problems), which reads keys at the top level only, with
-# their escapes decoded, as the app does.
+# their escapes decoded, as the app does. A display sleep request the app
+# journaled for its wake (displaySleepRequested) is not undone here either: it
+# does not stop the uninstall, goes with state.json, and must have its type.
 #
 # Deletion is by exact owned file, never by directory tree: --purge removes
 # the files Uykusuz writes (see Paths.swift), the session.json copies the
@@ -400,7 +402,7 @@ journal_shape_problems() { # file
     echo "state.json bir JSON nesnesi değil"
     return 0
   fi
-  for key in sleepDisabledByUs lowPowerSetByUs dockerFrozen savedMuted displayRestoreRefused keyboardRestoreRefused; do
+  for key in sleepDisabledByUs lowPowerSetByUs dockerFrozen savedMuted displayRestoreRefused keyboardRestoreRefused displaySleepRequested; do
     t="$(type_of "$f" "$key")"
     [[ -z "$t" || "$t" == bool || "$t" == "(any)" ]] || echo "$key türü $t, bool değil"
   done

@@ -34,7 +34,9 @@ restores, `savedOutputVolume`, `savedMuted`, `savedAudioOutputs`,
 `savedDisplayBrightness`, `savedKeyboardBrightness` and
 `displayRestoredUnderLowPower`: CoreAudio and the private brightness
 frameworks need the app. The app's records `keptDisplayUnderLowPower`,
-`keptDisplayUnderLowPowerBoot` and `keptDisplayReadLit` are kept too.
+`keptDisplayUnderLowPowerBoot` and `keptDisplayReadLit` are kept too, and so
+is `displaySleepRequested`, a lid close's display sleep request with no
+brightness journaled: only the app can wake the display, and it is not dirty.
 Before the backstop's `lowpowermode 0`, when the journal has
 `keptDisplayUnderLowPower` with another boot or none, it writes its own
 `kern.bootsessionuuid` (empty if unreadable) to

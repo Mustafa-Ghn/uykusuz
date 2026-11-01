@@ -4,6 +4,12 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.10.2 — 2026-11-01
+
+### Düzeltilenler
+
+- **Kapalı kapağın altında yanık kalan ekran.** Uykusuz'un ekranı karartamadığı durumlarda (henüz ölçülmemiş bir macOS sürümü ya da okunamayan parlaklık) klavye ışığı da zaten kapalıysa (macOS onu gün ışığında kapatır) ekrandan uyuması istenmiyor ve ekran kapak kapalıyken yanık kalıyordu; 0.7.1'den beri böyleydi. Artık Uykusuz ekranın uyumasını ister ve kapak açılınca uyandırır, klavye ışığına yine dokunmaz. Ekranı açık tutan bir uygulama varken macOS bu isteği yok sayar.
+
 ## 0.10.1 — 2026-11-01
 
 ### Düzeltilenler

@@ -2186,8 +2186,18 @@ final class SessionManager {
         // Brightness entries are read with the owed edits applied: an entry
         // this process already settled is not restored again.
         let kept = effectiveState
-        if kept.brightnessJournaled {
+        if kept.displayWakeOwed {
             display.wake()
+        }
+        // A clear that fails leaves the entry, so the next undo wakes once
+        // more and tries again.
+        if kept.displaySleepRequested {
+            let clear: (inout RuntimeState) -> Void = { $0.displaySleepRequested = false }
+            do {
+                try journal(clear)
+            } catch {
+                errors.append(unclearedLine("Ekran uyandırıldı, ancak kayıt defterindeki girdi temizlenemedi: \(error.localizedDescription); yeniden denenecek", clear))
+            }
         }
         // Read before the entries are cleared: the re-assert below needs them.
         var restoredDisplay: Float?
@@ -2769,21 +2779,26 @@ final class SessionManager {
             if case .privilegedCommandRunning = await performEnd(reason: .backstop) { return }
         } else {
             // Only output volumes are owed, from an end that found their
-            // devices not connected, or a brightness kept after a refused
-            // restore, which is not dirty. No session to end and nothing to
-            // announce on every launch: each device is tried, and one still
-            // not connected keeps its entry and its menu line.
+            // devices not connected, a brightness kept after a refused
+            // restore, or the wake of a display sleep request left by a
+            // session that ended without the app, neither of which is dirty.
+            // No session to end and nothing to announce on every launch:
+            // each device is tried, and one still not connected keeps its
+            // entry and its menu line.
             let refusedKept = state.hasRefusedBrightness
+            let wakeOwed = state.displaySleepRequested
             if state.displayRestoredUnderLowPower != nil {
                 dropDisplayWrite(reason: "no session and the mode is not ours")
-            } else if savedOutputs.isEmpty, !refusedKept {
+            } else if savedOutputs.isEmpty, !refusedKept, !wakeOwed {
                 Log.info("reconcile: no session, nothing to restore")
             }
-            if refusedKept {
+            if refusedKept || wakeOwed {
                 // This launch may be the build or macOS that can make the
                 // call; still refused, the entry stays. The undo restores
                 // the saved output volumes too.
-                Log.info("reconcile: no session; trying again the brightness kept after a refused restore")
+                Log.info(refusedKept
+                    ? "reconcile: no session; trying again the brightness kept after a refused restore"
+                    : "reconcile: no session; waking the display a lid close asked to sleep")
                 undoLidActionsInJournal()
                 // A write that failed made the entry an ordinary failed
                 // restore: ended as for any dirty journal, so the agent is

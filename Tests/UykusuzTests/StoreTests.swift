@@ -175,6 +175,34 @@ final class StoreTests: XCTestCase {
         XCTAssertNil(try Store.makeDecoder().decode(RuntimeState.self, from: legacy).displayRestoredUnderLowPower)
     }
 
+    /// A display sleep request with no brightness journaled stays in the
+    /// file as a flat bool, written only while set. It owes a wake and counts
+    /// as an undo entry, so a failed clear keeps its menu line, but it holds
+    /// up no end: neither dirty nor a lid action. A journal without it
+    /// decodes with none.
+    func testDisplaySleepRequestRoundTripsAndIsNotDirty() throws {
+        var st = RuntimeState()
+        st.displaySleepRequested = true
+        try store.saveState(st)
+        XCTAssertEqual(try store.loadState(), st)
+        let text = try String(contentsOf: home.paths.stateFile, encoding: .utf8)
+        XCTAssertTrue(text.contains("\"displaySleepRequested\" : true"), text)
+        XCTAssertFalse(st.isDirty)
+        XCTAssertFalse(st.hasLidActions)
+        XCTAssertFalse(st.brightnessJournaled)
+        XCTAssertTrue(st.displayWakeOwed)
+        XCTAssertNotEqual(st.undoEntries, RuntimeState.clean.undoEntries)
+
+        try store.saveState(RuntimeState())
+        let bare = try String(contentsOf: home.paths.stateFile, encoding: .utf8)
+        XCTAssertFalse(bare.contains("displaySleepRequested"), bare)
+        let legacy = Data(#"{"sleepDisabledByUs":false,"lowPowerSetByUs":false,"frozenProcesses":[],"dockerFrozen":false,"savedKeyboardBrightness":0.3}"#.utf8)
+        let decoded = try Store.makeDecoder().decode(RuntimeState.self, from: legacy)
+        XCTAssertFalse(decoded.displaySleepRequested)
+        XCTAssertTrue(decoded.displayWakeOwed, "a journaled brightness owes the wake on its own")
+        XCTAssertFalse(RuntimeState.clean.displayWakeOwed)
+    }
+
     /// The record of our Low Power Mode over a kept display entry stays in
     /// the file, flat, with its boot session, and is neither dirty nor an
     /// undo entry. Written only while set; a journal without it decodes

@@ -779,9 +779,12 @@ final class LidActionsTests: XCTestCase {
         await actions.onClose()
         XCTAssertEqual(h.keyboard.sets, [], "off already (daylight): not written")
         XCTAssertNil(try h.store.loadState()?.savedKeyboardBrightness)
+        XCTAssertEqual(h.display.sleepRequests, 1)
+        XCTAssertEqual(try h.store.loadState()?.displaySleepRequested, false, "the display's entry is what the open wakes for")
 
         await actions.onOpen()
         XCTAssertEqual(h.keyboard.sets, [], "no 0 written back on open: it would pin the backlight off for the evening")
+        XCTAssertEqual(h.display.wakes, 1)
     }
 
     func testDisplayReadFailureSkipsTheDisplayButKeyboardAndFreezesStillRun() async throws {

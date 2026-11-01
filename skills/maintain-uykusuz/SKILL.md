@@ -34,9 +34,10 @@ Reference pages in https://github.com/Mustafa-Ghn/uykusuz (Turkish):
    - `savedDisplayBrightness` or `savedKeyboardBrightness`, unless
      `displayRestoreRefused` or `keyboardRestoreRefused` is `true`
 
-   Other keys, such as `keptDisplayReadLit`, `keptDisplayUnderLowPower` and
-   `displayRestoredUnderLowPower`, are records the app keeps, not changes to
-   undo. A brightness value kept after a refused restore blocks nothing.
+   Other keys, such as `keptDisplayReadLit`, `keptDisplayUnderLowPower`,
+   `displayRestoredUnderLowPower` and `displaySleepRequested`, are records the
+   app keeps, not changes to undo. A brightness value kept after a refused
+   restore blocks nothing.
    Saved audio for an output that isn't connected waits for it to reconnect
    and doesn't block ending a session.
 4. `launchctl print gui/$(id -u)/com.mustafaghn.uykusuz.backstop` shows whether the

@@ -221,7 +221,8 @@ final class RefusedDarkeningTests: XCTestCase {
     /// display's sleep and wake land on `h.display`.
     private func makeDarkeningOnly(
         display: any DisplayDimming,
-        keyboard: any KeyboardBacklighting
+        keyboard: any KeyboardBacklighting,
+        sampler: BrightnessSampler? = nil
     ) -> (SessionManager, LidActions) {
         let m = h.makeManager()
         m.config.muteOnLidClose = false
@@ -235,7 +236,7 @@ final class RefusedDarkeningTests: XCTestCase {
             audio: h.audio,
             display: display,
             keyboard: keyboard,
-            sampler: nil
+            sampler: sampler
         )
         return (m, actions)
     }
@@ -291,6 +292,7 @@ final class RefusedDarkeningTests: XCTestCase {
         XCTAssertEqual(h.display.sleepRequests, 0, "no journaled brightness, so no wake on open: no sleep request")
         let state = try XCTUnwrap(try h.store.loadState())
         XCTAssertFalse(state.brightnessJournaled)
+        XCTAssertFalse(state.displaySleepRequested)
         XCTAssertTrue(logText().contains("display sleep not requested: no display or keyboard brightness is journaled"), logText())
         XCTAssertNil(m.lastError)
 
@@ -318,6 +320,315 @@ final class RefusedDarkeningTests: XCTestCase {
         XCTAssertEqual(h.display.wakes, 1)
         XCTAssertEqual(h.keyboard.sets, [0, 0.5])
         XCTAssertFalse(try XCTUnwrap(try h.store.loadState()).brightnessJournaled)
+    }
+
+    // MARK: A display sleep request with no brightness journaled
+
+    /// The journal a close leaves when the request is all it has to write.
+    private func assertTheRequestIsOnItsOwn(file: StaticString = #filePath, line: UInt = #line) throws {
+        let state = try XCTUnwrap(try h.store.loadState(), file: file, line: line)
+        XCTAssertTrue(state.displaySleepRequested, file: file, line: line)
+        XCTAssertNil(state.savedDisplayBrightness, "the display was not read", file: file, line: line)
+        XCTAssertNil(state.savedKeyboardBrightness, "a 0 written back on open would pin the backlight off", file: file, line: line)
+        XCTAssertFalse(state.hasLidActions, file: file, line: line)
+    }
+
+    /// The display is refused and the backlight is off already, as macOS
+    /// leaves it in daylight, so neither has a brightness to journal. Left
+    /// alone, the panel stays lit under the closed lid, so the close asks it
+    /// to sleep all the same. The request is on disk before it goes out,
+    /// with no 0 for the backlight. The open wakes the display for it, clears
+    /// it, and writes nothing to the backlight, so macOS can still light it in
+    /// the evening.
+    func testARefusedDisplayWithTheBacklightAlreadyOffStillSleepsAndWakes() async throws {
+        let (m, actions) = makeDarkeningOnly(display: refusedDisplay, keyboard: h.keyboard)
+        h.keyboard.brightness = 0
+        await m.start(duration: 3600)
+        let store = h.store
+        let onDisk = Locked<Bool?>(nil)
+        h.display.onSleepRequest = { onDisk.value = ((try? store.loadState()) ?? nil)?.displaySleepRequested }
+
+        await actions.onClose()
+
+        XCTAssertEqual(h.display.sleepRequests, 1)
+        XCTAssertEqual(onDisk.value, true, "journaled before the request goes out")
+        try assertTheRequestIsOnItsOwn()
+        XCTAssertEqual(h.keyboard.sets, [])
+        XCTAssertEqual(h.display.wakes, 0)
+        XCTAssertTrue(logText().contains("keyboard backlight already off; leaving it to macOS"), logText())
+        XCTAssertTrue(logText().contains("display sleep requested"), logText())
+        XCTAssertNil(m.lastError)
+
+        await actions.onOpen()
+
+        XCTAssertEqual(h.display.wakes, 1)
+        XCTAssertEqual(h.keyboard.sets, [], "no 0 written back on open: it would pin the backlight off for the evening")
+        XCTAssertFalse(try XCTUnwrap(try h.store.loadState()).displayWakeOwed)
+        XCTAssertNil(m.lastError)
+    }
+
+    /// A display whose read fails takes the same path as a refused one.
+    func testADisplayReadFailureWithTheBacklightAlreadyOffStillSleepsAndWakes() async throws {
+        let (m, actions) = makeDarkeningOnly(display: h.display, keyboard: h.keyboard)
+        h.display.throwOnRead = true
+        h.keyboard.brightness = 0
+        await m.start(duration: 3600)
+
+        await actions.onClose()
+
+        XCTAssertEqual(h.display.sets, [], "a display whose brightness is unknown is not set")
+        XCTAssertEqual(h.display.sleepRequests, 1)
+        try assertTheRequestIsOnItsOwn()
+        XCTAssertTrue(logText().contains("display darken on lid close skipped: read brightness"), logText())
+        XCTAssertNil(m.lastError)
+
+        await actions.onOpen()
+
+        XCTAssertEqual(h.display.wakes, 1)
+        XCTAssertEqual(h.display.sets, [])
+        XCTAssertEqual(h.keyboard.sets, [])
+        XCTAssertFalse(try XCTUnwrap(try h.store.loadState()).displayWakeOwed)
+    }
+
+    /// With a sampler, as the app runs: a read of 0 taken with recent input.
+    func testABacklightReadOffWithASamplerStillSleepsAndWakes() async throws {
+        let display = refusedDisplay
+        let sampler = BrightnessSampler(display: display, keyboard: h.keyboard, idleSeconds: { 1 })
+        let (m, actions) = makeDarkeningOnly(display: display, keyboard: h.keyboard, sampler: sampler)
+        h.keyboard.brightness = 0
+        await m.start(duration: 3600)
+
+        await actions.onClose()
+
+        XCTAssertEqual(h.display.sleepRequests, 1)
+        try assertTheRequestIsOnItsOwn()
+
+        await actions.onOpen()
+
+        XCTAssertEqual(h.display.wakes, 1)
+        XCTAssertEqual(h.keyboard.sets, [])
+    }
+
+    /// The read at the close cannot be trusted, but the last trusted sample
+    /// says the backlight was off: the same, not an unknown level.
+    func testABacklightSampledOffStillSleepsAndWakes() async throws {
+        let display = refusedDisplay
+        let idle = Locked<Double>(1)
+        let sampler = BrightnessSampler(display: display, keyboard: h.keyboard, idleSeconds: { idle.value })
+        let (m, actions) = makeDarkeningOnly(display: display, keyboard: h.keyboard, sampler: sampler)
+        h.keyboard.brightness = 0
+        await m.start(duration: 3600)
+        sampler.sample()
+        XCTAssertEqual(sampler.last?.keyboard, 0)
+        idle.value = 600
+
+        await actions.onClose()
+
+        XCTAssertEqual(h.display.sleepRequests, 1)
+        try assertTheRequestIsOnItsOwn()
+
+        await actions.onOpen()
+
+        XCTAssertEqual(h.display.wakes, 1)
+        XCTAssertEqual(h.keyboard.sets, [])
+    }
+
+    /// The backlight reads 0 because macOS holds it down, and no sample says
+    /// what it was: no level is known, as before 0.7.1. With the display
+    /// refused too, nothing would wake the panel, so it is not asked to sleep.
+    func testASuppressedBacklightWithNoSampleLeavesARefusedDisplayAwake() async throws {
+        let (m, actions) = makeDarkeningOnly(display: refusedDisplay, keyboard: h.keyboard)
+        h.keyboard.brightness = 0
+        h.keyboard.suppressedOrDimmed = true
+        await m.start(duration: 3600)
+
+        await actions.onClose()
+
+        XCTAssertEqual(h.display.sleepRequests, 0)
+        XCTAssertFalse(try XCTUnwrap(try h.store.loadState()).displayWakeOwed)
+        XCTAssertTrue(logText().contains("display sleep not requested: no display or keyboard brightness is journaled"), logText())
+
+        await actions.onOpen()
+
+        XCTAssertEqual(h.display.wakes, 0)
+    }
+
+    /// state.json refuses the request: nothing on disk would wake the panel,
+    /// so it is not asked to sleep, and the open has nothing to wake.
+    func testARequestTheJournalRefusesDoesNotGoOut() async throws {
+        let (m, actions) = makeDarkeningOnly(display: refusedDisplay, keyboard: h.keyboard)
+        h.keyboard.brightness = 0
+        await m.start(duration: 3600)
+        let file = h.home.paths.stateFile.path
+        try FileManager.default.setAttributes([.immutable: true], ofItemAtPath: file)
+        defer { try? FileManager.default.setAttributes([.immutable: false], ofItemAtPath: file) }
+
+        await actions.onClose()
+
+        XCTAssertEqual(h.display.sleepRequests, 0)
+        XCTAssertFalse(try XCTUnwrap(try h.store.loadState()).displaySleepRequested)
+        XCTAssertTrue(logText().contains("display sleep not requested: the request could not be journaled"), logText())
+
+        try FileManager.default.setAttributes([.immutable: false], ofItemAtPath: file)
+        await actions.onOpen()
+
+        XCTAssertEqual(h.display.wakes, 0)
+    }
+
+    /// The display is awake but state.json refuses the clear. The menu says
+    /// so, as for any undone entry, and keeps saying so while other writes
+    /// land, since the entry is still there. The next undo wakes once more,
+    /// clears it, and the line goes.
+    func testARequestWhoseClearFailsIsTriedAgainAtTheNextUndo() async throws {
+        let (m, actions) = makeDarkeningOnly(display: refusedDisplay, keyboard: h.keyboard)
+        h.keyboard.brightness = 0
+        await m.start(duration: 3600)
+        await actions.onClose()
+        let file = h.home.paths.stateFile.path
+        try FileManager.default.setAttributes([.immutable: true], ofItemAtPath: file)
+        defer { try? FileManager.default.setAttributes([.immutable: false], ofItemAtPath: file) }
+
+        await actions.onOpen()
+
+        XCTAssertEqual(h.display.wakes, 1)
+        XCTAssertTrue(try XCTUnwrap(try h.store.loadState()).displaySleepRequested)
+        let line = try XCTUnwrap(m.lastError)
+        XCTAssertTrue(line.contains("Ekran uyandırıldı, ancak kayıt defterindeki girdi temizlenemedi"), line)
+
+        try FileManager.default.setAttributes([.immutable: false], ofItemAtPath: file)
+        try m.journal { _ in }
+
+        XCTAssertEqual(m.lastError, line, "the entry is still on disk")
+
+        await actions.onOpen()
+
+        XCTAssertEqual(h.display.wakes, 2)
+        XCTAssertFalse(try XCTUnwrap(try h.store.loadState()).displaySleepRequested)
+        XCTAssertNil(m.lastError)
+    }
+
+    /// The app dies between that close and the open. The relaunch with the
+    /// lid open wakes the display from the journal, once.
+    func testARelaunchAfterARequestOnItsOwnStillWakesTheDisplay() async throws {
+        let (m, actions) = makeDarkeningOnly(display: refusedDisplay, keyboard: h.keyboard)
+        h.keyboard.brightness = 0
+        await m.start(duration: 3600)
+        await actions.onClose()
+        XCTAssertEqual(h.display.wakes, 0)
+
+        h.clamshell.closed = false
+        let relaunched = h.makeManager()
+        await relaunched.reconcile()
+
+        XCTAssertEqual(h.display.wakes, 1)
+        XCTAssertEqual(h.keyboard.sets, [])
+        XCTAssertFalse(try XCTUnwrap(try h.store.loadState()).displayWakeOwed)
+    }
+
+    /// A relaunch with the lid still closed leaves the panel as it is and
+    /// keeps the request for the open.
+    func testARelaunchUnderTheClosedLidKeepsTheRequestForTheOpen() async throws {
+        let (m, actions) = makeDarkeningOnly(display: refusedDisplay, keyboard: h.keyboard)
+        h.keyboard.brightness = 0
+        await m.start(duration: 3600)
+        await actions.onClose()
+
+        h.clamshell.closed = true
+        let relaunched = h.makeManager()
+        await relaunched.reconcile()
+
+        XCTAssertEqual(h.display.wakes, 0)
+        try assertTheRequestIsOnItsOwn()
+
+        h.clamshell.closed = false
+        await relaunched.undoLidActions()
+
+        XCTAssertEqual(h.display.wakes, 1)
+        XCTAssertFalse(try XCTUnwrap(try h.store.loadState()).displayWakeOwed)
+    }
+
+    /// The recovery agent ended the session while the app was gone, and
+    /// keeps the request for the app. The next launch wakes the display once
+    /// and clears it. It is no failed restore: no notice, no agent armed.
+    func testARequestLeftWithNoSessionIsWokenOnceAtALaunchAndBlocksNothing() async throws {
+        var st = RuntimeState()
+        st.displaySleepRequested = true
+        try h.store.saveState(st)
+        h.clamshell.closed = false
+        let m = h.makeManager()
+
+        await m.reconcile()
+
+        XCTAssertEqual(h.display.wakes, 1)
+        XCTAssertEqual(try h.store.loadState(), RuntimeState.clean)
+        XCTAssertEqual(h.backstop.arms, 0)
+        XCTAssertFalse(h.notifier.posts.contains { $0.title == SessionManager.incompleteTitle }, "\(h.notifier.posts)")
+        XCTAssertNil(m.lastError)
+        XCTAssertTrue(logText().contains("reconcile: no session; waking the display a lid close asked to sleep"), logText())
+
+        await h.makeManager().reconcile()
+
+        XCTAssertEqual(h.display.wakes, 1, "nothing owed at the launch after")
+    }
+
+    /// A session end wakes the display for the request, and leaves a clean
+    /// journal: an ordinary restore.
+    func testASessionEndWakesForTheRequestAndIsAnOrdinaryRestore() async throws {
+        let (m, actions) = makeDarkeningOnly(display: refusedDisplay, keyboard: h.keyboard)
+        h.keyboard.brightness = 0
+        await m.start(duration: 3600)
+        await actions.onClose()
+
+        let outcome = await m.end(reason: .timer)
+
+        XCTAssertEqual(outcome, .restored)
+        XCTAssertEqual(h.display.wakes, 1)
+        XCTAssertEqual(h.keyboard.sets, [])
+        XCTAssertEqual(try h.store.loadState(), RuntimeState.clean)
+        XCTAssertFalse(h.notifier.posts.contains { $0.title == SessionManager.incompleteTitle }, "\(h.notifier.posts)")
+    }
+
+    /// A second close with no open between asks again, and the one open
+    /// wakes once. A second open owes nothing.
+    func testASecondCloseAsksAgainAndTheOpenWakesOnce() async throws {
+        let (m, actions) = makeDarkeningOnly(display: refusedDisplay, keyboard: h.keyboard)
+        h.keyboard.brightness = 0
+        await m.start(duration: 3600)
+
+        await actions.onClose()
+        await actions.onClose()
+
+        XCTAssertEqual(h.display.sleepRequests, 2)
+        try assertTheRequestIsOnItsOwn()
+
+        await actions.onOpen()
+        await actions.onOpen()
+
+        XCTAssertEqual(h.display.wakes, 1)
+    }
+
+    /// A later close finds the display readable again, so a brightness is
+    /// journaled beside the request. The open wakes once, restores it, and
+    /// clears both.
+    func testABrightnessJournaledBesideARequestGetsOneWake() async throws {
+        let (m, actions) = makeDarkeningOnly(display: h.display, keyboard: h.keyboard)
+        h.display.throwOnRead = true
+        h.keyboard.brightness = 0
+        await m.start(duration: 3600)
+        await actions.onClose()
+        h.display.throwOnRead = false
+
+        await actions.onClose()
+
+        let closed = try XCTUnwrap(try h.store.loadState())
+        XCTAssertEqual(closed.savedDisplayBrightness, 0.7)
+        XCTAssertTrue(closed.displaySleepRequested)
+
+        await actions.onOpen()
+
+        XCTAssertEqual(h.display.wakes, 1)
+        XCTAssertEqual(h.display.sets, [0, 0.7])
+        XCTAssertFalse(try XCTUnwrap(try h.store.loadState()).displayWakeOwed)
     }
 
     private var refusedKeyboard: CoreBrightnessKeyboardBacklight {

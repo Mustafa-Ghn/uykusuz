@@ -143,9 +143,20 @@ struct RuntimeState: Codable, Equatable, Sendable {
     /// The same for the saved keyboard backlight.
     var keyboardRestoreRefused: Bool = false
     /// A display or keyboard brightness is journaled for the open to
-    /// restore, refused or not. Lid open and reconcile wake the display
-    /// only then, so lid close asks the display to sleep only then too.
+    /// restore, refused or not.
     var brightnessJournaled: Bool { savedDisplayBrightness != nil || savedKeyboardBrightness != nil }
+    /// A lid close asked the display to sleep with no brightness journaled:
+    /// the display was not read, and the keyboard backlight was off already,
+    /// so it has no entry (a 0 written back on open would pin it off). The
+    /// request is what turns that panel off under the closed lid, and this
+    /// entry is what wakes it again. Cleared after the wake. Not dirty and
+    /// not a lid action: the request changes no setting, so no end or quit
+    /// waits for it, and the scripts, which cannot wake the display, check
+    /// its type and keep it for the app. Written only while set.
+    var displaySleepRequested: Bool = false
+    /// Lid open and reconcile wake the display only then, so lid close asks
+    /// the display to sleep only then too.
+    var displayWakeOwed: Bool { brightnessJournaled || displaySleepRequested }
     /// A saved brightness kept only because the guard refused its restore.
     var hasRefusedBrightness: Bool {
         (savedDisplayBrightness != nil && displayRestoreRefused)
@@ -326,7 +337,7 @@ struct RuntimeState: Codable, Equatable, Sendable {
         case sleepDisabledByUs, lowPowerSetByUs, frozenProcesses, frozenPids, dockerFrozen
         case savedAudioOutputs, savedOutputVolume, savedMuted
         case savedDisplayBrightness, savedKeyboardBrightness, displayRestoredUnderLowPower
-        case displayRestoreRefused, keyboardRestoreRefused
+        case displayRestoreRefused, keyboardRestoreRefused, displaySleepRequested
         case keptDisplayUnderLowPower, keptDisplayUnderLowPowerBoot, keptDisplayReadLit
         case appNapOverrides
     }
@@ -355,6 +366,7 @@ struct RuntimeState: Codable, Equatable, Sendable {
         displayRestoredUnderLowPower = try c.decodeIfPresent(Float.self, forKey: .displayRestoredUnderLowPower)
         displayRestoreRefused = try c.decodeIfPresent(Bool.self, forKey: .displayRestoreRefused) ?? false
         keyboardRestoreRefused = try c.decodeIfPresent(Bool.self, forKey: .keyboardRestoreRefused) ?? false
+        displaySleepRequested = try c.decodeIfPresent(Bool.self, forKey: .displaySleepRequested) ?? false
         keptDisplayUnderLowPower = try c.decodeIfPresent(Float.self, forKey: .keptDisplayUnderLowPower)
         keptDisplayUnderLowPowerBoot = try c.decodeIfPresent(String.self, forKey: .keptDisplayUnderLowPowerBoot)
         keptDisplayReadLit = try c.decodeIfPresent(Float.self, forKey: .keptDisplayReadLit)
@@ -379,6 +391,7 @@ struct RuntimeState: Codable, Equatable, Sendable {
         // same to backstop.sh and uninstall.sh as before the flags existed.
         if displayRestoreRefused { try c.encode(true, forKey: .displayRestoreRefused) }
         if keyboardRestoreRefused { try c.encode(true, forKey: .keyboardRestoreRefused) }
+        if displaySleepRequested { try c.encode(true, forKey: .displaySleepRequested) }
         try c.encodeIfPresent(keptDisplayUnderLowPower, forKey: .keptDisplayUnderLowPower)
         try c.encodeIfPresent(keptDisplayUnderLowPowerBoot, forKey: .keptDisplayUnderLowPowerBoot)
         try c.encodeIfPresent(keptDisplayReadLit, forKey: .keptDisplayReadLit)

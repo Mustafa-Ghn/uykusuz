@@ -89,6 +89,11 @@
 #                              refused that restore on this macOS: kept, and
 #                              not dirty, since no run here or of that app
 #                              build can restore it.
+#       displaySleepRequested -> a lid close asked the display to sleep with no
+#                              brightness journaled; only the app can wake the
+#                              display. Nothing to undo here and not dirty:
+#                              never read for an undo, kept as it is for the
+#                              app. Its type is checked.
 #       displayRestoredUnderLowPower, keptDisplayUnderLowPower,
 #       keptDisplayUnderLowPowerBoot, keptDisplayReadLit -> the app's own
 #                              records about a display restore under its Low
@@ -703,7 +708,7 @@ journal_shape_problems() { # file
     echo "state.json is not a JSON object"
     return 0
   fi
-  for key in sleepDisabledByUs lowPowerSetByUs dockerFrozen savedMuted displayRestoreRefused keyboardRestoreRefused; do
+  for key in sleepDisabledByUs lowPowerSetByUs dockerFrozen savedMuted displayRestoreRefused keyboardRestoreRefused displaySleepRequested; do
     t="$(type_of "$f" "$key")"
     [[ -z "$t" || "$t" == bool || "$t" == "(any)" ]] || echo "$key is a $t, not a bool"
   done

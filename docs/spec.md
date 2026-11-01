@@ -78,6 +78,7 @@ RuntimeState {                // everything Uykusuz changed and must undo
   savedKeyboardBrightness: Float?  // nil when there is no backlight, too
   displayRestoreRefused:   Bool    // written only when true: the guard refused this restore; see section 4
   keyboardRestoreRefused:  Bool    // the same for the keyboard backlight
+  displaySleepRequested:   Bool    // written only when true: a lid close asked the display to sleep with no brightness journaled; see section 4
   displayRestoredUnderLowPower: Float?  // restored on open under our Low Power Mode; written again when it ends
   keptDisplayUnderLowPower:     Float?   // the kept (refused) display entry our Low Power Mode was on over; see section 4
   keptDisplayUnderLowPowerBoot: String?  // kern.bootsessionuuid of the boot that record was written in, or that backstop.sh switches the mode off in (published before it does)
@@ -164,11 +165,12 @@ methods are read through the Objective-C runtime and compared with the type
 encodings measured on macOS 26 (`DisplayPower.measuredKeyboardClientEncodings`,
 stack offsets removed); a missing required method or a changed encoding
 refuses the keyboard backlight before anything is instantiated. A refused
-device is skipped at lid close with a log line, nothing is journaled for
-it, and Settings shows the reason under the darken toggle. With nothing
-journaled for either device the close does not request display sleep,
-since lid open and reconcile wake the display only for a journaled
-brightness, as section 4 describes.
+device is skipped at lid close with a log line, no brightness is journaled
+for it, and Settings shows the reason under the darken toggle. With neither
+device's level known the close does not request display sleep, since lid
+open and reconcile wake the display only for a journal entry, as section 4
+describes. A keyboard backlight read off is a known level: next to a refused
+display the request still goes, with `displaySleepRequested` as its entry.
 
 A brightness journaled before an update that the guard now refuses is not
 written on open or reconcile, and it is not dropped either: an entry is
@@ -435,9 +437,18 @@ the panel and keys stayed lit for the whole closed period. A display sleep
 request (`IORequestIdle` on `IODisplayWrangler`, what `pmset displaysleepnow`
 does) is ignored while any process holds a display assertion, and agents
 routinely do, so brightness 0 is the primary mechanism and the sleep request
-is best effort. It is made only when a display or keyboard brightness is
-journaled, because the wake that undoes it on open, or on reconcile after
-a relaunch, runs only for such an entry. Display brightness 0 does not
+is best effort. The wake that undoes it on open, or on reconcile after a
+relaunch, runs only for a journal entry, so the request is made only with
+one: a display or keyboard brightness, or `displaySleepRequested`. The close
+writes `displaySleepRequested` before the request when the display was not
+read (refused or unreadable) and the keyboard backlight is already off. That
+backlight has no entry of its own, since a 0 written back on open would pin
+it off, and the request is the only thing that turns that panel off. A journal
+that refuses the write means no request. With no level known (both devices
+refused or unreadable, no backlight, or a backlight macOS holds down with no
+trusted sample) the close writes nothing and makes no request, so a panel still
+awake stays lit under the closed lid. The wake clears the entry. It is not dirty and
+holds up no end or quit: the request changes no setting. Display brightness 0 does not
 switch the keyboard backlight off; it is set separately. Both values are journaled before they are changed
 and restored on open, session end, Quit, or reconcile with the lid open; the
 backstop keeps the entries and only the app restores them (private
@@ -1037,6 +1048,10 @@ Backstop, independent of the app:
   `keyboardRestoreRefused` is kept but does not make the journal dirty, so
   it neither fails the run nor stops uninstall, which keeps state.json for
   it (section 4).
+- The shell cannot wake the display. `displaySleepRequested` stays in the
+  journal for the app and does not make it dirty, so it neither fails the run
+  nor stops uninstall, which removes it with state.json. A value of another
+  type makes the journal malformed.
 - The shell puts `appNapOverrides` back with `defaults write <id>
   NSAppSleepDisabled -bool <previous>` or `defaults delete` when the key was
   absent. A delete that fails counts as done only when `defaults read` then
