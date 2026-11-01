@@ -4,6 +4,12 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.12.3 — 2026-11-01
+
+### Değişenler
+
+- **Uykusuz sesi daha yüksek.** Okuma ve uyarılar yaklaşık 10 dB, yani kulağa iki kat kadar yüksek duyulur: doğal ses müzik ve videoların, 0.11.0'a kadar kullanılan Mac sesinin de altında kalıyordu. En çok ünsüzler ve kelime sonları yükselir, bu yüzden gürültülü yerde daha iyi anlaşılır; tepe noktaları sınırlandığı için ses patlamaz. Sessiz bir yerde fazla gelirse Mac'in sesini kısın.
+
 ## 0.12.2 — 2026-11-01
 
 ### Düzeltilenler

@@ -525,6 +525,10 @@ varsayılan olarak açıktır; kapatınca Mac'in Türkçe sesi okur.
   bellekten çıkar.
 - **Mac'i yormaz.** Bir saniyelik konuşma, M5 Pro'da yaklaşık 0,01 saniye
   işlemci harcar. Ses üretmek okumaktan çok daha hızlıdır.
+- **Gürültülü yerde de duyulur.** Ses, müzik ve videolarla aşağı yukarı aynı
+  yükseklikte çıkar. En çok ünsüzler ve kelime sonları yükselir, tepe noktaları
+  sınırlandığı için ses patlamaz. Sessiz bir yerde fazla gelirse Mac'in sesini
+  kısın.
 - **Teknik metni düzgün okur.** `README` "ridmi", `commit` "komit", `API` "Ey Pi
   Ay" diye söylenir; `Keychain'den` gibi eklerin sesi de okunuşa uyar. Sayılar,
   tarihler ve saatler ekleriyle okunur: `14:30'da` "on dört otuzda" olur.

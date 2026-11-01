@@ -93,7 +93,9 @@ actor NaturalVoice {
     }
 
     func render(_ piece: SpokenPiece, seed: UInt64) throws -> RenderedPiece {
-        try loaded().model.render(piece, seed: seed)
+        var rendered = try loaded().model.render(piece, seed: seed)
+        rendered.samples = SpeechLevel.raised(rendered.samples)
+        return rendered
     }
 
     /// Says `text` and returns when it is over, or false if the voice could not

@@ -571,3 +571,66 @@ final class WavFileTests: XCTestCase {
         XCTAssertEqual(last, -32767, "clamped")
     }
 }
+
+final class SpeechLevelTests: XCTestCase {
+    private func tone(_ amplitude: Float, seconds: Double = 0.5) -> [Float] {
+        (0..<Int(seconds * SpeechModel.sampleRate)).map {
+            amplitude * sin(2 * .pi * 200 * Float($0) / Float(SpeechModel.sampleRate))
+        }
+    }
+
+    private func level(_ samples: ArraySlice<Float>) -> Double {
+        10 * log10(samples.reduce(0.0) { $0 + Double($1) * Double($1) } / Double(samples.count))
+    }
+
+    func testNothingGoesOverTheCeilingAndEverySampleStaysInPlace() {
+        var samples = tone(1) + tone(0.001)
+        samples[0] = 1
+        samples[samples.count - 1000] = 1
+        samples[samples.count - 1] = -1
+        let raised = SpeechLevel.raised(samples)
+        XCTAssertEqual(raised.count, samples.count)
+        XCTAssertLessThanOrEqual(raised.map(abs).max() ?? 2, SpeechLevel.ceiling + 1e-5)
+    }
+
+    func testQuietPartsGainTheMost() {
+        let quiet = tone(0.01), loud = tone(0.3)
+        let raised = SpeechLevel.raised(quiet + loud)
+        let middle = quiet.count / 2
+        let quietGain = level(raised[(middle / 2)..<middle]) - level(quiet[(middle / 2)..<middle])
+        let loudStart = quiet.count + middle
+        let loudGain = level(raised[loudStart...]) - level(loud[middle...])
+        XCTAssertEqual(quietGain, 16, accuracy: 0.1)
+        XCTAssertGreaterThan(loudGain, 3, "the loud part goes up too")
+        XCTAssertLessThan(loudGain, quietGain - 5)
+    }
+
+    /// A gain that moved in one step would be heard as a click.
+    func testTheGainMovesGradually() {
+        let quiet = tone(0.01, seconds: 0.2), loud = tone(0.9, seconds: 0.2)
+        let samples = quiet + loud + quiet
+        let raised = SpeechLevel.raised(samples)
+        // Where the tone crosses zero there is no gain to read.
+        let gains = samples.indices.filter { abs(samples[$0]) > 0.005 }.map { (index: $0, gain: raised[$0] / samples[$0]) }
+        for (a, b) in zip(gains, gains.dropFirst()) where b.index - a.index < 50 {
+            XCTAssertLessThan(abs(b.gain - a.gain) / Float(b.index - a.index), 0.05, "at sample \(b.index)")
+        }
+    }
+
+    func testNothingAndSilenceStayAsTheyAre() {
+        XCTAssertEqual(SpeechLevel.raised([]), [])
+        XCTAssertEqual(SpeechLevel.raised([0, 0, 0]), [0, 0, 0])
+    }
+
+    /// What a reading and an alert get: the voice, raised, with its word timing.
+    func testTheVoiceIsRaisedAndItsWordsKeepTheirTimes() async throws {
+        let piece = SpokenPiece(text: "merhaba, ben uykusuz. kapak kapalıyken uyarıları bu sesle söylerim.", pause: 0.1)
+        let raw = try SpeechModel(directory: voiceFolder).render(piece, seed: 0)
+        let heard = try await NaturalVoice(directory: { voiceFolder }).render(piece, seed: 0)
+        XCTAssertEqual(heard.samples.count, raw.samples.count)
+        XCTAssertEqual(heard.wordFrames, raw.wordFrames)
+        XCTAssertEqual(heard.pause, raw.pause)
+        XCTAssertLessThanOrEqual(heard.samples.map(abs).max() ?? 2, SpeechLevel.ceiling + 1e-5)
+        XCTAssertGreaterThan(level(heard.samples[...]) - level(raw.samples[...]), 9)
+    }
+}
