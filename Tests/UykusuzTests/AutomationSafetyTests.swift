@@ -1026,31 +1026,74 @@ final class DockerRuleCommandTests: XCTestCase {
 
     /// The real process table and the real arguments, through the rule that
     /// `DockerRule(freezer:)` builds: a process named `docker` that was asked
-    /// to build. A copy of `cat` waiting on its input stands in for it.
+    /// to build. The kernel names a process after the file it runs, whatever
+    /// link starts it, so the stand-in is a small program compiled here. It
+    /// waits on its input and echoes it.
+    ///
+    /// A copy of `cat` would not do. macOS kills a copy of an Apple tool as it
+    /// launches (AMFI's launch constraints), while syspolicyd scans the new
+    /// file. That crashed syspolicyd (SIGSEGV in Security's code signature
+    /// read), and a first exec waiting anywhere on the Mac then never returned.
+    /// The stand-in's first exec is scanned too, and the process is in the
+    /// table from the start of it. The echo shows that the scan has answered
+    /// and the program runs. Closing its input ends it, with no signal, and its
+    /// file goes only after it has exited, so nothing can disturb a scan.
     func testTheLiveRuleSeesARealDockerProcess() async throws {
         let dir = URL(fileURLWithPath: "/tmp/ins-\(getpid())-\(UInt16.random(in: 0...UInt16.max))", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: dir) }
+        let source = dir.appendingPathComponent("docker.c")
+        try """
+        #include <unistd.h>
+        int main(void) {
+            char buffer[64];
+            ssize_t count;
+            while ((count = read(0, buffer, sizeof buffer)) > 0) {
+                if (write(1, buffer, (size_t)count) != count) return 1;
+            }
+            return 0;
+        }
+
+        """.write(to: source, atomically: true, encoding: .utf8)
         let build = dir.appendingPathComponent("docker")
-        try FileManager.default.copyItem(atPath: "/bin/cat", toPath: build.path)
+        let compiled = try await Shell.run("/usr/bin/cc", [source.path, "-o", build.path], timeout: 60)
+        XCTAssertEqual(compiled.status, 0, compiled.stderr)
         let process = Process()
         process.executableURL = build
-        process.arguments = ["-", "build", "."]
+        process.arguments = ["build", "."]
         let input = Pipe()
+        let output = Pipe()
         process.standardInput = input
+        process.standardOutput = output
+        process.standardError = FileHandle.nullDevice
+        let childExit = ProcessExit(process)
+        // Waits in the pipe until the program really runs.
+        try input.fileHandleForWriting.write(contentsOf: Data("ready\n".utf8))
         try process.run()
-        defer {
-            process.terminate()
-            process.waitUntilExit()
+        addTeardownBlock {
+            try? input.fileHandleForWriting.close()
+            if await childExit.exited(within: 10) {
+                try? FileManager.default.removeItem(at: dir)
+            }
+        }
+
+        // The read has a thread of its own, which stays blocked if nothing
+        // ever comes.
+        let reply = output.fileHandleForReading
+        let echo = Locked<Data?>(nil)
+        let replied = XCTestExpectation(description: "the read of the stand-in's output returned")
+        Thread {
+            echo.value = try? reply.read(upToCount: 1)
+            replied.fulfill()
+        }.start()
+        guard await XCTWaiter().fulfillment(of: [replied], timeout: TestScripts.firstExecLimit) == .completed else {
+            return XCTFail(TestScripts.firstExecIsLate("the stand-in at \(build.path)", pid: process.processIdentifier))
+        }
+        guard echo.value?.isEmpty == false else {
+            return XCTFail("the stand-in ended without echoing its input")
         }
 
         let live = DockerRule(freezer: freezer())
-        let deadline = Date().addingTimeInterval(5)
-        var found = try live.commands()
-        while !found.contains("docker build"), Date() < deadline {
-            try await Task.sleep(for: .milliseconds(20))
-            found = try live.commands()
-        }
+        let found = try live.commands()
         XCTAssertTrue(found.contains("docker build"), "\(found)")
 
         let busy = DockerRule(freezer: freezer(), probe: { true }, commands: live.commands)

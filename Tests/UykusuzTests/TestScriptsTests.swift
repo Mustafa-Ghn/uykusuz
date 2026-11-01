@@ -84,4 +84,32 @@ final class LaunchedFakeTests: XCTestCase {
         XCTAssertEqual(try fm.destinationOfSymbolicLink(atPath: b.path), launcher)
         XCTAssertFalse(fm.isWritableFile(atPath: launcher))
     }
+
+    /// A first exec that does not return ends in an error that says why, and
+    /// the process is left alone. /bin/sleep stands in for it: it is no new
+    /// file, so stopping it afterwards interrupts no scan.
+    func testAFirstExecPastItsLimitFailsAndSaysWhy() throws {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/sleep")
+        p.arguments = ["30"]
+        defer { if p.isRunning { p.terminate() } }
+
+        XCTAssertThrowsError(try TestScripts.runFirstExec(p, describedAs: "the stand-in", limit: 0.1)) { error in
+            let text = error.localizedDescription
+            XCTAssertTrue(text.contains("the stand-in (pid \(p.processIdentifier))"), text)
+            XCTAssertTrue(text.contains("syspolicyd"), text)
+        }
+        XCTAssertTrue(p.isRunning)
+    }
+
+    /// A first exec that ends in time returns, with its status final.
+    func testAFirstExecWithinItsLimitReturnsAfterTheExit() throws {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/sh")
+        p.arguments = ["-c", "exit 3"]
+
+        try TestScripts.runFirstExec(p, describedAs: "the stand-in", limit: 30)
+
+        XCTAssertEqual(p.terminationStatus, 3)
+    }
 }

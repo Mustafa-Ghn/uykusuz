@@ -82,13 +82,45 @@ enum TestScripts {
         try "#!/bin/sh\nexit 0\n".write(to: url.appendingPathExtension("fake"), atomically: true, encoding: .utf8)
         let scanned = Process()
         scanned.executableURL = url
-        let exit = ProcessExit(scanned)
-        try scanned.run()
-        exit.wait()
+        try runFirstExec(scanned, describedAs: "the fake launcher")
         guard scanned.terminationStatus == 0 else {
             throw NSError(domain: "TestScripts", code: Int(scanned.terminationStatus), userInfo: [NSLocalizedDescriptionKey: "the fake launcher exited \(scanned.terminationStatus)"])
         }
         return url
+    }
+
+    /// How long to wait for the first exec of a new file. Running out fails
+    /// every test that uses a fake, so this is far above the queue
+    /// `writeLaunched` describes, which takes seconds even beside dozens of
+    /// other processes. A scan whose answer was lost never ends, so no longer
+    /// limit would help.
+    static let firstExecLimit: TimeInterval = 120
+
+    /// What a test says when the first exec of a new file has not returned.
+    /// The test leaves the process running: the limit cannot tell a long queue
+    /// from an answer that will never come.
+    static func firstExecIsLate(_ what: String, pid: pid_t, limit: TimeInterval = firstExecLimit) -> String {
+        "\(what) (pid \(pid)) did not run within \(limit) s. macOS holds the first exec of a new file until syspolicyd "
+            + "has scanned it. If syspolicyd crashed in that time (look for a new /Library/Logs/DiagnosticReports/syspolicyd-*.ips), "
+            + "the answer never comes and the process stays at _dyld_start using no CPU; `sample \(pid) 2` shows it. "
+            + "It was left running. If it stays stuck, kill it by hand and run the tests again."
+    }
+
+    /// Runs `process`, the first exec of a new file, to its end, for at most
+    /// `limit` seconds, and past that throws `firstExecIsLate`. The process gets
+    /// none of this run's descriptors, because `swift test` reads the run's
+    /// output to its end: a process left behind that holds it would still hang
+    /// the run.
+    static func runFirstExec(_ process: Process, describedAs what: String, limit: TimeInterval = firstExecLimit) throws {
+        process.standardInput = FileHandle.nullDevice
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        let exited = DispatchSemaphore(value: 0)
+        process.terminationHandler = { _ in exited.signal() }
+        try process.run()
+        guard exited.wait(timeout: .now() + limit) == .success else {
+            throw NSError(domain: "TestScripts", code: Int(ETIMEDOUT), userInfo: [NSLocalizedDescriptionKey: firstExecIsLate(what, pid: process.processIdentifier, limit: limit)])
+        }
     }
 
     private static let lock = NSLock()
