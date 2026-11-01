@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import SwiftUI
 
 /// Menu bar app. The status item is an `NSStatusItem` hosting SwiftUI, and
@@ -30,9 +31,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// window it is told in.
     let awaySummary: AwaySummary
     let summaryPanel = SummaryPanel()
-    /// Claude's last reply read aloud when it finishes (fork addition), in
-    /// the same window.
+    /// Claude's last reply read aloud on request (fork addition), in the same
+    /// window, and the shortcut that asks for it.
     let replyReader: ClaudeReplyReader
+    let listenHotKey = GlobalHotKey(keyCode: kVK_ANSI_D, modifiers: controlKey | optionKey)
     /// "Claude is waiting for you" to the iPhone by iMessage (fork addition).
     let waitingAlerts: WaitingAlerts
     /// Claude's own phone pushes only while the user is away (fork addition).
@@ -53,6 +55,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         let keys = awaySummary.keyStore
         let paths = Paths.fromEnvironment()
+        let hotKey = listenHotKey
         replyReader = ClaudeReplyReader(
             config: { [manager] in manager.config },
             present: { reply, onFinish, onClose in
@@ -66,8 +69,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 )
             },
             dismiss: { panel.close() },
+            resume: { panel.resume() },
             windowIsReading: { panel.isReading },
-            canSpeak: { !(LidObserver.readClamshellState() ?? false) && !UserPresence.screenIsLocked() },
+            setShortcut: { hotKey.set($0) },
             paths: paths
         )
         waitingAlerts = WaitingAlerts(
@@ -152,6 +156,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             services?.announceAgentWaiting(endsAfter: c.autoSession && c.endWhileWaiting ? c.autoWaitGrace : nil)
         }
         awaySummary.start()
+        listenHotKey.onPress = { [replyReader] in
+            Task { await replyReader.listen() }
+        }
         replyReader.start()
         waitingAlerts.start()
         pushGate.start()

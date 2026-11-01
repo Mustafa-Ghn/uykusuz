@@ -121,9 +121,8 @@ mesajları yerelde yazılır ve API'ye gitmez: kapsayıcıların adını ve işi
 içerir.
 Anahtar giriş Anahtar Zinciri'nde tutulur; config.json'a ve günlüğe yazılmaz
 (ayrıntılar: [Sen yokken özeti](../README.md#sen-yokken-özeti)). [Claude'un
-yanıtını dinleme](../README.md#claudeun-yanıtını-dinleme) açıksa Claude'un son
-mesajı, uygulama okuyup silene kadar `claude-replies` klasöründe durur; ağa
-gitmez ve günlüğe yazılmaz. Yerel günlükler SSID'leri, süreç meta verilerini ve tmux hedeflerini
+yanıtını dinleme](../README.md#claudeun-yanıtını-dinleme) metni diske ya da
+günlüğe yazmaz ve ağa göndermez. Yerel günlükler SSID'leri, süreç meta verilerini ve tmux hedeflerini
 içerebilir. Herkese açık olarak paylaşmadan önce onları gözden geçirin.
 Uygulamanın `uykusuz.log` dosyasına yazdığı satırlar, gövdeleri özel
 (private) olarak işaretlenmiş biçimde birleşik günlüğe (unified log) de

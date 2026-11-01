@@ -88,15 +88,15 @@ kendi süreçlerinin adları, argümanları ve işlemci süreleri okunur. "Sen y
 Code kayıtlarını yalnızca okur ve bunlardan yalnızca yukarıda sayılan alanları
 alır.
 
-**Claude'un yanıtını sesli okuma.** İsteğe bağlıdır ve varsayılan olarak
-kapalıdır; kapalıyken hook hiçbir şey yazmaz. Açıkken `Stop` hook'u Claude'un son
-mesajını ve oturumun başlığını, uygulama destek klasöründeki 0700 izinli
-`claude-replies` klasörüne 0600 izinli bir dosya olarak bırakır. Uygulama dosyayı
-okur okumaz siler; uygulama çalışmıyorsa dosya bir sonraki yanıtta, 2 dakikadan
-eskiyse silinir, kaldırma da onu her durumda siler. Metin günlüğe yazılmaz ve ağa
-gitmez; okuma macOS'in konuşma sentezleyicisiyle (`AVSpeechSynthesizer`) bu Mac'te
-yapılır. Uykusuz mikrofonun kullanımda olup olmadığına bakmadığı için yanıt bir
-toplantı sırasında da okunabilir.
+**Claude'un yanıtını dinleme.** Yalnızca kullanıcı ⌃⌥D kısayoluna ya da
+menüdeki öğeye basınca çalışır. `~/Library/Application Support/Claude/claude-code-sessions`
+altındaki Claude uygulaması kayıtlarından yalnızca `lastFocusedAt` ve `cliSessionId`
+alanları, o oturumun `~/.claude/projects` altındaki kaydından da başlık, klasör
+adı ve son mesaj alınır. Bu dosyalar yalnızca okunur. Metin diske ve günlüğe
+yazılmaz, ağa gitmez; okuma macOS'in konuşma sentezleyicisiyle
+(`AVSpeechSynthesizer`) bu Mac'te yapılır. Kısayol `RegisterEventHotKey` ile
+kaydedilir: sistem uygulamaya yalnızca bu tuş birleşimi basılınca haber verir,
+Uykusuz başka tuş görmez ve bunun için izin istemez.
 
 **Ekran ve girdi.** Boşta siyah ekran yalnızca son girdiden geçen süreyi
 okur (`CGEventSource.secondsSinceLastEventType`); bunun için tuş vuruşlarını

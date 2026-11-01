@@ -1010,7 +1010,7 @@ final class ClaudeHookCommandTests: XCTestCase {
 
     func testATaskWritesTheMarkerToolUseRefreshesItAndStopRemovesIt() throws {
         XCTAssertEqual(hook("UserPromptSubmit"), 0)
-        XCTAssertEqual(try marker(), ClaudeTaskMarker(pid: 4242, identity: identity, event: "UserPromptSubmit", updatedAt: t0, promptedAt: t0))
+        XCTAssertEqual(try marker(), ClaudeTaskMarker(pid: 4242, identity: identity, event: "UserPromptSubmit", updatedAt: t0))
         hook("PostToolUse", at: 90)
         XCTAssertEqual(try marker()?.updatedAt, t0.addingTimeInterval(90))
         XCTAssertEqual(try marker()?.event, "PostToolUse")

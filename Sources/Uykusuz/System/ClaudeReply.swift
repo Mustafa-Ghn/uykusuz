@@ -1,10 +1,9 @@
 import Foundation
 
-/// The message Claude ended a turn with (fork addition). The `Stop` hook's
-/// `last_assistant_message` is that message alone, none of the steps before
-/// it, so nothing has to be picked out of the chat or the transcript.
-struct ClaudeReply: Codable, Equatable, Sendable {
-    /// The session id as `ClaudeHookCommand.markerName` makes it safe.
+/// The last thing Claude said in a chat (fork addition): the message its turn
+/// ended on, none of the steps before it.
+struct ClaudeReply: Equatable, Sendable {
+    /// The Claude Code session it is from.
     var session: String
     var title: String
     /// Markdown, as Claude wrote it (`ClaudeReplySpeech`).
@@ -12,73 +11,141 @@ struct ClaudeReply: Codable, Equatable, Sendable {
     var at: Date
 }
 
-/// Hands a reply from `Uykusuz --claude-hook`, which runs and exits, to the
-/// app: one owner-only file per session, renamed into place so the app never
-/// reads half of one, and removed as soon as the app has read it.
-enum ClaudeReplyInbox {
-    /// A reply older than this is not read aloud: the app was not running
-    /// when Claude finished.
-    static let maxAge: TimeInterval = 2 * 60
-
-    static func directory(_ paths: Paths) -> URL {
-        paths.appSupport.appendingPathComponent("claude-replies", isDirectory: true)
+/// Finds the chat the user is looking at and what Claude last said there
+/// (fork addition). Claude's desktop app stamps `lastFocusedAt` in a chat's
+/// record when the user goes to it, so the newest stamp is the chat in front
+/// of them. Only that stamp and the session's id are taken from a record, and
+/// only the session's title, folder and last message from a transcript.
+/// Without any record, as with Claude Code in a terminal alone, the transcript
+/// written to last stands in.
+enum ClaudeChats {
+    static var defaultSessionsDirectory: URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support/Claude/claude-code-sessions", isDirectory: true)
     }
 
-    static func put(_ reply: ClaudeReply, paths: Paths, now: Date = Date()) throws {
-        let dir = directory(paths)
-        _ = try OwnerOnly.createDirectory(dir)
-        sweep(dir, now: now)
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        let temp = dir.appendingPathComponent(".\(UUID().uuidString).tmp")
-        try OwnerOnly.createFile(at: temp, contents: encoder.encode(reply))
-        guard rename(temp.path, dir.appendingPathComponent("\(reply.session).json").path) == 0 else {
-            let failure = errno
-            try? FileManager.default.removeItem(at: temp)
-            throw OwnerOnlyError.write(path: temp.path, errno: failure)
-        }
+    static func lastReply(
+        sessions: URL = defaultSessionsDirectory,
+        projects: URL = ClaudeDigest.defaultProjectsDirectory
+    ) -> ClaudeReply? {
+        let file = focusedSession(in: sessions).map { transcript(of: $0, in: projects) } ?? newestTranscript(in: projects)
+        return file.flatMap(reply(in:))
     }
 
-    /// The replies waiting, oldest first; their files are gone afterwards.
-    static func take(paths: Paths) -> [ClaudeReply] {
-        let dir = directory(paths)
-        let names = (try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? []
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        var replies: [ClaudeReply] = []
-        for name in names where name.hasSuffix(".json") {
-            let file = dir.appendingPathComponent(name)
-            if let data = try? Data(contentsOf: file), let reply = try? decoder.decode(ClaudeReply.self, from: data) {
-                replies.append(reply)
-            }
-            try? FileManager.default.removeItem(at: file)
-        }
-        return replies.sorted { $0.at < $1.at }
-    }
-
-    /// With the app not running nothing takes the files, so a conversation's
-    /// text does not pile up: each new reply removes the ones past `maxAge`.
-    private static func sweep(_ dir: URL, now: Date) {
-        let fm = FileManager.default
-        let files = (try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
-        for file in files {
-            let modified = (try? file.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
-            if let modified, now.timeIntervalSince(modified) > maxAge { try? fm.removeItem(at: file) }
-        }
-    }
-
-    /// What the window is headed with: the session's title as Claude's own
-    /// sidebar shows it, else the folder it runs in. Claude Code repeats the
-    /// title through the transcript, so the end of the file has it.
-    static func title(transcript: String?, cwd: String?) -> String {
-        if let transcript, let data = ClaudeDigest.tail(of: URL(fileURLWithPath: transcript), bytes: 256 << 10) {
-            for line in data.split(separator: UInt8(ascii: "\n")).reversed() where line.range(of: Data("custom-title".utf8)) != nil {
-                let object = try? JSONSerialization.jsonObject(with: Data(line)) as? [String: Any]
-                if let title = object?["customTitle"] as? String, !title.isEmpty { return title }
+    /// The session of the chat with the newest focus stamp, from the records
+    /// at `<account>/<organization>/local_<id>.json`.
+    static func focusedSession(in sessions: URL) -> String? {
+        var best: (focus: Double, session: String)?
+        for account in children(of: sessions) {
+            for organization in children(of: account) {
+                for file in children(of: organization) where file.lastPathComponent.hasPrefix("local_") && file.pathExtension == "json" {
+                    guard let data = try? Data(contentsOf: file),
+                          let record = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                          let focus = record["lastFocusedAt"] as? Double,
+                          let session = record["cliSessionId"] as? String else { continue }
+                    if focus > best?.focus ?? 0 { best = (focus, session) }
+                }
             }
         }
-        if let cwd, !cwd.isEmpty { return URL(fileURLWithPath: cwd).lastPathComponent }
-        return "Claude"
+        return best?.session
+    }
+
+    static func transcript(of session: String, in projects: URL) -> URL? {
+        // It goes into a path.
+        guard ClaudeHookCommand.markerName(session) == "\(session).json" else { return nil }
+        return children(of: projects)
+            .map { $0.appendingPathComponent("\(session).jsonl") }
+            .first { FileManager.default.fileExists(atPath: $0.path) }
+    }
+
+    static func newestTranscript(in projects: URL) -> URL? {
+        func modified(_ file: URL) -> Date {
+            (try? file.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast
+        }
+        return children(of: projects)
+            .flatMap(children(of:))
+            .filter { $0.pathExtension == "jsonl" && !$0.lastPathComponent.hasPrefix("agent-") }
+            .max { modified($0) < modified($1) }
+    }
+
+    /// What Claude last said in a transcript. A message is one line per
+    /// block, sharing the message's id, and walking back from the end the
+    /// first with text is the last thing on the screen: a message that only
+    /// runs tools says nothing. nil when Claude has said nothing.
+    static func reply(in file: URL) -> ClaudeReply? {
+        guard let data = ClaudeDigest.tail(of: file) else { return nil }
+        let titleMark = Data("customTitle".utf8)
+        let assistantMark = Data("\"assistant\"".utf8)
+        func object(_ line: Data.SubSequence) -> [String: Any]? {
+            (try? JSONSerialization.jsonObject(with: Data(line))) as? [String: Any]
+        }
+        var texts: [String] = []
+        var message: String?
+        var at: Date?
+        var folder: String?
+        var title: String?
+        var complete = false
+        for line in data.split(separator: UInt8(ascii: "\n")).reversed() {
+            if title == nil, line.range(of: titleMark) != nil, let found = object(line)?["customTitle"] as? String, !found.isEmpty {
+                title = found
+            }
+            if complete {
+                if title != nil { break }
+                continue
+            }
+            guard line.range(of: assistantMark) != nil, let entry = object(line),
+                  entry["type"] as? String == "assistant",
+                  entry["isSidechain"] as? Bool != true,
+                  entry["isApiErrorMessage"] as? Bool != true,
+                  let body = entry["message"] as? [String: Any],
+                  body["model"] as? String != "<synthetic>" else { continue }
+            let id = body["id"] as? String
+            if !texts.isEmpty, id == nil || id != message {
+                complete = true
+                continue
+            }
+            let blocks = (body["content"] as? [[String: Any]] ?? []).compactMap { block -> String? in
+                guard block["type"] as? String == "text",
+                      let text = (block["text"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { return nil }
+                return text
+            }
+            guard !blocks.isEmpty else { continue }
+            if texts.isEmpty {
+                message = id
+                at = (entry["timestamp"] as? String).flatMap(ClaudeDigest.timestamp)
+                folder = (entry["cwd"] as? String).flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0).lastPathComponent }
+            }
+            texts.insert(contentsOf: blocks, at: 0)
+        }
+        guard !texts.isEmpty else { return nil }
+        return ClaudeReply(
+            session: file.deletingPathExtension().lastPathComponent,
+            title: title ?? folder ?? "Claude",
+            text: texts.joined(separator: "\n\n"),
+            at: at ?? Date()
+        )
+    }
+
+    private static func children(of folder: URL) -> [URL] {
+        (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
+    }
+}
+
+/// `Uykusuz --last-reply`: prints which chat the shortcut would read and what
+/// it would say, to check either in silence.
+enum LastReplyCommand {
+    static let flag = "--last-reply"
+
+    static func run(_ arguments: [String], find: () -> ClaudeReply? = { ClaudeChats.lastReply() }) -> Int32? {
+        guard arguments.first == flag else { return nil }
+        guard let reply = find() else {
+            print(ClaudeReplyReader.nothingToRead)
+            return 0
+        }
+        print("Sohbet: \(reply.title)")
+        print("")
+        print(ClaudeReplySpeech.plain(reply.text))
+        return 0
     }
 }
 

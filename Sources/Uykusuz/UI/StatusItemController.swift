@@ -725,9 +725,7 @@ final class StatusItemController: NSObject {
                 manager: manager,
                 status: status,
                 hasSummary: lastSummary?() != nil,
-                hasReply: replyReader?.last != nil,
-                // The hook hands the replies over: without it, nothing to turn on.
-                readReplies: replyReader != nil && ClaudeHooks.isInstalled() ? manager.config.readClaudeReplies : nil
+                listenShortcut: replyReader == nil ? nil : manager.config.listenShortcut
             ),
             target: self,
             settings: #selector(menuOpenSettings),
@@ -737,8 +735,7 @@ final class StatusItemController: NSObject {
             pauseChoice: #selector(menuPauseChoice(_:)),
             resumeAuto: #selector(menuResumeAuto),
             showSummary: #selector(menuShowSummary),
-            listenToReply: #selector(menuListenToReply),
-            readReplies: #selector(menuToggleReadReplies)
+            listenToReply: #selector(menuListenToReply)
         )
         menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.height + 4), in: button)
     }
@@ -749,8 +746,7 @@ final class StatusItemController: NSObject {
         manager: SessionManager,
         status: any StatusSource,
         hasSummary: Bool = false,
-        hasReply: Bool = false,
-        readReplies: Bool? = nil
+        listenShortcut: Bool? = nil
     ) -> [StatusMenu.Item] {
         StatusMenu.items(
             sessionActive: manager.isActive,
@@ -760,8 +756,7 @@ final class StatusItemController: NSObject {
             autoIdleGrace: manager.config.autoIdleGrace,
             autoPausedUntil: manager.config.autoPausedUntil,
             hasSummary: hasSummary,
-            hasReply: hasReply,
-            readReplies: readReplies,
+            listenShortcut: listenShortcut,
             machine: StatusLines.machine(
                 lidClosed: status.lidClosed,
                 watts: status.instantWatts(),
@@ -836,17 +831,7 @@ final class StatusItemController: NSObject {
     }
 
     @objc private func menuListenToReply() {
-        replyReader?.listenAgain()
-    }
-
-    @objc private func menuToggleReadReplies() {
-        manager.config.readClaudeReplies.toggle()
-        do {
-            try manager.store.saveConfig(manager.config)
-        } catch {
-            Log.error("could not save reading replies: \(error.localizedDescription)")
-        }
-        replyReader?.settingChanged()
+        Task { await replyReader?.listen() }
     }
 
     @objc private func menuResumeAuto() {

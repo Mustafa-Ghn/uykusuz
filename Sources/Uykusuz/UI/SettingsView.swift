@@ -479,10 +479,14 @@ struct SettingsView: View {
 
     private var replyReadingSection: some View {
         Section("Claude'un yanıtını dinle") {
-            Toggle("Claude işini bitirince son yanıtını sesli oku", isOn: bind(\.readClaudeReplies))
-                .disabled(!claudeHooksInstalled)
-                .onChange(of: manager.config.readClaudeReplies) { replyReader?.settingChanged() }
-            Text("Claude bir işi bitirince yalnızca size yazdığı son mesaj, ekranın sağ üstündeki küçük pencerede okunur; önceki adımlar okunmaz. Kod blokları atlanır, bağlantı adresleri okunmaz, dosya yollarının yalnızca dosya adı söylenir. Okunan kelime vurgulanır; ❚❚ durdurur, çubuk ve ileri geri düğmeleriyle istediğiniz yere gidersiniz. O oturuma yeni bir istek gönderince okuma durur. Birkaç oturum art arda biterse yanıtlar sırayla okunur; pencereyi kapatınca okuma ve sıradakiler biter. Kapak kapalıyken ya da ekran kilitliyken okunmaz. Bu ayar ve son yanıtı yeniden dinlemek göze sağ tıklayınca açılan menüde de bulunur; toplantıya girmeden önce oradan kapatabilirsiniz. Claude Code hook'larının kurulu olması gerekir. Yanıt bu Mac'te okunur, hiçbir yere gönderilmez.")
+            Toggle("\(ClaudeReplyReader.shortcutLabel) ile son yanıtı dinle", isOn: bind(\.listenShortcut))
+                .onChange(of: manager.config.listenShortcut) { replyReader?.settingChanged() }
+            if manager.config.listenShortcut, replyReader?.shortcutTaken == true {
+                Text("\(ClaudeReplyReader.shortcutLabel) başka bir uygulamada kullanılıyor. Son yanıtı göze sağ tıklayınca açılan menüden dinleyebilirsiniz.")
+                    .font(.callout)
+                    .foregroundStyle(.red)
+            }
+            Text("Claude uygulamasında baktığınız sohbetin son mesajı, \(ClaudeReplyReader.shortcutLabel) kısayoluna ya da göze sağ tıklayınca açılan menüdeki Son yanıtı dinle öğesine basınca ekranın sağ üstündeki küçük pencerede okunur; önceki adımlar okunmaz ve kendiliğinden hiçbir şey okunmaz. Aynı sohbette yeniden basınca okuma durur; başka bir sohbete geçip basınca o sohbetin yanıtı okunur. Kod blokları atlanır, bağlantı adresleri okunmaz, dosya yollarının yalnızca dosya adı söylenir. Okunan kelime vurgulanır; ❚❚ durdurur, çubuk ve ileri geri düğmeleriyle istediğiniz yere gidersiniz. Kısayol hangi uygulamada olursanız olun çalışır ve Uykusuz başka hiçbir tuşu görmez. Yanıt bu Mac'te okunur, hiçbir yere gönderilmez.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

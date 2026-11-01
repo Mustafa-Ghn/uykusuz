@@ -1,109 +1,156 @@
+import Carbon.HIToolbox
 import XCTest
 @testable import Uykusuz
 
-final class ClaudeReplyHookTests: XCTestCase {
+final class ClaudeChatsTests: XCTestCase {
     private var root: URL!
-    private var paths: Paths!
-    /// Now, to the second as the files keep it: `put` sweeps by the real age
-    /// of what it finds.
-    private let t0 = Date(timeIntervalSince1970: Date().timeIntervalSince1970.rounded(.down))
+    private var sessions: URL { root.appendingPathComponent("claude-code-sessions", isDirectory: true) }
+    private var projects: URL { root.appendingPathComponent("projects", isDirectory: true) }
+    private let fm = FileManager.default
 
     override func setUpWithError() throws {
-        root = FileManager.default.temporaryDirectory.appendingPathComponent("uykusuz-reply-\(UUID().uuidString)", isDirectory: true)
-        paths = Paths(root: root)
+        root = fm.temporaryDirectory.appendingPathComponent("uykusuz-chats-\(UUID().uuidString)", isDirectory: true)
+        try fm.createDirectory(at: root, withIntermediateDirectories: true)
     }
 
     override func tearDown() {
-        try? FileManager.default.removeItem(at: root)
+        try? fm.removeItem(at: root)
     }
 
-    private func hook(_ event: String, session: String = "abc-123", extra: String = "", readReplies: Bool = true, at offset: TimeInterval = 0) {
-        let input = Data(#"{"session_id":"\#(session)","hook_event_name":"\#(event)"\#(extra)}"#.utf8)
-        _ = ClaudeHookCommand.run(["--claude-hook"], readInput: { input }, paths: paths, now: t0.addingTimeInterval(offset),
-                                  claudeProcess: { nil }, autoApprove: { _ in false }, readReplies: { _ in readReplies }, write: { _ in })
+    private func record(_ name: String, session: String?, focus: Double?, account: String = "hesap") throws {
+        let dir = sessions.appendingPathComponent("\(account)/kurum", isDirectory: true)
+        try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        var object: [String: Any] = ["title": "yok sayılır"]
+        if let session { object["cliSessionId"] = session }
+        if let focus { object["lastFocusedAt"] = focus }
+        try JSONSerialization.data(withJSONObject: object).write(to: dir.appendingPathComponent("local_\(name).json"))
     }
 
-    private func marker(_ session: String = "abc-123") -> ClaudeTaskMarker? {
-        ClaudeHookCommand.readMarker(ClaudeHookCommand.markerDirectory(paths).appendingPathComponent("\(session).json"))
+    @discardableResult
+    private func transcript(_ session: String, folder: String = "-Users-me-proje", lines: [String]) throws -> URL {
+        let dir = projects.appendingPathComponent(folder, isDirectory: true)
+        try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        let file = dir.appendingPathComponent("\(session).jsonl")
+        try lines.joined(separator: "\n").write(to: file, atomically: true, encoding: .utf8)
+        return file
     }
 
-    func testStopLeavesClaudesLastMessageAndNothingElse() throws {
-        hook("Stop", extra: #","last_assistant_message":"  Bitti.\n","cwd":"/Users/me/proje""#)
-        let replies = ClaudeReplyInbox.take(paths: paths)
-        XCTAssertEqual(replies, [ClaudeReply(session: "abc-123", title: "proje", text: "Bitti.", at: t0)])
-        XCTAssertEqual(ClaudeReplyInbox.take(paths: paths), [], "taken once: the file is gone")
+    private func said(_ text: String, id: String = "m1", extra: String = "") -> String {
+        let quoted = String(decoding: try! JSONSerialization.data(withJSONObject: [text], options: .fragmentsAllowed), as: UTF8.self).dropFirst().dropLast()
+        return #"{"type":"assistant","timestamp":"2026-10-31T10:00:00Z","cwd":"/Users/me/proje"\#(extra),"message":{"id":"\#(id)","model":"claude","content":[{"type":"text","text":\#(quoted)}]}}"#
     }
 
-    func testTheFileAndItsFolderAreTheOwnersAlone() throws {
-        hook("Stop", extra: #","last_assistant_message":"Bitti.""#)
-        let dir = ClaudeReplyInbox.directory(paths)
-        let names = try FileManager.default.contentsOfDirectory(atPath: dir.path)
-        XCTAssertEqual(names, ["abc-123.json"], "no temp file left")
-        let file = dir.appendingPathComponent("abc-123.json")
-        XCTAssertEqual(try FileManager.default.attributesOfItem(atPath: file.path)[.posixPermissions] as? Int, 0o600)
-        XCTAssertEqual(try FileManager.default.attributesOfItem(atPath: dir.path)[.posixPermissions] as? Int, 0o700)
+    private func ran(id: String) -> String {
+        #"{"type":"assistant","message":{"id":"\#(id)","model":"claude","content":[{"type":"tool_use","name":"Bash","input":{}}]}}"#
     }
 
-    func testNothingIsLeftWhenOffOrWithNothingToRead() {
-        hook("Stop", extra: #","last_assistant_message":"Bitti.""#, readReplies: false)
-        hook("Stop", session: "bos", extra: #","last_assistant_message":"  \n ""#)
-        hook("Stop", session: "yok")
-        hook("StopFailure", session: "hata", extra: #","last_assistant_message":"API hatası""#)
-        hook("SessionEnd", session: "son", extra: #","last_assistant_message":"Bitti.""#)
-        hook("PostToolUse", session: "arac", extra: #","last_assistant_message":"Sürüyor""#)
-        XCTAssertEqual(ClaudeReplyInbox.take(paths: paths), [])
+    private func thought(id: String) -> String {
+        #"{"type":"assistant","message":{"id":"\#(id)","model":"claude","content":[{"type":"thinking","thinking":"gizli"}]}}"#
     }
 
-    func testASessionsNewerReplyReplacesItsOlderOne() {
-        hook("Stop", extra: #","last_assistant_message":"Birinci""#)
-        hook("Stop", extra: #","last_assistant_message":"İkinci""#, at: 5)
-        hook("Stop", session: "baska", extra: #","last_assistant_message":"Öteki""#, at: 3)
-        XCTAssertEqual(ClaudeReplyInbox.take(paths: paths).map(\.text), ["Öteki", "İkinci"], "oldest first")
+    private let prompt = #"{"type":"user","message":{"role":"user","content":"yap"}}"#
+
+    func testTheNewestFocusIsTheChatInFront() throws {
+        try record("a", session: "eski", focus: 1_000)
+        try record("b", session: "yeni", focus: 3_000, account: "baska")
+        try record("c", session: "orta", focus: 2_000)
+        try record("d", session: "odaksiz", focus: nil)
+        try record("e", session: nil, focus: 9_000)
+        XCTAssertEqual(ClaudeChats.focusedSession(in: sessions), "yeni")
     }
 
-    func testRepliesLeftWhileTheAppWasNotRunningDoNotPileUp() throws {
-        let old = Date().addingTimeInterval(-ClaudeReplyInbox.maxAge - 60)
-        try ClaudeReplyInbox.put(ClaudeReply(session: "eski", title: "t", text: "Eski", at: old), paths: paths)
-        let file = ClaudeReplyInbox.directory(paths).appendingPathComponent("eski.json")
-        try FileManager.default.setAttributes([.modificationDate: old], ofItemAtPath: file.path)
-        try ClaudeReplyInbox.put(ClaudeReply(session: "yeni", title: "t", text: "Yeni", at: Date()), paths: paths)
-        XCTAssertEqual(ClaudeReplyInbox.take(paths: paths).map(\.session), ["yeni"])
+    func testARecordThatCannotBeReadIsPassedOver() throws {
+        try record("a", session: "iyi", focus: 1_000)
+        let broken = sessions.appendingPathComponent("hesap/kurum/local_bozuk.json")
+        try "{bozuk".write(to: broken, atomically: true, encoding: .utf8)
+        XCTAssertEqual(ClaudeChats.focusedSession(in: sessions), "iyi")
     }
 
-    func testAPromptIsRememberedAcrossToolUsesAndANewTurnResetsIt() {
-        hook("UserPromptSubmit")
-        XCTAssertEqual(marker()?.promptedAt, t0)
-        hook("PostToolUse", extra: #","tool_name":"Bash""#, at: 5)
-        XCTAssertEqual(marker()?.promptedAt, t0)
-        hook("Stop", at: 10)
-        hook("PostToolUse", extra: #","tool_name":"Bash""#, at: 15)
-        XCTAssertNil(marker()?.promptedAt, "background work after the turn is not a prompt")
-        hook("UserPromptSubmit", at: 20)
-        XCTAssertEqual(marker()?.promptedAt, t0.addingTimeInterval(20))
+    func testOnlyTheLastMessageIsTakenNotTheStepsBeforeIt() throws {
+        let file = try transcript("s1", lines: [
+            prompt,
+            said("ARA ADIM: komutu çalıştırıyorum.", id: "m1"),
+            ran(id: "m1"),
+            said("İKİNCİ ADIM: bakıyorum.", id: "m2"),
+            ran(id: "m2"),
+            thought(id: "m3"),
+            said("Bitti, testler geçti.", id: "m3"),
+        ])
+        let reply = try XCTUnwrap(ClaudeChats.reply(in: file))
+        XCTAssertEqual(reply.text, "Bitti, testler geçti.")
+        XCTAssertEqual(reply.session, "s1")
+        XCTAssertEqual(reply.title, "proje", "the folder, with no title in the transcript")
+        XCTAssertEqual(reply.at, ClaudeDigest.timestamp("2026-10-31T10:00:00Z"))
     }
 
-    func testAMarkerFromAnEarlierBuildStillReads() throws {
-        let dir = ClaudeHookCommand.markerDirectory(paths)
-        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let file = dir.appendingPathComponent("eski.json")
-        try Data(#"{"pid":1,"event":"PostToolUse","updatedAt":"2026-10-20T19:53:35Z"}"#.utf8).write(to: file)
-        XCTAssertEqual(ClaudeHookCommand.readMarker(file)?.event, "PostToolUse")
-        XCTAssertNil(ClaudeHookCommand.readMarker(file)?.promptedAt)
+    func testAMessageOfSeveralBlocksIsReadWhole() throws {
+        let file = try transcript("s1", lines: [said("Önceki.", id: "m1"), said("Birinci.", id: "m2"), said("İkinci.", id: "m2")])
+        XCTAssertEqual(ClaudeChats.reply(in: file)?.text, "Birinci.\n\nİkinci.")
     }
 
-    func testTheTitleIsTheSidebarsThenTheFolders() throws {
-        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        let transcript = root.appendingPathComponent("oturum.jsonl")
-        let lines = [
-            #"{"type":"custom-title","customTitle":"Eski başlık"}"#,
-            #"{"type":"assistant","message":{"content":"custom-title geçen bir metin"}}"#,
-            #"{"type":"custom-title","customTitle":"Yeni başlık"}"#,
-            #"{"type":"assistant","message":{"content":"son"}}"#,
-        ]
-        try lines.joined(separator: "\n").write(to: transcript, atomically: true, encoding: .utf8)
-        XCTAssertEqual(ClaudeReplyInbox.title(transcript: transcript.path, cwd: "/Users/me/proje"), "Yeni başlık")
-        XCTAssertEqual(ClaudeReplyInbox.title(transcript: root.appendingPathComponent("yok").path, cwd: "/Users/me/proje"), "proje")
-        XCTAssertEqual(ClaudeReplyInbox.title(transcript: nil, cwd: nil), "Claude")
+    func testWhileClaudeWorksTheLastThingItSaidIsTaken() throws {
+        let file = try transcript("s1", lines: [said("Başlıyorum.", id: "m1"), ran(id: "m1"), ran(id: "m2")])
+        XCTAssertEqual(ClaudeChats.reply(in: file)?.text, "Başlıyorum.")
+    }
+
+    func testSubagentsAndWhatClaudeDidNotWriteAreLeftOut() throws {
+        let synthetic = #"{"type":"assistant","message":{"id":"m3","model":"<synthetic>","content":[{"type":"text","text":"No response requested."}]}}"#
+        let file = try transcript("s1", lines: [
+            said("Asıl yanıt.", id: "m1"),
+            said("Alt ajanın raporu.", id: "m2", extra: #","isSidechain":true"#),
+            said("API hatası.", id: "m4", extra: #","isApiErrorMessage":true"#),
+            synthetic,
+        ])
+        XCTAssertEqual(ClaudeChats.reply(in: file)?.text, "Asıl yanıt.")
+    }
+
+    func testTheTitleIsTheNewestOneInTheTranscript() throws {
+        let title = { (name: String) in #"{"type":"custom-title","customTitle":"\#(name)"}"# }
+        let file = try transcript("s1", lines: [title("Eski başlık"), said("Yanıt."), title("Yeni başlık"), prompt])
+        XCTAssertEqual(ClaudeChats.reply(in: file)?.title, "Yeni başlık")
+        let mentioned = try transcript("s2", lines: [#"{"type":"user","text":"customTitle geçen bir metin"}"#, said("Yanıt.")])
+        XCTAssertEqual(ClaudeChats.reply(in: mentioned)?.title, "proje")
+    }
+
+    func testAChatWhereClaudeSaidNothingHasNoReply() throws {
+        let file = try transcript("s1", lines: [prompt, ran(id: "m1")])
+        XCTAssertNil(ClaudeChats.reply(in: file))
+        XCTAssertNil(ClaudeChats.reply(in: root.appendingPathComponent("yok.jsonl")))
+    }
+
+    func testTheReplyComesFromTheChatInFrontNotTheNewestTranscript() throws {
+        try record("a", session: "onde", focus: 2_000)
+        try record("b", session: "arkada", focus: 1_000)
+        try transcript("onde", lines: [said("Öndeki sohbet.")])
+        try transcript("arkada", folder: "-Users-me-baska", lines: [said("Arkadaki sohbet.")])
+        XCTAssertEqual(ClaudeChats.lastReply(sessions: sessions, projects: projects)?.text, "Öndeki sohbet.")
+    }
+
+    func testAChatInFrontWithNoTranscriptDoesNotReadAnother() throws {
+        try record("a", session: "yeni-sohbet", focus: 2_000)
+        try transcript("baska", lines: [said("Başka sohbet.")])
+        XCTAssertNil(ClaudeChats.lastReply(sessions: sessions, projects: projects))
+    }
+
+    func testWithoutTheDesktopAppTheNewestTranscriptStandsIn() throws {
+        let old = try transcript("eski", lines: [said("Eski.")])
+        try fm.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -600)], ofItemAtPath: old.path)
+        try transcript("yeni", folder: "-Users-me-baska", lines: [said("Yeni.")])
+        try transcript("agent-1", folder: "-Users-me-baska", lines: [said("Alt ajan.")])
+        let agent = projects.appendingPathComponent("-Users-me-baska/agent-1.jsonl")
+        try fm.setAttributes([.modificationDate: Date(timeIntervalSinceNow: 60)], ofItemAtPath: agent.path)
+        XCTAssertEqual(ClaudeChats.lastReply(sessions: sessions, projects: projects)?.text, "Yeni.")
+    }
+
+    func testASessionIDThatIsNotOneGoesIntoNoPath() throws {
+        try transcript("gizli", lines: [said("Okunmamalı.")])
+        XCTAssertNil(ClaudeChats.transcript(of: "../-Users-me-proje/gizli", in: projects))
+        XCTAssertNotNil(ClaudeChats.transcript(of: "gizli", in: projects))
+    }
+
+    func testTheCommandSaysWhatWouldBeRead() {
+        XCTAssertNil(LastReplyCommand.run(["--resume-frozen"]))
+        XCTAssertEqual(LastReplyCommand.run([LastReplyCommand.flag], find: { nil }), 0)
     }
 }
 
@@ -158,21 +205,23 @@ final class ClaudeReplySpeechTests: XCTestCase {
 
 @MainActor
 final class ClaudeReplyReaderTests: XCTestCase {
+    final class Found: @unchecked Sendable { var reply: ClaudeReply? }
+
     private var root: URL!
-    private var paths: Paths!
     private var config = Config()
+    private let found = Found()
     private var shown: [String] = []
     private var finishers: [@MainActor () -> Void] = []
     private var closers: [@MainActor () -> Void] = []
     private var dismissals = 0
+    private var resumes = 0
     private var windowReading = false
-    private var speakable = true
-    private let t0 = Date()
+    private var shortcutCalls: [Bool] = []
+    private var shortcutFree = true
+    private let t0 = Date(timeIntervalSince1970: 1_800_000_000)
 
     override func setUp() async throws {
         root = FileManager.default.temporaryDirectory.appendingPathComponent("uykusuz-reader-\(UUID().uuidString)", isDirectory: true)
-        paths = Paths(root: root)
-        config.readClaudeReplies = true
     }
 
     override func tearDown() async throws {
@@ -180,45 +229,35 @@ final class ClaudeReplyReaderTests: XCTestCase {
     }
 
     private func reader(linger: TimeInterval = 60) -> ClaudeReplyReader {
-        ClaudeReplyReader(
+        let found = found
+        return ClaudeReplyReader(
             config: { [unowned self] in self.config },
+            find: { found.reply },
             present: { [unowned self] reply, onFinish, onClose in
+                // As the window does: a new one closes the one before.
+                self.closers.last?()
                 self.shown.append(reply.text)
                 self.finishers.append(onFinish)
                 self.closers.append(onClose)
             },
             dismiss: { [unowned self] in
                 self.dismissals += 1
-                // As the window does: its close reports back.
                 self.closers.last?()
             },
+            resume: { [unowned self] in self.resumes += 1 },
             windowIsReading: { [unowned self] in self.windowReading },
-            canSpeak: { [unowned self] in self.speakable },
-            paths: paths,
+            setShortcut: { [unowned self] on in
+                self.shortcutCalls.append(on)
+                return !on || self.shortcutFree
+            },
+            paths: Paths(root: root),
             clock: { [unowned self] in self.t0 },
             linger: linger
         )
     }
 
-    private func reply(_ text: String, session: String = "s1", at offset: TimeInterval = 0) -> ClaudeReply {
-        ClaudeReply(session: session, title: "t", text: text, at: t0.addingTimeInterval(offset))
-    }
-
-    /// Ends reading `index`. One that never started fails the test: indexing
-    /// `finishers` would end the whole test run.
-    private func finish(_ index: Int, file: StaticString = #filePath, line: UInt = #line) {
-        guard finishers.indices.contains(index) else {
-            return XCTFail("reading \(index) never started: \(shown)", file: file, line: line)
-        }
-        finishers[index]()
-    }
-
-    /// Closes the window of reading `index`, as `finish` ends it.
-    private func close(_ index: Int, file: StaticString = #filePath, line: UInt = #line) {
-        guard closers.indices.contains(index) else {
-            return XCTFail("reading \(index) never started: \(shown)", file: file, line: line)
-        }
-        closers[index]()
+    private func reply(_ text: String, session: String = "s1") -> ClaudeReply {
+        ClaudeReply(session: session, title: "t", text: text, at: t0)
     }
 
     /// `present` runs in a task the reader starts.
@@ -226,239 +265,186 @@ final class ClaudeReplyReaderTests: XCTestCase {
         for _ in 0..<5 { await Task.yield() }
     }
 
-    private func prompt(session: String, at offset: TimeInterval) throws {
-        let dir = ClaudeHookCommand.markerDirectory(paths)
-        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let marker = ClaudeTaskMarker(pid: 0, event: "UserPromptSubmit", updatedAt: t0.addingTimeInterval(offset), promptedAt: t0.addingTimeInterval(offset))
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        try encoder.encode(marker).write(to: dir.appendingPathComponent("\(session).json"))
-    }
-
-    func testAReplyIsReadWhenItArrives() async {
-        let r = reader()
-        r.arrived(reply("Bitti."))
+    private func press(_ r: ClaudeReplyReader) async {
+        await r.listen()
         await settle()
-        XCTAssertEqual(shown, ["Bitti."])
-        XCTAssertEqual(r.last?.text, "Bitti.")
     }
 
-    func testOffNothingIsReadOrKept() async {
-        config.readClaudeReplies = false
+    func testNothingIsReadUntilAsked() async {
+        found.reply = reply("Bitti.")
         let r = reader()
-        r.arrived(reply("Bitti."))
+        r.start()
         await settle()
         XCTAssertEqual(shown, [])
-        XCTAssertNil(r.last)
     }
 
-    func testAReplyWithNothingToSayIsSkipped() async {
+    func testAPressReadsTheChatInFront() async {
+        found.reply = reply("Bitti.")
         let r = reader()
-        r.arrived(reply("---"))
-        await settle()
-        XCTAssertEqual(shown, [])
-        XCTAssertNil(r.last)
-    }
-
-    func testWithTheLidClosedOrLockedItIsKeptNotRead() async {
-        speakable = false
-        let r = reader()
-        r.arrived(reply("Bitti."))
-        await settle()
-        XCTAssertEqual(shown, [])
-        XCTAssertEqual(r.last?.text, "Bitti.", "for the menu")
-    }
-
-    func testAReplyTheAppFoundLaterIsKeptNotRead() async {
-        let r = reader()
-        r.arrived(reply("Eski", at: -ClaudeReplyInbox.maxAge - 1))
-        await settle()
-        XCTAssertEqual(shown, [])
-        XCTAssertEqual(r.last?.text, "Eski")
-    }
-
-    func testRepliesAreReadInTurnAndANewerOneTakesItsSessionsPlace() async {
-        let r = reader()
-        r.arrived(reply("A", session: "a"))
-        r.arrived(reply("B1", session: "b", at: 1))
-        r.arrived(reply("C", session: "c", at: 2))
-        r.arrived(reply("B2", session: "b", at: 3))
-        await settle()
-        XCTAssertEqual(shown, ["A"], "nothing cuts the reading off")
-        finish(0)
-        await settle()
-        XCTAssertEqual(shown, ["A", "C"])
-        finish(1)
-        await settle()
-        XCTAssertEqual(shown, ["A", "C", "B2"])
-        XCTAssertEqual(r.last?.text, "B2")
-    }
-
-    func testAReadingTheUserAskedForIsNotCutOff() async {
-        windowReading = true
-        let r = reader()
-        r.arrived(reply("Bitti."))
-        await settle()
-        XCTAssertEqual(shown, [], "a summary is being read")
-        windowReading = false
-        r.look()
-        await settle()
+        await press(r)
         XCTAssertEqual(shown, ["Bitti."])
     }
 
-    func testWhatWaitsBehindASummaryIsNotReadOnceTheLidCloses() async {
+    func testPressingAgainInTheSameChatEndsTheReading() async {
+        found.reply = reply("Bitti.")
+        let r = reader()
+        await press(r)
         windowReading = true
-        let r = reader()
-        r.arrived(reply("Bitti."))
-        await settle()
-        windowReading = false
-        speakable = false
-        r.look()
-        speakable = true
-        r.look()
-        await settle()
-        XCTAssertEqual(shown, [])
-    }
-
-    func testClosingTheWindowEndsTheReadingAndWhatWaits() async {
-        let r = reader()
-        r.arrived(reply("A", session: "a"))
-        r.arrived(reply("B", session: "b", at: 1))
-        await settle()
-        close(0)
-        finish(0)
-        r.look()
-        await settle()
-        XCTAssertEqual(shown, ["A"])
-    }
-
-    func testANewPromptEndsItsSessionsReadingAndNoOthers() async throws {
-        let r = reader()
-        r.arrived(reply("A", session: "a"))
-        r.arrived(reply("B", session: "b", at: 1))
-        await settle()
-        r.look()
-        XCTAssertEqual(dismissals, 0, "no prompt yet")
-        try prompt(session: "a", at: 5)
-        r.look()
-        await settle()
+        await press(r)
+        XCTAssertEqual(shown, ["Bitti."])
         XCTAssertEqual(dismissals, 1)
-        XCTAssertEqual(shown, ["A", "B"], "the other session's reply goes on")
+        windowReading = false
+        await press(r)
+        XCTAssertEqual(shown, ["Bitti.", "Bitti."], "closed: the next press reads it from the start")
     }
 
-    func testANewPromptDropsItsSessionsWaitingReply() async throws {
+    func testPressingOnAPausedOrFinishedWindowGoesOn() async {
+        found.reply = reply("Bitti.")
         let r = reader()
-        r.arrived(reply("A", session: "a"))
-        r.arrived(reply("B", session: "b", at: 1))
-        await settle()
-        try prompt(session: "b", at: 5)
-        r.look()
-        finish(0)
-        await settle()
-        XCTAssertEqual(shown, ["A"])
+        await press(r)
+        windowReading = false
+        await press(r)
+        XCTAssertEqual(resumes, 1)
+        XCTAssertEqual(dismissals, 0)
+        XCTAssertEqual(shown, ["Bitti."])
     }
 
-    func testAPromptBeforeTheReplyChangesNothing() async throws {
+    func testAPressInAnotherChatReadsThatInstead() async {
+        found.reply = reply("Birinci.", session: "a")
         let r = reader()
-        r.arrived(reply("A", session: "a", at: 5))
-        await settle()
-        try prompt(session: "a", at: 0)
-        r.look()
+        await press(r)
+        windowReading = true
+        found.reply = reply("İkinci.", session: "b")
+        await press(r)
+        XCTAssertEqual(shown, ["Birinci.", "İkinci."])
         XCTAssertEqual(dismissals, 0)
     }
 
-    func testTheWindowGoesAfterTheLastReading() async throws {
+    func testAPressAfterClaudeSaidSomethingNewReadsThat() async {
+        found.reply = reply("Birinci.")
+        let r = reader()
+        await press(r)
+        windowReading = true
+        found.reply = reply("Yeni yanıt.")
+        await press(r)
+        XCTAssertEqual(shown, ["Birinci.", "Yeni yanıt."])
+    }
+
+    func testReplacingTheWindowDoesNotCountAsTheUserClosingIt() async {
+        found.reply = reply("Birinci.", session: "a")
+        let r = reader()
+        await press(r)
+        found.reply = reply("İkinci.", session: "b")
+        await press(r)
+        windowReading = true
+        await press(r)
+        XCTAssertEqual(dismissals, 1, "the second window is still known as up")
+        XCTAssertEqual(shown, ["Birinci.", "İkinci."])
+    }
+
+    func testWithNoReplyItSaysSo() async {
+        found.reply = nil
+        let r = reader()
+        await press(r)
+        XCTAssertEqual(shown, [ClaudeReplyReader.nothingToRead])
+    }
+
+    func testAReplyWithNothingToSayCountsAsNone() async {
+        found.reply = reply("---")
+        let r = reader()
+        await press(r)
+        XCTAssertEqual(shown, [ClaudeReplyReader.nothingToRead])
+    }
+
+    func testTheWindowGoesAfterTheReading() async throws {
+        found.reply = reply("A")
         let r = reader(linger: 0)
-        r.arrived(reply("A"))
-        await settle()
-        finish(0)
+        await press(r)
+        finishers[0]()
         try await Task.sleep(for: .milliseconds(50))
         XCTAssertEqual(dismissals, 1)
     }
 
     func testTheWindowStaysWhileTheUserListensAgainInIt() async throws {
+        found.reply = reply("A")
         let r = reader(linger: 0)
-        r.arrived(reply("A"))
-        await settle()
+        await press(r)
         windowReading = true
-        finish(0)
+        finishers[0]()
         try await Task.sleep(for: .milliseconds(50))
         XCTAssertEqual(dismissals, 0)
     }
 
-    func testListeningAgainPlaysTheLastEvenWhereItWouldNotBeRead() async throws {
-        speakable = false
-        let r = reader()
-        r.arrived(reply("Bitti."))
-        r.listenAgain()
-        await settle()
-        XCTAssertEqual(shown, ["Bitti."])
-        try prompt(session: "s1", at: 5)
-        r.look()
-        XCTAssertEqual(dismissals, 0, "asked for: a prompt since does not end it")
+    func testAFinishFromAWindowAlreadyGoneChangesNothing() async throws {
+        found.reply = reply("A", session: "a")
+        let r = reader(linger: 0)
+        await press(r)
+        found.reply = reply("B", session: "b")
+        await press(r)
+        finishers[0]()
+        try await Task.sleep(for: .milliseconds(50))
+        XCTAssertEqual(dismissals, 0)
     }
 
-    func testTurningItOffEndsTheReading() async {
-        let r = reader()
-        r.arrived(reply("A", session: "a"))
-        r.arrived(reply("B", session: "b", at: 1))
-        await settle()
-        r.settingChanged()
-        XCTAssertEqual(dismissals, 0, "still on")
-        config.readClaudeReplies = false
-        r.settingChanged()
-        XCTAssertEqual(dismissals, 1)
-        r.look()
-        await settle()
-        XCTAssertEqual(shown, ["A"])
-    }
-
-    func testTheInboxIsReadThroughToTheWindow() async throws {
-        let r = reader()
-        try ClaudeReplyInbox.put(reply("Dosyadan"), paths: paths)
-        r.takeReplies()
-        await settle()
-        XCTAssertEqual(shown, ["Dosyadan"])
-    }
-
-    func testTheKernelReportsANewReply() async throws {
+    func testTheSettingTakesAndGivesUpTheShortcut() {
         let r = reader()
         r.start()
-        try ClaudeReplyInbox.put(reply("Bitti."), paths: paths)
-        for _ in 0..<100 where shown.isEmpty {
-            try await Task.sleep(for: .milliseconds(20))
-        }
-        XCTAssertEqual(shown, ["Bitti."])
+        XCTAssertEqual(shortcutCalls, [true])
+        XCTAssertFalse(r.shortcutTaken)
+        config.listenShortcut = false
+        r.settingChanged()
+        XCTAssertEqual(shortcutCalls, [true, false])
+    }
+
+    func testAShortcutAnotherAppHoldsIsReported() {
+        shortcutFree = false
+        let r = reader()
+        r.start()
+        XCTAssertTrue(r.shortcutTaken)
+        config.listenShortcut = false
+        r.settingChanged()
+        XCTAssertFalse(r.shortcutTaken, "off: nothing to report")
+    }
+
+    func testStartRemovesWhatEarlierBuildsLeft() throws {
+        let leftover = Paths(root: root).appSupport.appendingPathComponent("claude-replies", isDirectory: true)
+        try FileManager.default.createDirectory(at: leftover, withIntermediateDirectories: true)
+        try "{}".write(to: leftover.appendingPathComponent("eski.json"), atomically: true, encoding: .utf8)
+        reader().start()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: leftover.path))
     }
 }
 
 final class ClaudeReplySettingTests: XCTestCase {
-    func testOffByDefaultAndInAConfigWithoutTheKey() throws {
-        XCTAssertFalse(Config().readClaudeReplies)
-        let decoded = try JSONDecoder().decode(Config.self, from: Data("{}".utf8))
-        XCTAssertFalse(decoded.readClaudeReplies)
+    func testOnByDefaultAndInAConfigWithoutTheKey() throws {
+        XCTAssertTrue(Config().listenShortcut)
+        XCTAssertTrue(try JSONDecoder().decode(Config.self, from: Data("{}".utf8)).listenShortcut)
     }
 
     func testTheSettingSurvivesSavingAndLoading() throws {
         var config = Config()
-        config.readClaudeReplies = true
-        let decoded = try JSONDecoder().decode(Config.self, from: JSONEncoder().encode(config))
-        XCTAssertTrue(decoded.readClaudeReplies)
+        config.listenShortcut = false
+        XCTAssertFalse(try JSONDecoder().decode(Config.self, from: JSONEncoder().encode(config)).listenShortcut)
     }
 
-    private func items(hasReply: Bool = false, readReplies: Bool? = nil) -> [StatusMenu.Item] {
-        StatusMenu.items(sessionActive: false, sleepHeld: false, hasReply: hasReply, readReplies: readReplies, machine: nil, actions: nil, throttledBrowsers: [], error: nil)
+    private func items(listenShortcut: Bool? = nil) -> [StatusMenu.Item] {
+        StatusMenu.items(sessionActive: false, sleepHeld: false, listenShortcut: listenShortcut, machine: nil, actions: nil, throttledBrowsers: [], error: nil)
     }
 
-    func testTheMenuOffersTheLastReplyOnlyWhenThereIsOne() {
-        XCTAssertTrue(items(hasReply: true).contains { $0.kind == .listenToReply && $0.title == StatusMenu.listenToReplyTitle })
-        XCTAssertFalse(items().contains { $0.kind == .listenToReply })
+    func testTheMenuOffersTheLastReplyAndSaysWhetherTheShortcutIsOn() {
+        XCTAssertTrue(items(listenShortcut: true).contains { $0.kind == .listenToReply(shortcut: true) && $0.title == StatusMenu.listenToReplyTitle })
+        XCTAssertTrue(items(listenShortcut: false).contains { $0.kind == .listenToReply(shortcut: false) })
+        XCTAssertFalse(items().contains { $0.title == StatusMenu.listenToReplyTitle })
     }
 
-    func testTheMenuTogglesReadingAndShowsWhichWayItIs() {
-        XCTAssertTrue(items(readReplies: true).contains { $0.kind == .readReplies(on: true) && $0.title == StatusMenu.readRepliesTitle })
-        XCTAssertTrue(items(readReplies: false).contains { $0.kind == .readReplies(on: false) })
-        XCTAssertFalse(items().contains { $0.title == StatusMenu.readRepliesTitle }, "no hooks: nothing to turn on")
+    @MainActor
+    func testAShortcutCanBeTakenTwiceAndGivenUp() {
+        // F20 with three modifiers, so it never meets the running app's.
+        let hotKey = GlobalHotKey(keyCode: kVK_F20, modifiers: controlKey | optionKey | shiftKey)
+        XCTAssertTrue(hotKey.set(true))
+        XCTAssertTrue(hotKey.set(true))
+        XCTAssertTrue(hotKey.set(false))
+        XCTAssertTrue(hotKey.set(false))
     }
 }
 

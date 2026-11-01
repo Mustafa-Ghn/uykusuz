@@ -4,6 +4,13 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.10.0 — 2026-11-01
+
+### Değişenler
+
+- **Claude'un yanıtı artık siz isteyince okunur.** Claude bir işi bitirince kendiliğinden okumak yerine, Claude uygulamasında baktığınız sohbetin son mesajı Control+Option+D (⌃⌥D) kısayoluna ya da göze sağ tıklayınca açılan menüdeki "Son yanıtı dinle" öğesine basınca okunur. Aynı sohbette okuma sürerken yeniden basınca durur; başka bir sohbete geçip basınca o sohbetin yanıtı okunur.
+- **Kendiliğinden okuma kaldırıldı.** "Claude'un yanıtını sesli oku" ayarı yok; Claude'un yanıtı artık diske de yazılmaz. Kısayol Ayarlar > Claude'un yanıtını dinle bölümünden kapatılır.
+
 ## 0.9.4 — 2026-11-01
 
 ### Değişenler

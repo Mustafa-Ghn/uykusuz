@@ -22,6 +22,10 @@ if let status = ClaudeHooksSetupCommand.run(Array(CommandLine.arguments.dropFirs
 if let status = AwayDigestCommand.run(Array(CommandLine.arguments.dropFirst())) {
     exit(status)
 }
+// What the shortcut would read now (fork addition): local, nothing is spoken.
+if let status = LastReplyCommand.run(Array(CommandLine.arguments.dropFirst())) {
+    exit(status)
+}
 if let output = ResumeFrozenCommand.run(Array(CommandLine.arguments.dropFirst()), endAfter: ResumeFrozenCommand.endProcess) {
     for line in output.lines { print(line) }
     exit(output.status)

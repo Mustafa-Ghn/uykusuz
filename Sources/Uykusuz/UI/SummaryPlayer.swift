@@ -4,9 +4,8 @@ import SwiftUI
 
 /// Reads the away summary aloud on request (fork addition): play and pause,
 /// the word being read highlighted, and a bar to move back and forth.
-/// Nothing is spoken until the user presses play; Claude's reply
-/// (`ClaudeReplyReader`) is the one thing that starts on its own, as the user
-/// asked for by turning it on.
+/// Nothing is spoken until the user presses play, or asks for Claude's reply
+/// (`ClaudeReplyReader`), which starts as it comes up.
 ///
 /// AVSpeechSynthesizer reports each word as it reads it
 /// (`willSpeakRangeOfSpeechString`), with every system voice; it cannot
@@ -384,6 +383,11 @@ final class SummaryPanel {
         let closed = onClose
         onClose = nil
         closed?()
+    }
+
+    /// Goes on from a pause, or reads it again from the start.
+    func resume() {
+        player?.play()
     }
 
     var isShowing: Bool { panel != nil }
