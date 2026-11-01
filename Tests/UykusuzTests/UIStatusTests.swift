@@ -1222,7 +1222,19 @@ final class UIStatusTests: XCTestCase {
     /// Opening the pills in a test used to take key status from whoever was
     /// typing: half of three minutes while one test ran in a loop.
     func testATestProcessDoesNotTakeKeyStatus() {
-        XCTAssertFalse(KeyCatcherPanel.mayTakeKeyStatus)
+        XCTAssertTrue(TestProcess.isRunning, "KeyCatcherPanel.comeUp only orders the panel front then")
+    }
+
+    /// A test's status item used to come and go in the real menu bar, 231 times
+    /// in 12 minutes while tests looped: it looked as if Uykusuz kept opening
+    /// and closing.
+    @MainActor
+    func testATestProcessStaysOutOfTheMenuBar() {
+        _ = NSApplication.shared
+        let h = Harness()
+        defer { h.home.destroy() }
+        let controller = StatusItemController(manager: h.makeManager(), status: PlaceholderStatus(), showSettings: {})
+        XCTAssertFalse(controller.isStatusItemVisible)
     }
 
     /// Opening the pills has to put up the window that keyboard focus hangs

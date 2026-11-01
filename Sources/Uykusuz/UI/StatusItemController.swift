@@ -104,12 +104,16 @@ final class StatusItemController: NSObject {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.autosaveName = Self.autosaveName
         statusItem.behavior = [.terminationOnRemoval]
+        // A test's eye in the menu bar looks like this app opening and closing.
+        if TestProcess.isRunning { statusItem.isVisible = false }
         super.init()
         installHostingView()
         observeManager()
     }
 
     // MARK: Status item
+
+    var isStatusItemVisible: Bool { statusItem.isVisible }
 
     /// New status items are appended at the left of the existing group. On a
     /// crowded menu bar (notch Macs) that lands in the hidden overflow, so the

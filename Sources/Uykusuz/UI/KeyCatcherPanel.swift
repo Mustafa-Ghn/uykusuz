@@ -13,21 +13,18 @@ import AppKit
 /// pills while they are up (as with Spotlight). Ordering it out gives key
 /// status back.
 final class KeyCatcherPanel: NSPanel {
-    /// False in a test process. Key status belongs to the window server, not
-    /// to the process: a test that takes it leaves whoever is at the keyboard
-    /// typing into this invisible panel, in whatever app they were in, even
-    /// though the test's own `NSApp.keyWindow` stays nil.
-    static let mayTakeKeyStatus = NSClassFromString("XCTestCase") == nil
-
     /// A borderless window refuses key status by default.
     override var canBecomeKey: Bool { true }
 
-    /// Comes up as the key window; in a test process, only comes up.
+    /// Comes up as the key window; in a test process, only comes up. Key
+    /// status belongs to the window server, so a test that takes it leaves
+    /// whoever is at the keyboard typing into this invisible panel, even
+    /// though the test's own `NSApp.keyWindow` stays nil.
     func comeUp() {
-        if Self.mayTakeKeyStatus {
-            makeKeyAndOrderFront(nil)
-        } else {
+        if TestProcess.isRunning {
             orderFront(nil)
+        } else {
+            makeKeyAndOrderFront(nil)
         }
     }
 
