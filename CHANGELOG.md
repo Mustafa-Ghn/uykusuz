@@ -4,6 +4,13 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.12.1 — 2026-11-01
+
+### Düzeltilenler
+
+- **Şarj aleti takılınca otomatik oturum geri gelir.** Oturum pil alt sınırında bittikten sonra Claude çalışmayı hiç bırakmıyorsa otomatik oturum, Mac şarja takılsa bile yeniden açılmıyor ve menü çubuğundaki göz kapalı kalıyordu; birkaç Claude oturumu aynı anda çalışırken bu saatlerce sürebiliyordu. Artık şarj aleti takılınca ya da pil eşiğin 5 puan üstüne çıkınca oturum kendiliğinden açılır. Elle bitirdiğiniz ya da kritik ısı veya okunamayan pil yüzünden biten oturum, önceki gibi Claude bir kez durup yeniden başlayana kadar açılmaz.
+- **Testler klavye odağını almaz.** Uygulamanın testleri süre kutularını açarken klavye odağını alıyor, o anlarda başka bir uygulamaya yazılanlar oraya ulaşmıyordu. Test sürecinde görünmez panel artık odak almaz; uygulamanın kendisinde süre kutuları eskisi gibi çalışır.
+
 ## 0.12.0 — 2026-11-01
 
 ### Eklenenler

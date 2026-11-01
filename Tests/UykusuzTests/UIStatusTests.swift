@@ -1219,12 +1219,19 @@ final class UIStatusTests: XCTestCase {
         XCTAssertFalse(panel.hidesOnDeactivate)
     }
 
+    /// Opening the pills in a test used to take key status from whoever was
+    /// typing: half of three minutes while one test ran in a loop.
+    func testATestProcessDoesNotTakeKeyStatus() {
+        XCTAssertFalse(KeyCatcherPanel.mayTakeKeyStatus)
+    }
+
     /// Opening the pills has to put up the window that keyboard focus hangs
     /// off, and closing them has to take it away again.
     ///
     /// Key status itself cannot be asserted here: the test binary runs as a
     /// background-only process (`.prohibited`), which the window server never
-    /// activates, so `NSApp.keyWindow` stays nil no matter what the app does.
+    /// activates, so `NSApp.keyWindow` stays nil no matter what the app does,
+    /// and a test does not take it anyway (`KeyCatcherPanel.comeUp`).
     /// What is pinned instead is the panel's lifecycle, on top of the
     /// `canBecomeKey` contract above.
     @MainActor

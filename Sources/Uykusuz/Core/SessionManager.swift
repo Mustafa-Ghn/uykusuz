@@ -100,6 +100,9 @@ enum TransactionRefusal: Error, Sendable {
 @Observable
 final class SessionManager {
     private(set) var session: Session?
+    /// Why the last session ended, for `AgentAutoSession`: a session the
+    /// battery floor ended does not hold the next automatic one back.
+    private(set) var lastEndReason: EndReason?
     private(set) var state: RuntimeState
     var config: Config
     /// Minute-granularity remaining time for the popover ("2h 14m").
@@ -1442,6 +1445,7 @@ final class SessionManager {
         stopTimers()
         countdownPaused = false
         session = nil
+        lastEndReason = reason
         // Every lid action is undone from the journal below, or by the
         // retry of this end, and Low Power Mode restored from it: a lid
         // event refused earlier, a settle pass waiting to run again and

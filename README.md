@@ -269,7 +269,10 @@ yanıt](#telefondan-yanıt) açıkken bu süre, orada seçilen süredir (varsay�
   yanıt](#telefondan-yanıt)'ı açın; bekleme o zaman orada seçilen süre kadar
   (varsayılan 30 dakika) sürer.
 - **Güvenlik payı.** Mac ısınıyorsa ya da pil gücündeyken pil, bitiş eşiğinin
-  (varsayılan %20) en çok 5 puan üstündeyse otomatik oturum başlamaz.
+  (varsayılan %20) en çok 5 puan üstündeyse otomatik oturum başlamaz. Oturum
+  pil eşiğinde bittiyse ve Claude çalışmayı sürdürüyorsa, şarj aleti takılınca
+  oturum kendiliğinden yeniden açılır. Kritik ısı ya da okunamayan pil yüzünden
+  biten oturum ise Claude bir kez durup yeniden başlayana kadar açılmaz.
 - **Elle başlatılan oturumlar.** Kendi başlattığınız oturumlar geri sayımla
   görünür; Claude onları uzatmaz ve bitirmez.
 

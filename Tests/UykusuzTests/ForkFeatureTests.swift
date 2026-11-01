@@ -18,7 +18,8 @@ final class AutoSessionPolicyTests: XCTestCase {
         endFloor: Int = 20,
         pausedUntil: Date? = nil,
         waiting: Bool = false,
-        waitGrace: TimeInterval = AutoSessionPolicy.idleGrace
+        waitGrace: TimeInterval = AutoSessionPolicy.idleGrace,
+        endedAtFloor: Bool = false
     ) -> AutoSessionPolicy.Inputs {
         .init(
             now: t0.addingTimeInterval(offset),
@@ -31,7 +32,8 @@ final class AutoSessionPolicyTests: XCTestCase {
             endFloor: endFloor,
             pausedUntil: pausedUntil,
             agentWaiting: waiting,
-            waitGrace: waitGrace
+            waitGrace: waitGrace,
+            endedAtBatteryFloor: endedAtFloor
         )
     }
 
@@ -175,6 +177,110 @@ final class AutoSessionPolicyTests: XCTestCase {
         XCTAssertNil(p.step(inputs(0, active: true, started: manual, endsAt: t0.addingTimeInterval(60))))
         XCTAssertEqual(p.step(inputs(75, active: true)), .start(AutoSessionPolicy.chunk))
         XCTAssertFalse(p.suppressed)
+    }
+
+    func testASessionTheBatteryFloorEndedComesBackWithoutTheAgentLettingGo() {
+        var p = AutoSessionPolicy()
+        XCTAssertEqual(p.step(inputs(0, active: true)), .start(AutoSessionPolicy.chunk))
+        p.started(at: t0)
+        // The floor ended it at 19% with the agent still at work.
+        XCTAssertNil(p.step(inputs(30, active: true, percent: 19, endedAtFloor: true)))
+        XCTAssertFalse(p.suppressed)
+        XCTAssertNil(p.step(inputs(45, active: true, percent: 25, endedAtFloor: true)), "still within the margin")
+        XCTAssertEqual(p.step(inputs(60, active: true, percent: 19, charging: true, endedAtFloor: true)), .start(AutoSessionPolicy.chunk),
+                       "the charger is enough")
+        XCTAssertEqual(p.step(inputs(75, active: true, percent: 26, endedAtFloor: true)), .start(AutoSessionPolicy.chunk),
+                       "and so is a charge above the margin")
+    }
+
+    func testAUserSessionTheBatteryFloorEndedLetsTheAgentsSessionFollowOnTheCharger() {
+        var p = AutoSessionPolicy()
+        let manual = t0.addingTimeInterval(-100)
+        XCTAssertNil(p.step(inputs(0, active: true, started: manual, endsAt: t0.addingTimeInterval(3600))))
+        XCTAssertNil(p.step(inputs(30, active: true, percent: 19, endedAtFloor: true)))
+        XCTAssertFalse(p.suppressed)
+        XCTAssertEqual(p.step(inputs(45, active: true, percent: 19, charging: true, endedAtFloor: true)), .start(AutoSessionPolicy.chunk))
+    }
+
+    func testAHandOffTheUserChoseOutlastsALaterBatteryFloorEnd() {
+        var p = AutoSessionPolicy()
+        XCTAssertEqual(p.step(inputs(0, active: true)), .start(AutoSessionPolicy.chunk))
+        p.started(at: t0)
+        XCTAssertNil(p.step(inputs(30, active: true)))
+        XCTAssertTrue(p.suppressed)
+        // They then ran a session of their own, and the floor ended that one.
+        let manual = t0.addingTimeInterval(40)
+        XCTAssertNil(p.step(inputs(45, active: true, started: manual, endsAt: t0.addingTimeInterval(3600))))
+        XCTAssertNil(p.step(inputs(60, active: true, percent: 19, charging: true, endedAtFloor: true)))
+        XCTAssertTrue(p.suppressed)
+    }
+}
+
+/// What ended the last session decides whether the automatic one may return
+/// while Claude never stops: several Claude sessions at once rarely all do.
+@MainActor
+final class AutoSessionAfterAnEndTests: XCTestCase {
+    private final class Power {
+        var reading: (percent: Int?, isCharging: Bool) = (80, false)
+    }
+
+    var h: Harness!
+
+    override func setUp() async throws {
+        h = Harness()
+    }
+
+    override func tearDown() async throws {
+        h.home.destroy()
+    }
+
+    private func automatic(_ m: SessionManager, _ power: Power) -> AgentAutoSession {
+        m.config.autoSession = true
+        m.config.endFloor = 20
+        let clock = h.clock
+        return AgentAutoSession(manager: m, isAgentActive: { _ in true }, readPower: { power.reading }, thermal: { .nominal }, clock: { clock.now })
+    }
+
+    func testTheChargerBringsBackASessionTheBatteryFloorEnded() async {
+        let m = h.makeManager()
+        let power = Power()
+        let auto = automatic(m, power)
+        await auto.tick()
+        XCTAssertTrue(m.isAutoSession)
+
+        power.reading = (19, false)
+        await m.end(reason: .batteryFloor)
+        XCTAssertEqual(m.lastEndReason, .batteryFloor)
+        h.clock.advance(15)
+        await auto.tick()
+        XCTAssertNil(m.session, "on battery, below the margin")
+
+        power.reading = (19, true)
+        h.clock.advance(15)
+        await auto.tick()
+        XCTAssertTrue(m.isAutoSession, "Claude never stopped and the charger is in")
+
+        // Back on a session of ours, an end the user chooses holds again.
+        await m.end(reason: .user)
+        h.clock.advance(15)
+        await auto.tick()
+        XCTAssertNil(m.session)
+    }
+
+    func testOtherEndsStillHoldTheNextStartOnTheCharger() async {
+        for reason in [EndReason.user, .thermalCritical, .batteryUnreadable] {
+            let m = h.makeManager()
+            let power = Power()
+            let auto = automatic(m, power)
+            await auto.tick()
+            XCTAssertTrue(m.isAutoSession, "\(reason)")
+
+            power.reading = (50, true)
+            await m.end(reason: reason)
+            h.clock.advance(15)
+            await auto.tick()
+            XCTAssertNil(m.session, "\(reason): nobody let go, so no new start")
+        }
     }
 }
 

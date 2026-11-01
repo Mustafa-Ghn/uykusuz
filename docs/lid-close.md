@@ -140,14 +140,15 @@ Varsayılanları bilmekte yarar var:
   aksi hâlde tam hızda çalışmayı sürdürür; bir pil ya da ısı kuralı hâlâ
   istemiyorsa mod kapak açılınca yeniden kapatılır.
 - **Pil kuralları:** pil gücündeyken pil düzeyi %30 eşiğinin altına inince
-  Düşük Güç Modu istenir; %20 eşiğinin altında oturum biter. Pil gücündeyken
-  var olan ama art arda iki okumada okunamayan bir pil de oturumu bitirir ve
-  nedenini söyleyen bir bildirim gösterilir: kimsenin okuyamadığı bir düzeye
-  alt sınır uygulanamaz. Tek bir başarısız okumaya göz yumulur ve düzey yeniden
-  okunabilir hâle gelene kadar her 30 saniyede bir yeniden okunur. Masaüstü bir
-  Mac'te pil ve alt sınır yoktur. Ciddi ısı durumu Düşük Güç Modu ister;
-  kritik ısı durumu oturumu bitirir. Bu kurallar uygulamanın çalışıyor olmasını
-  gerektirir.
+  Düşük Güç Modu istenir; %20 eşiğinin altında oturum biter. Claude çalışmayı
+  sürdürüyorsa otomatik oturum, şarj aleti takılınca yeniden açılır. Pil
+  gücündeyken var olan ama art arda iki okumada okunamayan bir pil de oturumu
+  bitirir ve nedenini söyleyen bir bildirim gösterilir: kimsenin okuyamadığı
+  bir düzeye alt sınır uygulanamaz. Tek bir başarısız okumaya göz yumulur ve
+  düzey yeniden okunabilir hâle gelene kadar her 30 saniyede bir yeniden okunur.
+  Masaüstü bir Mac'te pil ve alt sınır yoktur. Ciddi ısı durumu Düşük Güç Modu
+  ister; kritik ısı durumu oturumu bitirir. Bu kurallar uygulamanın çalışıyor
+  olmasını gerektirir.
   Bitirme alt sınırını 0 yapmak pil nedeniyle bitirmeyi kapatır. Aksi hâlde
   bitirme alt sınırı Düşük Güç Modu alt sınırının altında kalır. İki sınır
   kesişecek olduğunda Ayarlar'daki artırma/azaltma düğmeleri diğer sınırı da

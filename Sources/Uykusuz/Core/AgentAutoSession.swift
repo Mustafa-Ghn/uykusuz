@@ -16,10 +16,15 @@ import Foundation
 /// - Paused (`Inputs.pausedUntil`, the user's choice): no start before
 ///   then, and our session, if one still runs, ends.
 /// - Hands off after an end it did not ask for (the user held the end
-///   control, a floor or the timer ended it): no new start until the agent
-///   lets go once, so a session the user ended is not started again under
-///   them. The same when a session of the user's ends before its time; one
-///   that ran its time out lets ours follow while the agent works.
+///   control, a critical temperature, an unreadable battery or the timer
+///   ended it): no new start until the agent lets go once, so a session the
+///   user ended is not started again under them. The same when a session of
+///   the user's ends before its time; one that ran its time out lets ours
+///   follow while the agent works.
+/// - Not after the battery floor (`Inputs.endedAtBatteryFloor`): nobody chose
+///   that end and the start margin already holds the next start back, so the
+///   session returns on the charger. Waiting for the agent to let go could
+///   last for hours: with several Claude sessions at work, one always is.
 struct AutoSessionPolicy: Equatable, Sendable {
     enum Action: Equatable, Sendable {
         case start(TimeInterval)
@@ -45,6 +50,9 @@ struct AutoSessionPolicy: Equatable, Sendable {
         var waitGrace: TimeInterval = AutoSessionPolicy.idleGrace
         /// `Config.autoIdleGrace`.
         var idleGrace: TimeInterval = AutoSessionPolicy.idleGrace
+        /// The last session ended at the battery floor
+        /// (`SessionManager.lastEndReason`).
+        var endedAtBatteryFloor = false
 
         var paused: Bool { pausedUntil.map { now < $0 } ?? false }
     }
@@ -79,14 +87,14 @@ struct AutoSessionPolicy: Equatable, Sendable {
             // Ours is gone: through the end asked for below (`ending`), or
             // one someone else made.
             ownSession = nil
-            if i.agentActive, !ending { suppressed = true }
+            if i.agentActive, !ending, !i.endedAtBatteryFloor { suppressed = true }
             ending = false
         }
         if let user = userSession, i.sessionStartedAt != user.startedAt {
             // Theirs is gone: ended before its time, so no start under them;
             // at its time, what they set has run out.
             userSession = nil
-            if i.agentActive, i.now < user.endsAt { suppressed = true }
+            if i.agentActive, i.now < user.endsAt, !i.endedAtBatteryFloor { suppressed = true }
         }
         // Letting go clears the hand-off; so does a pause the user chose,
         // which takes its place: once it is over, ours starts again if the
@@ -273,7 +281,8 @@ final class AgentAutoSession {
             pausedUntil: manager.config.autoPausedUntil,
             agentWaiting: waiting != nil && endsWhileWaiting,
             waitGrace: config.autoWaitGrace,
-            idleGrace: config.autoIdleGrace
+            idleGrace: config.autoIdleGrace,
+            endedAtBatteryFloor: manager.lastEndReason == .batteryFloor
         ))
         switch action {
         case let .start(duration)?:

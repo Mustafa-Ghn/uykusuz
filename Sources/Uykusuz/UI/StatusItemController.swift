@@ -896,7 +896,7 @@ final class StatusItemController: NSObject {
         // app in front stays frontmost and its windows keep their focus.
         let panel = KeyCatcherPanel()
         if let button { panel.move(toStatusButton: button) }
-        panel.makeKeyAndOrderFront(nil)
+        panel.comeUp()
         keyCatcher = panel
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             // Local monitors always run on the main thread.
