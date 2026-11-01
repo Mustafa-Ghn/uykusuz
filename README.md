@@ -460,8 +460,10 @@ kısayoluna basın ya da göze sağ tıklayınca açılan menüden **Son yanıt�
   yere götürür. Sığmayan metin kaydırılır ve okunan paragrafı izler. Okuma bitince
   pencere birkaç saniye sonra kapanır.
 - **Kısayol.** Hangi uygulamada olursanız olun çalışır; Ayarlar > Claude'un
-  yanıtını dinle bölümünden kapatılır. ⌃⌥D başka bir uygulamada
-  kullanılıyorsa Ayarlar bunu söyler; menü yine çalışır.
+  yanıtını dinle bölümünden kapatılır. Başka bir uygulama ⌃⌥D kısayolunu
+  kendine ayırmışsa Ayarlar bunu söyler ve menü yine çalışır. macOS diğer
+  durumları bildirmez; o uygulama da aynı kısayolu kullanıyorsa ikisi de tepki
+  verebilir.
 - **Gizlilik.** Yanıt bu Mac'te okunur, diske yazılmaz ve hiçbir yere
   gönderilmez. Uykusuz başka hiçbir tuşu görmez ve bunun için izin istemez.
 

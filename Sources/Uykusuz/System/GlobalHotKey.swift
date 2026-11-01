@@ -3,8 +3,9 @@ import Foundation
 
 /// One system-wide shortcut (fork addition). The system tells the app when
 /// this one combination is pressed and sees to the rest, so no other key
-/// reaches the app and no permission is asked. Another app holding the
-/// combination is a registration that fails.
+/// reaches the app and no permission is asked. It is registered as exclusive,
+/// so an app holding the combination the same way makes the registration fail.
+/// macOS says nothing of an app holding it any other way: both then hear it.
 @MainActor
 final class GlobalHotKey {
     var onPress: (@MainActor () -> Void)?
@@ -30,7 +31,7 @@ final class GlobalHotKey {
         guard hotKey == nil else { return true }
         guard installHandler() else { return false }
         var ref: EventHotKeyRef?
-        let status = RegisterEventHotKey(keyCode, modifiers, EventHotKeyID(signature: 0x55796B7A, id: 1), GetApplicationEventTarget(), 0, &ref)
+        let status = RegisterEventHotKey(keyCode, modifiers, EventHotKeyID(signature: 0x55796B7A, id: 1), GetApplicationEventTarget(), OptionBits(kEventHotKeyExclusive), &ref)
         guard status == noErr, let ref else {
             Log.error("hot key: could not register it (status \(status))")
             return false

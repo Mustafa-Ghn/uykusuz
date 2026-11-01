@@ -1,3 +1,4 @@
+import AppKit
 import Carbon.HIToolbox
 import XCTest
 @testable import Uykusuz
@@ -445,6 +446,18 @@ final class ClaudeReplySettingTests: XCTestCase {
         XCTAssertTrue(hotKey.set(true))
         XCTAssertTrue(hotKey.set(false))
         XCTAssertTrue(hotKey.set(false))
+    }
+
+    @MainActor
+    func testAShortcutHeldExclusivelyIsNotHadTwice() {
+        _ = NSApplication.shared
+        let make = { GlobalHotKey(keyCode: kVK_F20, modifiers: controlKey | optionKey | shiftKey) }
+        let first = make(), second = make()
+        XCTAssertTrue(first.set(true))
+        XCTAssertFalse(second.set(true), "this is what Settings reports")
+        XCTAssertTrue(first.set(false))
+        XCTAssertTrue(second.set(true))
+        XCTAssertTrue(second.set(false))
     }
 }
 

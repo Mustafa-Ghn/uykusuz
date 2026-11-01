@@ -482,7 +482,7 @@ struct SettingsView: View {
             Toggle("\(ClaudeReplyReader.shortcutLabel) ile son yanıtı dinle", isOn: bind(\.listenShortcut))
                 .onChange(of: manager.config.listenShortcut) { replyReader?.settingChanged() }
             if manager.config.listenShortcut, replyReader?.shortcutTaken == true {
-                Text("\(ClaudeReplyReader.shortcutLabel) başka bir uygulamada kullanılıyor. Son yanıtı göze sağ tıklayınca açılan menüden dinleyebilirsiniz.")
+                Text("\(ClaudeReplyReader.shortcutLabel) kısayolunu başka bir uygulama kendine ayırmış. Son yanıtı göze sağ tıklayınca açılan menüden dinleyebilirsiniz.")
                     .font(.callout)
                     .foregroundStyle(.red)
             }

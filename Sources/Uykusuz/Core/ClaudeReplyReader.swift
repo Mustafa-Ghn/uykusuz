@@ -34,7 +34,7 @@ final class ClaudeReplyReader {
     @ObservationIgnored private var shown: ClaudeReply?
     @ObservationIgnored private var shownID: UUID?
 
-    /// Another app holds the shortcut, for Settings.
+    /// Another app has the shortcut to itself, for Settings.
     private(set) var shortcutTaken = false
 
     init(

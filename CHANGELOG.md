@@ -4,6 +4,12 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.10.4 — 2026-11-01
+
+### Düzeltilenler
+
+- **Kısayol çakışması bildirilir.** Başka bir uygulama ⌃⌥D kısayolunu kendine ayırmışsa Ayarlar > Claude'un yanıtını dinle bölümü artık bunu söyler; önceki sürümde bu uyarı hiç çıkmıyordu. macOS diğer durumları bildirmez; o uygulama da aynı kısayolu kullanıyorsa ikisi de tepki verebilir.
+
 ## 0.10.3 — 2026-11-01
 
 ### Düzeltilenler
