@@ -95,11 +95,12 @@ Root olarak çalışan başka bir şey yoktur.
 - **Konum izni:** Yalnızca macOS'un Wi-Fi adlarını gösterebilmesi için
   istenir. Konum verisi okunmaz ya da saklanmaz.
 - **Ekran kaydı izni (0.12.0):** Yalnızca kullanıcı bir alan çizip dinlemek
-  istediğinde gerekir. Ekrana yalnızca o anda bir kez bakılır; ayrıntılar aşağıda
-  "Seçilen alanı dinleme" maddesindedir.
+  istediğinde ve okunan kelimenin ekranda işaretlenmesi için gerekir. Ekrana yalnızca
+  kullanıcının başlattığı bir okuma sırasında bakılır; ayrıntılar aşağıda "Seçilen
+  alanı dinleme" ve "Okunan kelimeyi ekranda işaretleme" maddelerindedir.
 - **Okunmayan veriler:** Pano, başka uygulamalara yazılanlar, tarayıcı geçmişi
   ya da sekmeleri, SSH anahtarları ve kabuk geçmişi okunmaz. Ekran içeriği yalnızca
-  kullanıcı bir alan çizdiğinde ve yalnızca o alandan okunur (0.12.0).
+  kullanıcının başlattığı bir okuma sırasında okunur ve bellekte kalır (0.12.0, 0.13.0).
 
 ### Diğer uygulamalar
 
@@ -244,6 +245,18 @@ macOS'un sorduğu Otomasyon (Mesajlar) iznidir.
   sesle ya da Mac'in sesiyle yerelde yapılır. Kısayol `RegisterEventHotKey` ile
   kaydedilir, başka tuş görülmez; her kısayolun işleyicisi yalnızca kendi kimliğine
   yanıt verir. Yeni ağ isteği, `sudo` komutu ya da kalıcı bileşen yoktur.
+- **Okunan kelimeyi ekranda işaretleme (0.13.0):** Varsayılan olarak açıktır, Ayarlar'dan
+  kapatılır. Yalnızca kullanıcının başlattığı bir yanıt ya da alan okuması için, okuma
+  penceresi açıkken çalışır; izin yoksa ekrana bakılmaz. Okuma başlayınca, okuma
+  sürerken iki saniyede bir ve kaydırma ya da tıklamadan sonra `SCScreenshotManager` ile
+  ekranın tek bir görüntüsü alınır, uygulamanın kendi pencereleri süzgeçle dışarıda
+  bırakılır, sürekli yakalama akışı açılmaz. Kelimeler ve yerleri Vision'ın hızlı metin
+  tanımasıyla bu Mac'te bulunur. Görüntü ve kelimeler bellekte kalır, diske ve günlüğe
+  yazılmaz, ağa gitmez. İşaret, tıklama almayan ayrı bir saydam penceredir; başka
+  uygulamanın penceresine dokunulmaz, tuş ya da olay gönderilmez, Erişilebilirlik izni
+  istenmez. Okuma penceresi açıkken `NSEvent.addGlobalMonitorForEvents` yalnızca kaydırma
+  ve sol düğmeyi bırakma olaylarını dinler; olayların yalnızca olduğu kullanılır, tuşlar
+  görülmez. Yeni izin, ağ isteği, `sudo` komutu ya da kalıcı bileşen yoktur.
 - **Bilinen Wi-Fi ağına geri dönüş (0.6.0):** Oturum sürerken hotspot'tayken
   CoreWLAN ile tarar ve bilinen ağ listesinden yalnızca adları ve parolalı olup
   olmadıklarını okur; Wi-Fi parolalarını okumaz ve hiçbir ağa kendisi katılmaz.

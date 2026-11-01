@@ -107,6 +107,20 @@ macOS'un Vision çerçevesiyle bu Mac'te tanınır. Görüntü ve yazı diske ve
 yazılmaz (günlüğe yalnızca karakter sayısı yazılır), ağa gitmez. Kısayol ⌃⌥D gibi
 `RegisterEventHotKey` ile kaydedilir.
 
+**Okunan kelimeyi ekranda işaretleme.** Ayarlar'dan kapatılır. Yalnızca kullanıcının
+başlattığı bir yanıt ya da alan okuması için, okuma penceresi açıkken çalışır ve
+ekran kaydı iznini kullanır; izin yoksa hiçbir şey yapmaz. Okuma başlayınca, okuma
+sürerken iki saniyede bir ve kullanıcı kaydırınca ya da tıklayınca o ekranın tek bir
+görüntüsü alınır (`SCScreenshotManager`); sürekli bir yakalama akışı açılmaz ve
+Uykusuz'un kendi pencereleri görüntüye girmez. Kelimeler ve yerleri Vision ile bu
+Mac'te bulunur ve okunan metinle eşleştirilir. Görüntü ve bulunan kelimeler bellekte
+kalır, diske ve günlüğe yazılmaz, ağa gitmez; pencere kapanınca ekrana bakılmaz.
+Başka uygulamaların penceresine dokunulmaz: işaret, tıklama almayan ayrı bir saydam
+penceredir ve tuş ya da olay gönderilmez. Kaydırmayı ve tıklamayı anlamak için
+okuma penceresi açıkken `NSEvent.addGlobalMonitorForEvents` ile yalnızca kaydırma ve
+sol düğmeyi bırakma olayları dinlenir; olayların yalnızca olduğu kullanılır, tuşlar
+görülmez.
+
 **Doğal Türkçe ses.** Uyarıları, özeti, Claude'un yanıtını ve seçilen alanı
 uygulama paketindeki `Contents/Resources/Voice` klasöründen yüklenen konuşma
 modeli okur; paket imzasının mührü bu dosyaları da kapsar. Model Core ML ile

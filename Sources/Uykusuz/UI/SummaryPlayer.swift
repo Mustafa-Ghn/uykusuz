@@ -25,9 +25,15 @@ final class SummaryPlayer {
     let paragraphs: [NSRange]
     /// Called when a reading gets to the end, not when it is stopped.
     @ObservationIgnored var onFinish: (@MainActor () -> Void)?
-    private(set) var isPlaying = false
+    /// Called when the word being read changes, or the reading stops or starts.
+    @ObservationIgnored var onChange: (@MainActor () -> Void)?
+    private(set) var isPlaying = false {
+        didSet { onChange?() }
+    }
     /// The word being read, or the one a move landed on.
-    private(set) var currentWord: Int?
+    private(set) var currentWord: Int? {
+        didSet { onChange?() }
+    }
 
     @ObservationIgnored private var backend: any ReadingBackend
     @ObservationIgnored private var paused = false
@@ -191,7 +197,8 @@ final class SummaryPlayer {
 
 /// The small window the summary comes in: title, the text with the word
 /// being read marked, and the controls. A text too long for the screen
-/// scrolls, following the paragraph being read.
+/// scrolls, following the paragraph being read. While the word is marked on
+/// the screen itself (`ScreenFollower`), only the title and the controls stay.
 struct SummaryPlayerView: View {
     static let width: CGFloat = 400
     static let padding: CGFloat = 16
@@ -202,14 +209,30 @@ struct SummaryPlayerView: View {
     let title: String
     let told: String
     let onClose: () -> Void
+    let follower: ScreenFollower?
+    /// The way to the permission `follower` lacks.
+    let askPermission: () -> Void
+    /// The window fits itself to this: what it shows changes during a reading.
+    let onResize: (CGSize) -> Void
     /// Once: the drawing below runs again for every word.
     private let scrolls: Bool
     @State private var dragging: Double?
 
-    init(player: SummaryPlayer, title: String, told: String, onClose: @escaping () -> Void) {
+    init(
+        player: SummaryPlayer,
+        title: String,
+        told: String,
+        follower: ScreenFollower? = nil,
+        askPermission: @escaping () -> Void = {},
+        onResize: @escaping (CGSize) -> Void = { _ in },
+        onClose: @escaping () -> Void
+    ) {
         self.player = player
         self.title = title
         self.told = told
+        self.follower = follower
+        self.askPermission = askPermission
+        self.onResize = onResize
         self.onClose = onClose
         scrolls = Self.needsScrolling(player.text, paragraphs: player.paragraphs.count)
     }
@@ -258,17 +281,36 @@ struct SummaryPlayerView: View {
                 .buttonStyle(.plain)
                 .help("Kapat")
             }
-            if scrolls {
-                ScrollViewReader { proxy in
-                    ScrollView { paragraphs }
-                        .frame(height: Self.maxTextHeight)
-                        .onChange(of: player.currentParagraph) { _, paragraph in
-                            guard let paragraph else { return }
-                            withAnimation { proxy.scrollTo(paragraph, anchor: .top) }
-                        }
+            if let note = follower?.note {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(note)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if follower?.place == .noPermission {
+                        Spacer()
+                        Button("İzin ver", action: askPermission)
+                            .font(.caption)
+                            .controlSize(.small)
+                    }
                 }
-            } else {
-                paragraphs
+            }
+            if follower?.textBelongsInWindow ?? true {
+                if scrolls {
+                    ScrollViewReader { proxy in
+                        ScrollView { paragraphs }
+                            .frame(height: Self.maxTextHeight)
+                            .onChange(of: player.currentParagraph) { _, paragraph in
+                                guard let paragraph else { return }
+                                withAnimation { proxy.scrollTo(paragraph, anchor: .top) }
+                            }
+                            .onAppear {
+                                if let paragraph = player.currentParagraph { proxy.scrollTo(paragraph, anchor: .top) }
+                            }
+                    }
+                } else {
+                    paragraphs
+                }
             }
             HStack(spacing: 14) {
                 Button(action: player.back) { Image(systemName: "backward.fill") }
@@ -297,7 +339,9 @@ struct SummaryPlayerView: View {
         }
         .padding(Self.padding)
         .frame(width: Self.width)
+        .fixedSize(horizontal: false, vertical: true)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .onGeometryChange(for: CGSize.self, of: \.size, action: onResize)
     }
 }
 
@@ -314,30 +358,51 @@ final class SummaryPanel {
     private var panel: NSPanel?
     private var player: SummaryPlayer?
     private var onClose: (@MainActor () -> Void)?
+    private var follower: ScreenFollower?
+    private let marker = WordMarker()
+    private let screenPermission = ScreenPermission()
     /// Whether the settings ask for the natural voice (`Config.naturalVoice`).
     var naturalVoice: @MainActor () -> Bool = { false }
+    /// Whether the settings ask for the word to be marked on the screen (`Config.followOnScreen`).
+    var followOnScreen: @MainActor () -> Bool = { false }
+    /// Where the natural voice's sound goes; nil for the speakers.
+    var naturalOutput: (@MainActor () -> any ReadingOutput)?
 
     /// `autoplay`: start reading as soon as it is up. `onFinish` is told when
     /// a reading gets to the end, `onClose` when the window goes, for whatever
-    /// reason.
+    /// reason. `onScreen`: the text is one the user can see on the screen, so
+    /// the word is marked there when it can be found.
     func show(
         _ text: String,
         told: Date,
         title: String = AwaySummary.title,
         autoplay: Bool = false,
+        onScreen: Bool = false,
         onFinish: (@MainActor () -> Void)? = nil,
         onClose: (@MainActor () -> Void)? = nil
     ) async {
         let voice: SummaryPlayer.Voice = naturalVoice() ? .natural : .system(identifier: await TurkishVoice.current().identifier)
         close()
-        let player = SummaryPlayer(text: text, voice: voice)
+        let player = SummaryPlayer(text: text, voice: voice, naturalOutput: naturalOutput)
         player.onFinish = onFinish
         let clock = DateFormatter()
         clock.locale = Locale(identifier: "tr_TR")
         clock.dateFormat = "HH:mm"
-        let view = SummaryPlayerView(player: player, title: title, told: clock.string(from: told)) { [weak self] in self?.close() }
+        let follower = onScreen && followOnScreen() ? makeFollower(for: player) : nil
+        player.onChange = { [weak follower] in follower?.readingChanged() }
+        let view = SummaryPlayerView(
+            player: player,
+            title: title,
+            told: clock.string(from: told),
+            follower: follower,
+            askPermission: { [screenPermission] in screenPermission.openSettings() },
+            onResize: { [weak self] size in self?.fit(size) },
+            onClose: { [weak self] in self?.close() }
+        )
         let host = FirstMouseHostingView(rootView: view)
         let size = host.fittingSize
+        // From here on `fit` sizes the window, keeping its top right corner.
+        host.sizingOptions = []
         let panel = NSPanel(
             contentRect: NSRect(origin: .zero, size: size),
             styleMask: [.borderless, .nonactivatingPanel],
@@ -361,13 +426,40 @@ final class SummaryPanel {
         self.panel = panel
         self.player = player
         self.onClose = onClose
+        self.follower = follower
+        follower?.start()
         guard autoplay else { return }
         player.play()
         // Nothing to say (no words in it): over already.
         if !player.isPlaying { onFinish?() }
     }
 
+    private func makeFollower(for player: SummaryPlayer) -> ScreenFollower {
+        // A new one for each reading: the displays may have changed since the last.
+        let screenLook = ScreenLook()
+        return ScreenFollower(
+            reading: ScreenFollower.foldedWords(of: player),
+            hasPermission: { [screenPermission] in screenPermission.isGranted },
+            look: { [screenLook] near in try await screenLook.words(near: near) },
+            mark: { [marker] rect in
+                if let rect { marker.show(rect) } else { marker.hide() }
+            },
+            watch: { ScreenFollower.watchScreen($0) },
+            word: { [weak player] in player?.currentWord },
+            isPlaying: { [weak player] in player?.isPlaying ?? false }
+        )
+    }
+
+    private func fit(_ size: CGSize) {
+        guard let panel, size.width > 0, size.height > 0 else { return }
+        let frame = panel.frame
+        panel.setFrame(NSRect(x: frame.maxX - size.width, y: frame.maxY - size.height, width: size.width, height: size.height), display: true)
+    }
+
     func close() {
+        follower?.stop()
+        follower = nil
+        player?.onChange = nil
         player?.onFinish = nil
         player?.stop()
         player = nil

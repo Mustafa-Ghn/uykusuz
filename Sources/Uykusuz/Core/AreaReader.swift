@@ -7,9 +7,9 @@ import Observation
 /// with its marked word, pause and bar. Pressing again while drawing gives up;
 /// pressing during such a reading ends it.
 ///
-/// The screen recording permission is used for this and nothing else: one
-/// picture is taken after the area is drawn, and it is gone once its text has
-/// been read (`ScreenText`). Nothing looks at the screen in between.
+/// The text comes from one picture taken after the area is drawn, gone once
+/// its text has been read (`ScreenText`). Nothing looks at the screen until the
+/// user asks for a reading.
 @MainActor
 @Observable
 final class AreaReader {
@@ -18,7 +18,12 @@ final class AreaReader {
     static let title = "Seçilen alan"
     static let nothingToRead = "Seçilen alanda okunacak yazı bulunamadı."
     static let unreadable = "Seçilen alan okunamadı."
-    static let needsPermission = "Alan okumak için ekran kaydı izni gerekiyor. Sistem Ayarları > Gizlilik ve Güvenlik > Ekran ve Sistem Sesi Kaydı bölümünde Uykusuz'u açın; açık görünüyorsa kapatıp yeniden açın. Sonra Uykusuz'dan çıkıp yeniden başlatın. Uykusuz ekrana yalnızca siz alan çizince bakar."
+    static let needsPermission = "Alan okumak için ekran kaydı izni gerekiyor. Sistem Ayarları > Gizlilik ve Güvenlik > Ekran ve Sistem Sesi Kaydı bölümünde Uykusuz'u açın; açık görünüyorsa kapatıp yeniden açın. Sonra Uykusuz'dan çıkıp yeniden başlatın. Uykusuz ekrana yalnızca siz okuma isteyince bakar."
+
+    /// One of this reader's own messages, not text from the screen.
+    static func isMessage(_ text: String) -> Bool {
+        [nothingToRead, unreadable, needsPermission].contains(text)
+    }
 
     /// What the drawn area says; nil when the user gave up drawing.
     typealias Read = @MainActor () async throws -> String?

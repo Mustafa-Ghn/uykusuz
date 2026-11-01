@@ -119,6 +119,9 @@ struct Config: Codable, Equatable, Sendable {
     /// A system-wide shortcut lets the user draw an area of the screen and
     /// hear what is written in it (`AreaReader`).
     var listenAreaShortcut: Bool = true
+    /// While Claude's reply or a drawn area is read, the word is marked on the
+    /// screen itself when it can be found there (`ScreenFollower`).
+    var followOnScreen: Bool = true
     /// Alerts, the summary, Claude's reply and a drawn area are read by the
     /// voice that ships with the app (`NaturalVoice`); off, by the Mac's Turkish voice.
     var naturalVoice: Bool = true
@@ -270,6 +273,7 @@ struct Config: Codable, Equatable, Sendable {
         summaryModel = try c.decodeIfPresent(String.self, forKey: .summaryModel) ?? d.summaryModel
         listenShortcut = try c.decodeIfPresent(Bool.self, forKey: .listenShortcut) ?? d.listenShortcut
         listenAreaShortcut = try c.decodeIfPresent(Bool.self, forKey: .listenAreaShortcut) ?? d.listenAreaShortcut
+        followOnScreen = try c.decodeIfPresent(Bool.self, forKey: .followOnScreen) ?? d.followOnScreen
         naturalVoice = try c.decodeIfPresent(Bool.self, forKey: .naturalVoice) ?? d.naturalVoice
         endWhileWaiting = try c.decodeIfPresent(Bool.self, forKey: .endWhileWaiting) ?? d.endWhileWaiting
         approvalWaitGrace = try c.decodeIfPresent(TimeInterval.self, forKey: .approvalWaitGrace) ?? d.approvalWaitGrace

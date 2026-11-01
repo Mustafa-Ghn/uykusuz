@@ -70,8 +70,9 @@ Claude çalışırken bunu kendiliğinden de yapar.
   vurgulanır ve çubukla ileri geri gidersiniz; bir Claude API anahtarı
   kaydederseniz özeti Claude yazar.
 - **Claude'un yanıtını dinleme.** Baktığınız Claude sohbetinin son mesajını
-  ⌃⌥D ile dinlersiniz; ara adımlar okunmaz ve siz istemeden hiçbir şey
-  okunmaz.
+  ⌃⌥D ile dinlersiniz; okunan kelime sohbetteki yazının üzerinde işaretlenir,
+  sağ üstte durdurma düğmesi ve ileri geri çubuğu kalır. Ara adımlar okunmaz ve
+  siz istemeden hiçbir şey okunmaz.
 - **Seçilen alanı dinleme.** ⌃⌥S ile ekranda bir alan çizersiniz; o alandaki yazı
   aynı küçük pencerede okunur. Yazı bu Mac'te tanınır, görüntü hiçbir yere
   gönderilmez.
@@ -221,7 +222,7 @@ Ayarlar penceresi göze sağ tıklayınca açılan menüden (⌘,) açılır:
 | Pil ve ısı | Düşük Güç Modu ve oturum sonu eşikleri, ısı kuralları |
 | Claude, kod modu ve ekran | Claude Code hook'ları, izin isteklerini otomatik onaylama, otomatik oturum, yanıt beklerken bitirme ve bekleme süresi, kod modu, boşta siyah ekran süreleri ve kilitleme |
 | Sen yokken özeti | Kapak ya da kilit açılınca özet penceresi, Claude API anahtarı, özeti yazan model, son 2 saati şimdi özetle |
-| Claude'un yanıtını dinle | ⌃⌥D kısayolunu açıp kapatma |
+| Claude'un yanıtını dinle | ⌃⌥D kısayolunu açıp kapatma, okunan kelimeyi ekrandaki yazının üzerinde işaretleme |
 | Seçilen alanı dinle | ⌃⌥S kısayolunu açıp kapatma |
 | Telefondan yanıt | Claude'un telefon bildirimleri yalnızca uzaktayken, yanıt için Mac'in uyanık kalacağı süre |
 | Claude sizi beklerken iPhone'a haber ver | iMessage gönder, alıcı (telefon numarası ya da Apple ID e-postası), deneme mesajı, Docker kullanılırken de haber ver |
@@ -455,8 +456,8 @@ Ayarlar > Sen yokken özeti bölümündeki **Son 2 saati şimdi özetle** düğm
 
 Claude uygulamasında baktığınız sohbetin son mesajını dinlemek için **⌃⌥D**
 kısayoluna basın ya da göze sağ tıklayınca açılan menüden **Son yanıtı dinle**
-öğesini seçin. Yalnızca o mesaj, ekranın sağ üstündeki küçük pencerede okunur;
-önceki adımlar ve araç çıktıları okunmaz. Siz istemeden hiçbir şey okunmaz.
+öğesini seçin. Yalnızca o mesaj okunur; önceki adımlar ve araç çıktıları
+okunmaz. Siz istemeden hiçbir şey okunmaz.
 
 - **Hangi sohbet.** Uykusuz, Claude uygulamasının sohbet kayıtlarından en son
   odaklandığınız sohbeti bulur. Bu kayıtlar yoksa, örneğin Claude Code'u yalnızca
@@ -469,9 +470,22 @@ kısayoluna basın ya da göze sağ tıklayınca açılan menüden **Son yanıt�
 - **Ne okunur.** Markdown işaretleri okunmaz. Kod blokları "Kod bloğu atlandı"
   diye geçilir, bağlantı adresleri okunmaz, dosya yollarının yalnızca dosya adı
   söylenir. Parantez içindeki kod adları atlanır.
-- **Pencere.** [Sen yokken özetinin](#sen-yokken-özeti) penceresidir: okunan
-  kelime vurgulanır, ❚❚ durdurur, ◀◀ ve ▶▶ beşer kelime gider, çubuk istediğiniz
-  yere götürür. Sığmayan metin kaydırılır ve okunan paragrafı izler. Okuma bitince
+- **Okunan kelime ekranda.** Yanıt ekranda görünüyorsa okunan kelime sohbetteki
+  yazının üzerinde saydam bir işaretle gösterilir. Sohbetin yazısı değişmez ve
+  işaret tıklamaları engellemez. Uykusuz sohbeti kendisi kaydırmaz: okunan yer
+  ekranda değilse yazı sağ üstteki pencerede görünür, pencere de hangi yöne
+  kaydırmanız gerektiğini söyler; kaydırınca işaret yeniden sohbete geçer.
+- **Nasıl bulunur.** Bir uygulama başka bir uygulamanın penceresine yazamadığı
+  için Uykusuz kelimenin yerini ekrandan okuyarak bulur: okuma başlayınca, okuma
+  sürerken iki saniyede bir ve siz kaydırınca ya da tıklayınca ekrana bakar. Her
+  bakış işlemciden yaklaşık 0,1 saniye alır. Bunun için macOS ekran kaydı izni
+  gerekir; okuma sırasında macOS menü çubuğunda kayıt simgesi gösterebilir. İzin
+  yoksa pencere bunu söyler ve yazı orada izlenir. Ayarlar > Claude'un yanıtını
+  dinle bölümünden kapatılınca Uykusuz ekrana bakmaz, yazı yine pencerede izlenir.
+- **Pencere.** [Sen yokken özetinin](#sen-yokken-özeti) penceresidir: ❚❚ durdurur,
+  ◀◀ ve ▶▶ beşer kelime gider, çubuk istediğiniz yere götürür. Yazı ekranda
+  işaretlenirken pencerede yalnızca başlık, düğmeler ve çubuk kalır. Yazı pencerede
+  görünürken sığmayan metin kaydırılır ve okunan paragrafı izler. Okuma bitince
   pencere birkaç saniye sonra kapanır.
 - **Kısayol.** Hangi uygulamada olursanız olun çalışır; Ayarlar > Claude'un
   yanıtını dinle bölümünden kapatılır. Başka bir uygulama ⌃⌥D kısayolunu
@@ -479,14 +493,16 @@ kısayoluna basın ya da göze sağ tıklayınca açılan menüden **Son yanıt�
   durumları bildirmez; o uygulama da aynı kısayolu kullanıyorsa ikisi de tepki
   verebilir.
 - **Gizlilik.** Yanıt bu Mac'te okunur, diske yazılmaz ve hiçbir yere
-  gönderilmez. Uykusuz başka hiçbir tuşu görmez ve bunun için izin istemez.
+  gönderilmez. Ekranın görüntüleri de yalnızca bellekte kalır; yazıyı macOS'un
+  metin tanıması bu Mac'te okur. Okuma sürerken Uykusuz, farenin kaydırıldığını ve
+  tıklamanın bittiğini anlar. Başka hiçbir tuşu görmez ve kısayol için izin istemez.
 
 ### Seçilen alanı dinleme
 
 Ekranda yalnızca bir bölümü dinlemek için **⌃⌥S** kısayoluna basın ya da göze sağ
 tıklayınca açılan menüden **Alan seçip dinle** öğesini seçin. Ekran kararır;
-okunacak alanı fareyle çizin. Alandaki yazı, ekranın sağ üstündeki küçük
-pencerede okunur. Çizerken Esc ya da yeniden ⌃⌥S vazgeçer.
+okunacak alanı fareyle çizin ve alandaki yazı okunsun. Çizerken Esc ya da yeniden
+⌃⌥S vazgeçer.
 
 - **Ne okunur.** Yazı alanın görüntüsünden tanındığı için tarayıcıda, PDF'te,
   terminalde ya da bir resimde aynı şekilde çalışır. Türkçe ve İngilizce tanınır;
@@ -494,19 +510,21 @@ pencerede okunur. Çizerken Esc ya da yeniden ⌃⌥S vazgeçer.
   Bağlantı adresleri okunmaz, dosya yollarının yalnızca dosya adı söylenir.
   Alanın sınırının ortasından geçtiği bir satır okunmayabilir; satırları tam içine
   alacak şekilde çizin.
-- **Pencere.** [Claude'un yanıtını dinlerken](#claudeun-yanıtını-dinleme) açılan
-  penceredir: okunan kelime vurgulanır, ❚❚ durdurur, ◀◀ ve ▶▶ beşer kelime gider,
-  çubuk istediğiniz yere götürür. Okuma sürerken yeniden ⌃⌥S okumayı durdurur.
+- **Pencere.** [Claude'un yanıtını dinlerken](#claudeun-yanıtını-dinleme) olduğu
+  gibi okunan kelime ekrandaki yazının üzerinde işaretlenir; sağ üstteki pencerede
+  ❚❚ durdurur, ◀◀ ve ▶▶ beşer kelime gider, çubuk istediğiniz yere götürür. Okuma
+  sürerken yeniden ⌃⌥S okumayı durdurur.
 - **İzin.** Görüntü için macOS ekran kaydı izni gerekir. İlk basışta macOS sorar;
   Sistem Ayarları > Gizlilik ve Güvenlik > Ekran ve Sistem Sesi Kaydı bölümünden
   Uykusuz'u açın ve Uykusuz'u yeniden başlatın. Uygulama her kurulumda yeniden
   imzalandığı için bu izni yeni bir kurulumdan sonra yenilemek gerekir: Uykusuz
   orada açık görünse de kapatıp yeniden açın. macOS bu izni zaman zaman yeniden
   sorabilir. İzin yoksa pencere bunu söyler, Uykusuz'un geri kalanı etkilenmez.
-- **Gizlilik.** Uykusuz ekrana yalnızca siz alan çizdikten sonra bir kez bakar;
-  kendi pencereleri görüntüye girmez. Görüntü bellekte kalır, yazıyı macOS'un
-  metin tanıması bu Mac'te okur. Görüntü ve yazı diske ya da günlüğe yazılmaz,
-  hiçbir yere gönderilmez.
+- **Gizlilik.** Uykusuz ekrana yalnızca siz okuma isteyince bakar: yazıyı almak
+  için çizdiğiniz alana bir kez, okunan kelimeyi işaretlemek için okuma sürerken
+  birkaç saniyede bir. Kendi pencereleri görüntüye girmez. Görüntü bellekte kalır,
+  yazıyı macOS'un metin tanıması bu Mac'te okur. Görüntü ve yazı diske ya da
+  günlüğe yazılmaz, hiçbir yere gönderilmez.
 - **Kısayol.** Hangi uygulamada olursanız olun çalışır; Ayarlar > Seçilen alanı
   dinle bölümünden kapatılır. Başka bir uygulama ⌃⌥S kısayolunu kendine ayırmışsa
   Ayarlar bunu söyler ve menü yine çalışır.

@@ -53,6 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         autoSession = AgentAutoSession(manager: manager)
         let panel = summaryPanel
         panel.naturalVoice = { [manager] in manager.config.naturalVoice }
+        panel.followOnScreen = { [manager] in manager.config.followOnScreen }
         awaySummary = AwaySummary(
             config: { [manager] in manager.config },
             present: { text, told in await panel.show(text, told: told) },
@@ -69,6 +70,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     told: reply.at,
                     title: reply.title,
                     autoplay: true,
+                    // "Nothing to read" is not on the screen to be found.
+                    onScreen: !reply.session.isEmpty,
                     onFinish: onFinish,
                     onClose: onClose
                 )
@@ -92,7 +95,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             },
             giveUp: { picker.cancel() },
             present: { text, autoplay, onFinish, onClose in
-                await panel.show(text, told: Date(), title: AreaReader.title, autoplay: autoplay, onFinish: onFinish, onClose: onClose)
+                await panel.show(text, told: Date(), title: AreaReader.title, autoplay: autoplay, onScreen: !AreaReader.isMessage(text), onFinish: onFinish, onClose: onClose)
             },
             dismiss: { panel.close() },
             windowIsReading: { panel.isReading },

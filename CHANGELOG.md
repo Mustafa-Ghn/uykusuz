@@ -4,6 +4,18 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.13.0 — 2026-11-01
+
+### Eklenenler
+
+- **Okunan kelime ekrandaki yazının üzerinde işaretlenir.** Claude'un yanıtını ya da seçilen alanı dinlerken yazı ekranda görünüyorsa kelime yazının kendisinde saydam bir işaretle gösterilir, sağ üstteki pencerede yalnızca başlık, düğmeler ve çubuk kalır. Sohbetin yazısı değişmez, işaret tıklamaları engellemez ve okuma aynı kalır: aynı ses, aynı Türkçe okunuş.
+- **Okunan yer ekranda değilse yazı pencerede görünür.** Pencere hangi yöne kaydırmanız gerektiğini de söyler; kaydırınca işaret yeniden yazının üzerine geçer. Uykusuz sohbeti kendisi kaydırmaz.
+- **Ayarlar > Claude'un yanıtını dinle** bölümündeki yeni seçenek bunu kapatır; kapalıyken yazı eskisi gibi pencerede izlenir.
+
+### Değişenler
+
+- **Ekran kaydı izni artık ⌃⌥D'de de kullanılır.** Bir uygulama başka bir uygulamanın penceresine yazamadığı için Uykusuz kelimenin yerini ekrandan okuyarak bulur: okuma sürerken iki saniyede bir ve siz kaydırınca ya da tıklayınca ekrana bakar. Görüntü bellekte kalır, hiçbir şey diske yazılmaz ya da gönderilmez. İzin yoksa pencere bunu söyler ve yazı orada izlenir. Uygulama her kurulumda yeniden imzalandığı için izni bu kurulumdan sonra yenilemek gerekir.
+
 ## 0.12.4 — 2026-11-01
 
 ### Düzeltilenler

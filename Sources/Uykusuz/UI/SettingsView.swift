@@ -498,11 +498,18 @@ struct SettingsView: View {
                     .font(.callout)
                     .foregroundStyle(.red)
             }
-            Text("Claude uygulamasında baktığınız sohbetin son mesajı, \(ClaudeReplyReader.shortcutLabel) kısayoluna ya da göze sağ tıklayınca açılan menüdeki Son yanıtı dinle öğesine basınca ekranın sağ üstündeki küçük pencerede okunur; önceki adımlar okunmaz ve kendiliğinden hiçbir şey okunmaz. Aynı sohbette yeniden basınca okuma durur; başka bir sohbete geçip basınca o sohbetin yanıtı okunur. Kod blokları atlanır, bağlantı adresleri okunmaz, dosya yollarının yalnızca dosya adı söylenir. Okunan kelime vurgulanır; ❚❚ durdurur, çubuk ve ileri geri düğmeleriyle istediğiniz yere gidersiniz. Kısayol hangi uygulamada olursanız olun çalışır ve Uykusuz başka hiçbir tuşu görmez. Yanıt bu Mac'te okunur, hiçbir yere gönderilmez.")
+            Text("Claude uygulamasında baktığınız sohbetin son mesajı, \(ClaudeReplyReader.shortcutLabel) kısayoluna ya da göze sağ tıklayınca açılan menüdeki Son yanıtı dinle öğesine basınca okunur; önceki adımlar okunmaz ve kendiliğinden hiçbir şey okunmaz. Aynı sohbette yeniden basınca okuma durur; başka bir sohbete geçip basınca o sohbetin yanıtı okunur. Kod blokları atlanır, bağlantı adresleri okunmaz, dosya yollarının yalnızca dosya adı söylenir. Ekranın sağ üstündeki küçük pencerede ❚❚ durdurur, çubuk ve ileri geri düğmeleriyle istediğiniz yere gidersiniz. Kısayol hangi uygulamada olursanız olun çalışır ve Uykusuz başka hiçbir tuşu görmez. Yanıt bu Mac'te okunur, hiçbir yere gönderilmez.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Toggle(Self.followOnScreenTitle, isOn: bind(\.followOnScreen))
+            Text(Self.followOnScreenNote)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
     }
+
+    static let followOnScreenTitle = "Okunan kelimeyi ekrandaki yazının üzerinde işaretle"
+    static let followOnScreenNote = "Yanıt ya da seçilen alan ekranda görünüyorsa okunan kelime yazının kendisinde işaretlenir, sağ üstteki pencerede yalnızca düğmeler ve çubuk kalır. Okunan yer ekranda değilse yazı o pencerede görünür; yazıyı kaydırınca işaret yine ekrana geçer. Uygulamalar başka bir uygulamanın penceresine yazamadığı için Uykusuz kelimenin yerini ekrandan okuyarak bulur: okuma sürerken birkaç saniyede bir ve kaydırınca ya da tıklayınca ekrana bakar. Bunun için macOS ekran kaydı izni gerekir. Görüntü diske yazılmaz, yazı bu Mac'te tanınır ve hiçbir şey gönderilmez."
 
     private var areaReadingSection: some View {
         Section("Seçilen alanı dinle") {
@@ -513,7 +520,7 @@ struct SettingsView: View {
                     .font(.callout)
                     .foregroundStyle(.red)
             }
-            Text("\(AreaReader.shortcutLabel) kısayoluna ya da göze sağ tıklayınca açılan menüdeki Alan seçip dinle öğesine basınca ekran kararır; okunacak alanı fareyle çizersiniz, Esc vazgeçer. Alandaki yazı ekranın sağ üstündeki küçük pencerede okunur: okunan kelime vurgulanır, ❚❚ durdurur, çubuk ve ileri geri düğmeleriyle istediğiniz yere gidersiniz. Okuma sürerken yeniden basmak okumayı durdurur. macOS ekran kaydı izni ister; Uykusuz ekrana yalnızca siz alan çizince bir kez bakar. Görüntü diske yazılmaz, yazı bu Mac'te okunur ve hiçbir şey gönderilmez.")
+            Text("\(AreaReader.shortcutLabel) kısayoluna ya da göze sağ tıklayınca açılan menüdeki Alan seçip dinle öğesine basınca ekran kararır; okunacak alanı fareyle çizersiniz, Esc vazgeçer. Alandaki yazı okunur: ekranın sağ üstündeki küçük pencerede ❚❚ durdurur, çubuk ve ileri geri düğmeleriyle istediğiniz yere gidersiniz. Okuma sürerken yeniden basmak okumayı durdurur. macOS ekran kaydı izni ister; Uykusuz ekrana yalnızca siz okuma isteyince bakar. Görüntü diske yazılmaz, yazı bu Mac'te okunur ve hiçbir şey gönderilmez.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
