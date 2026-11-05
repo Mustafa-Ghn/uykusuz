@@ -69,6 +69,11 @@ Claude çalışırken bunu kendiliğinden de yapar.
   pencerede bir iki cümleyle anlatılır; ▶ ile dinlersiniz, okunan kelime
   vurgulanır ve çubukla ileri geri gidersiniz; bir Claude API anahtarı
   kaydederseniz özeti Claude yazar.
+- **Defter.** Claude API anahtarı kayıtlıysa Uykusuz, siz başındayken iki saatte
+  bir Mac'e bakar; boşuna açık duran bir simülatör ya da boşta bellek tutan Docker
+  gibi bir şey görürse deftere yazar ve en fazla dört saatte bir haber verir.
+  Bildirime yanıt yazarsınız, Claude yanıt verir; Uykusuz önerdiği işi yalnızca
+  siz onaylarsanız yapar.
 - **Claude'un yanıtını dinleme.** Baktığınız Claude sohbetinin son mesajını
   ⌃⌥D ile dinlersiniz; Claude bir planı onaylamanızı bekliyorsa plan okunur.
   Okunan kelime sohbetteki yazının üzerinde işaretlenir, sağ üstte durdurma
@@ -104,8 +109,8 @@ Claude çalışırken bunu kendiliğinden de yapar.
 - **Ağ yedekleme.** Wi-Fi koparsa iPhone'unuzun kişisel erişim noktasına
   geçebilir; isterseniz tmux'ta çalışan kodlama ajanınıza `continue` yazar.
 - **Gizlilik.** Uykusuz yalnızca siz bir Claude API anahtarı kaydettiyseniz ve
-  yalnızca "Sen yokken" özetini yazdırmak için `api.anthropic.com`'a istek
-  yapar; başka hiçbir ağ isteği yapmaz. Ayarlar ve günlükler yalnızca sizin
+  yalnızca "Sen yokken" özetini ve defteri yazdırmak için `api.anthropic.com`'a
+  istek yapar; başka hiçbir ağ isteği yapmaz. Ayarlar ve günlükler yalnızca sizin
   hesabınızın okuyabildiği dosyalarda, anahtar giriş Anahtar Zinciri'nde tutulur.
 
 ## Gereksinimler
@@ -223,6 +228,7 @@ Ayarlar penceresi göze sağ tıklayınca açılan menüden (⌘,) açılır:
 | Pil ve ısı | Düşük Güç Modu ve oturum sonu eşikleri, ısı kuralları |
 | Claude, kod modu ve ekran | Claude Code hook'ları, izin isteklerini otomatik onaylama, otomatik oturum, yanıt beklerken bitirme ve bekleme süresi, kod modu, boşta siyah ekran süreleri ve kilitleme |
 | Sen yokken özeti | Kapak ya da kilit açılınca özet penceresi, Claude API anahtarı, özeti yazan model, son 2 saati şimdi özetle |
+| Defter | Mac'i arada bir gözden geçirip öneriyi deftere yazma, Defteri aç, Şimdi bak |
 | Claude'un yanıtını dinle | ⌃⌥D kısayolunu açıp kapatma, okunan kelimeyi ekrandaki yazının üzerinde işaretleme |
 | Seçilen alanı dinle | ⌃⌥S kısayolunu açıp kapatma |
 | Telefondan yanıt | Claude'un telefon bildirimleri yalnızca uzaktayken, yanıt için Mac'in uyanık kalacağı süre |
@@ -452,6 +458,45 @@ Ayarlar > Sen yokken özeti bölümündeki **Son 2 saati şimdi özetle** düğm
   planları her ay Claude Console'da kullanılabilen bir API kredisi içerir
   (claude.ai > Ayarlar > Faturalandırma > API credits); anahtarı harcama sınırı
   olan ayrı bir çalışma alanında oluşturun.
+
+### Defter
+
+Claude API anahtarı kayıtlıysa Uykusuz, siz Mac'in başındayken iki saatte bir
+Mac'e bakar ve Claude'a boşuna kaynak harcayan bir şey olup olmadığını sorar:
+kimsenin kullanmadığı bir iOS simülatörü, hiç kapsayıcı çalışmazken bellek tutan
+Docker Desktop, takası dolduran bir uygulama gibi. Söylenecek bir şey varsa
+menüdeki **Defter** penceresine yazar.
+
+- **Az bildirim.** Söylenecek bir şey yoksa hiçbir şey yazılmaz. Yazılan her şey
+  defterde kalır, ama bildirim en fazla dört saatte bir gelir. Claude aynı şeyi
+  yeniden söylemez; istemediğiniz bir öneri bir gün boyunca yeniden yapılmaz.
+  Menüdeki öğe görmediğiniz kayıt sayısını gösterir: **Defter (1 yeni)**.
+- **Yanıt yazarsınız.** Bildirimdeki **Yanıtla** alanına ya da Defter penceresine
+  yazarsınız, Claude yanıt verir. "Bu simülatör açık kalsın" gibi isteklerinizi
+  kendi notlarına yazar ve sonraki bakışlarda hatırlar; notlar pencerede
+  **Uykusuz'un notları** başlığında görünür.
+- **Yalnızca siz onaylarsanız.** Uykusuz kendisi yalnızca önerdiği tek işi yapar,
+  o da siz bildirimdeki ya da penceredeki düğmeye basınca ya da yanıtınızda kabul
+  edince: bir simülatörü kapatmak (`xcrun simctl shutdown`), bir uygulamadan
+  çıkmak (kaydedilmemiş bir şey varsa uygulama sorar) ya da bir Docker
+  kapsayıcısını durdurmak (`docker stop`; `docker start` ile yeniden açılır).
+  Hedef, o anki durumda gerçekten açık olan bir şey olmalıdır. Terminal
+  uygulamalarından, ajan uygulamalarından ve Uykusuz'dan hiçbir zaman çıkılmaz.
+  **Gerek yok** öneriyi kapatır.
+- **Claude'a giden.** Açık simülatörlerin adı ve sürümü; çalışan Docker
+  kapsayıcılarının adı, imajı, durumu ve kullanımı; en çok bellek ve işlemci
+  kullanan uygulamaların adı, bundle kimliği, kullanımı ve en son ne zaman öne
+  geldiği; bellek, takas, pil, ısı ve disk durumu; defterin son kayıtları ve
+  notlar. Pencere başlıkları, dosya adları, klasör yolları ve komut satırları
+  gitmez. Gönderilecek dökümü görmek için
+  `~/Applications/Uykusuz.app/Contents/MacOS/Uykusuz --mac-snapshot` hiçbir şey
+  göndermeden yazdırır.
+- **Dosya.** Defter `~/Library/Application Support/Uykusuz/defter.json`
+  dosyasında, yalnızca sizin hesabınızın okuyabileceği izinlerle tutulur; en yeni
+  300 kayıt kalır. `uninstall.sh --purge` onu da siler.
+- **Model ve maliyet.** Her bakış ve her yanıt bir API isteğidir; özeti yazan
+  model kullanılır. Ayarlar > Defter'den kapatılır; **Şimdi bak** beklemeden
+  bakar.
 
 ### Claude'un yanıtını dinleme
 
@@ -705,8 +750,9 @@ izin girdileri) dokunmaz; bu yüzden başka bir hesap bunlardan biri aracılığ
 yine de erişebilir. Günlükler Wi-Fi adları, süreç ayrıntıları ve tmux hedefleri
 içerebilir; bu yüzden bir günlüğü paylaşmadan önce gözden geçirin. Uykusuz'un
 ağ istekleri yalnızca isteğe bağlı iki özelliktedir: Claude API anahtarı
-kaydettiyseniz "Sen yokken" özeti ve iPhone'a gidecek mesaj için
-`api.anthropic.com`'a gidilir (bkz. [Sen yokken özeti](#sen-yokken-özeti));
+kaydettiyseniz "Sen yokken" özeti, iPhone'a gidecek mesaj ve defter için
+`api.anthropic.com`'a gidilir (bkz. [Sen yokken özeti](#sen-yokken-özeti) ve
+[Defter](#defter));
 iMessage'ı Mac'teki Mesajlar uygulaması gönderir (bkz.
 [Claude sizi beklerken iPhone'a haber](#claude-sizi-beklerken-iphonea-haber)).
 [docs/extras.md](docs/extras.md#yapılandırma-ve-gizlilik) ayrıntıları içerir.

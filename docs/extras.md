@@ -111,11 +111,13 @@ garantisi değildir.
 Yapılandırma `~/Library/Application Support/Uykusuz/config.json` dosyasında
 tutulur. Uygulamanın denetimleri için Ayarlar'ı kullanın; tam yapılandırmayı
 ve varsayılanları [Config.swift](../Sources/Uykusuz/Model/Config.swift)
-tanımlar. Uygulamanın ağ istekleri yalnızca isteğe bağlı "Sen yokken" özeti ve
-iPhone'a giden mesajdır: `api.anthropic.com`'a yalnızca Ayarlar'da bir Claude
-API anahtarı kaydettiyseniz gidilir ve istek yalnızca oturum başlıklarını, araç
-sayılarını, düzenlenen dosyaların adlarını, Claude'un komut açıklamalarını ve
-son mesajlarının sonunu içerir. iPhone'a giden iMessage'ı Mac'teki Mesajlar
+tanımlar. Uygulamanın ağ istekleri yalnızca isteğe bağlı "Sen yokken" özeti,
+iPhone'a giden mesaj ve defterdir: `api.anthropic.com`'a yalnızca Ayarlar'da bir
+Claude API anahtarı kaydettiyseniz gidilir. Özetin ve mesajın isteği yalnızca
+oturum başlıklarını, araç sayılarını, düzenlenen dosyaların adlarını, Claude'un
+komut açıklamalarını ve son mesajlarının sonunu içerir; defterin isteği
+simülatör, kapsayıcı ve uygulama adlarıyla kullanım sayılarını ve defterin son
+kayıtlarını içerir (ayrıntılar: [Defter](../README.md#defter)). iPhone'a giden iMessage'ı Mac'teki Mesajlar
 uygulaması gönderir; Uykusuz yalnızca Mesajlar'a metni ve alıcıyı verir. Docker
 mesajları yerelde yazılır ve API'ye gitmez: kapsayıcıların adını ve işin süresini
 içerir.

@@ -37,6 +37,8 @@ final class StatusItemController: NSObject {
     /// The last away summary, to put up again from the menu (fork
     /// addition); nil when there is none.
     private let lastSummary: (@MainActor () -> (() -> Void)?)?
+    /// The notebook's menu title and how to open it; nil while the notebook is off.
+    private let notebook: (@MainActor () -> (title: String, open: () -> Void)?)?
     private let replyReader: ClaudeReplyReader?
     private let areaReader: AreaReader?
     /// What the projected countdown reads the time from. Tests inject the
@@ -85,6 +87,7 @@ final class StatusItemController: NSObject {
         askPauseUntil: (@MainActor () -> Date?)? = nil,
         presentPauseMenu: (@MainActor (NSMenu) -> Void)? = nil,
         lastSummary: (@MainActor () -> (() -> Void)?)? = nil,
+        notebook: (@MainActor () -> (title: String, open: () -> Void)?)? = nil,
         replyReader: ClaudeReplyReader? = nil,
         areaReader: AreaReader? = nil,
         clock: @escaping @Sendable () -> Date = { Date() }
@@ -97,6 +100,7 @@ final class StatusItemController: NSObject {
         self.askPauseUntil = askPauseUntil ?? Self.askPauseTime
         self.presentPauseMenu = presentPauseMenu
         self.lastSummary = lastSummary
+        self.notebook = notebook
         self.replyReader = replyReader
         self.areaReader = areaReader
         self.clock = clock
@@ -733,7 +737,8 @@ final class StatusItemController: NSObject {
                 status: status,
                 hasSummary: lastSummary?() != nil,
                 listenShortcut: replyReader == nil ? nil : manager.config.listenShortcut,
-                listenAreaShortcut: areaReader == nil ? nil : manager.config.listenAreaShortcut
+                listenAreaShortcut: areaReader == nil ? nil : manager.config.listenAreaShortcut,
+                notebookTitle: notebook?()?.title
             ),
             target: self,
             settings: #selector(menuOpenSettings),
@@ -744,7 +749,8 @@ final class StatusItemController: NSObject {
             resumeAuto: #selector(menuResumeAuto),
             showSummary: #selector(menuShowSummary),
             listenToReply: #selector(menuListenToReply),
-            listenToArea: #selector(menuListenToArea)
+            listenToArea: #selector(menuListenToArea),
+            showNotebook: #selector(menuShowNotebook)
         )
         menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.height + 4), in: button)
     }
@@ -756,7 +762,8 @@ final class StatusItemController: NSObject {
         status: any StatusSource,
         hasSummary: Bool = false,
         listenShortcut: Bool? = nil,
-        listenAreaShortcut: Bool? = nil
+        listenAreaShortcut: Bool? = nil,
+        notebookTitle: String? = nil
     ) -> [StatusMenu.Item] {
         StatusMenu.items(
             sessionActive: manager.isActive,
@@ -768,6 +775,7 @@ final class StatusItemController: NSObject {
             hasSummary: hasSummary,
             listenShortcut: listenShortcut,
             listenAreaShortcut: listenAreaShortcut,
+            notebookTitle: notebookTitle,
             machine: StatusLines.machine(
                 lidClosed: status.lidClosed,
                 watts: status.instantWatts(),
@@ -839,6 +847,10 @@ final class StatusItemController: NSObject {
 
     @objc private func menuShowSummary() {
         lastSummary?()?()
+    }
+
+    @objc private func menuShowNotebook() {
+        notebook?()?.open()
     }
 
     @objc private func menuListenToReply() {

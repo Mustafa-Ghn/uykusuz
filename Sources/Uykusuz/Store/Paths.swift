@@ -70,6 +70,8 @@ struct Paths: Sendable, Equatable {
     static let unreadableSessionPrefix = "session.json.unreadable-"
     var stateFile: URL { appSupport.appendingPathComponent("state.json") }
     var configFile: URL { appSupport.appendingPathComponent("config.json") }
+    /// What the notebook keeps (`Notebook`).
+    var notebookFile: URL { appSupport.appendingPathComponent("defter.json") }
     /// scripts/backstop.sh as install.sh seals it into a bundle, under
     /// Contents/Resources, before the bundle is signed. The LaunchAgent
     /// verifies the bundle's signature before running it (LaunchdBackstop).

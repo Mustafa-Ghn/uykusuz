@@ -1017,7 +1017,7 @@ done
 if (( PURGE == 1 )); then
   step "Uykusuz'un dosyaları temizleniyor: $APP_SUPPORT ve $LOG_DIR"
   remove_owned "$SESSION" "$APP_SUPPORT/config.json" "$APP_SUPPORT/backstop.sh" \
-        "$APP_SUPPORT/unfinished-command.json" \
+        "$APP_SUPPORT/unfinished-command.json" "$APP_SUPPORT/defter.json" \
         "$LOG_DIR/uykusuz.log" "$LOG_DIR/uykusuz.log.1" \
         "$LOG_DIR/handoffs.log" "$LOG_DIR/handoffs.log.1"
   (( ${#kept_brightness[@]} > 0 )) || remove_owned "$STATE"

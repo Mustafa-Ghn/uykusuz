@@ -30,6 +30,10 @@ if let status = LastReplyCommand.run(Array(CommandLine.arguments.dropFirst())) {
 if let status = VoiceCheckCommand.run(Array(CommandLine.arguments.dropFirst())) {
     exit(status)
 }
+// What the notebook would tell Claude about the Mac now: local, nothing is sent.
+if let status = MacSnapshotCommand.run(Array(CommandLine.arguments.dropFirst())) {
+    exit(status)
+}
 if let output = ResumeFrozenCommand.run(Array(CommandLine.arguments.dropFirst()), endAfter: ResumeFrozenCommand.endProcess) {
     for line in output.lines { print(line) }
     exit(output.status)

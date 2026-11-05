@@ -4,6 +4,19 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.15.0 — 2026-11-05
+
+### Eklenenler
+
+- **Defter.** Claude API anahtarı kayıtlıysa Uykusuz, siz Mac'in başındayken iki saatte bir Mac'e bakar ve Claude'a boşuna kaynak harcayan bir şey olup olmadığını sorar: kimsenin kullanmadığı bir simülatör, hiç kapsayıcı yokken bellek tutan Docker Desktop, takası dolduran bir uygulama gibi. Söylenecek bir şey varsa menüdeki Defter'e yazar, yoksa hiçbir şey yazmaz.
+- **Az bildirim, yanıt yazılabilir.** Bildirim en fazla dört saatte bir gelir ve aynı öneri tekrarlanmaz. Bildirimdeki Yanıtla alanına ya da Defter penceresine yazarsınız; Claude yanıt verir ve "bu simülatör açık kalsın" gibi isteklerinizi sonraki bakışlar için not eder.
+- **Yalnızca onayla.** Uykusuz yalnızca önerdiği tek işi siz onaylarsanız yapar: bir simülatörü kapatmak, bir uygulamadan çıkmak ya da bir Docker kapsayıcısını durdurmak. Terminal ve ajan uygulamalarından hiçbir zaman çıkılmaz.
+- **`Uykusuz --mac-snapshot`** Claude'a gidecek dökümü hiçbir şey göndermeden yazdırır.
+
+### Değişenler
+
+- **Yeni ağ isteği.** Defter açıkken ve API anahtarı kayıtlıyken iki saatte bir, siz yanıt yazınca da `api.anthropic.com`'a birer istek gider. İstekte uygulama, simülatör ve kapsayıcı adlarıyla kullanım sayıları bulunur; pencere başlıkları, dosya adları ve komut satırları bulunmaz. Ayarlar > Defter'den kapatılır.
+
 ## 0.14.1 — 2026-11-05
 
 ### Düzeltilenler

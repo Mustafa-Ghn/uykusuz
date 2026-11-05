@@ -43,6 +43,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let waitingAlerts: WaitingAlerts
     /// Claude's own phone pushes only while the user is away (fork addition).
     let pushGate: ClaudePushGate
+    /// The notebook: a look at the Mac every two hours, Claude's advice and
+    /// the user's replies, and its window.
+    let advisor: MacAdvisor
+    private var notebookWindow: NotebookWindow?
     private var statusItem: StatusItemController?
     private var settingsWindow: SettingsWindow?
     private var terminating = false
@@ -61,6 +65,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         let keys = awaySummary.keyStore
         let paths = Paths.fromEnvironment()
+        let store = manager.store
+        advisor = MacAdvisor(
+            config: { [manager] in manager.config },
+            notebook: store.loadNotebook(),
+            save: { notebook in
+                do {
+                    try store.saveNotebook(notebook)
+                } catch {
+                    Log.error("notebook: could not save: \(error.localizedDescription)")
+                }
+            },
+            keyStore: keys
+        )
         let hotKey = listenHotKey
         replyReader = ClaudeReplyReader(
             config: { [manager] in manager.config },
@@ -168,7 +185,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
-        let settings = SettingsWindow { [manager, secrets, locationPermission, loginItem, awaySummary, replyReader, areaReader, waitingAlerts, pushGate] in
+        let notebook = NotebookWindow(advisor: advisor, isOn: { [manager] in manager.config.macAdvisor })
+        notebookWindow = notebook
+        advisor.isReading = { [weak notebook] in notebook?.isVisible ?? false }
+        AdviceNotifications.register()
+        AdviceNotifications.onResponse = { [advisor, weak notebook] response in
+            Task { await advisor.handle(response) { notebook?.show() } }
+        }
+        let settings = SettingsWindow { [manager, secrets, locationPermission, loginItem, awaySummary, replyReader, areaReader, waitingAlerts, pushGate, advisor, weak notebook] in
             AnyView(
                 SettingsView(
                     manager: manager,
@@ -179,7 +203,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     replyReader: replyReader,
                     areaReader: areaReader,
                     waitingAlerts: waitingAlerts,
-                    pushGate: pushGate
+                    pushGate: pushGate,
+                    advisor: advisor,
+                    openNotebook: { notebook?.show() }
                 )
             )
         }
@@ -192,6 +218,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 guard awaySummary.last != nil else { return nil }
                 return { Task { await awaySummary.showLast() } }
             },
+            notebook: { [manager, advisor, weak notebook] in
+                // Off, it stays in the menu while there is something to read.
+                guard manager.config.macAdvisor || !advisor.notebook.entries.isEmpty else { return nil }
+                return (StatusMenu.notebookTitle(unread: advisor.notebook.unread), { notebook?.show() })
+            },
             replyReader: replyReader,
             areaReader: areaReader
         )
@@ -203,6 +234,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             services?.announceAgentWaiting(endsAfter: c.autoSession && c.endWhileWaiting ? c.autoWaitGrace : nil)
         }
         awaySummary.start()
+        advisor.start()
         listenHotKey.onPress = { [replyReader] in
             Task { await replyReader.listen() }
         }

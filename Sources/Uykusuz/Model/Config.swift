@@ -113,6 +113,11 @@ struct Config: Codable, Equatable, Sendable {
     /// when a Claude API key is saved; otherwise it is made here from counts.
     var awaySummary: Bool = true
     var summaryModel: String = AnthropicSummaryClient.defaultModel
+    /// The notebook (`MacAdvisor`): with an API key saved, look at the Mac
+    /// every two hours while the user is at it and write down what is worth
+    /// saying. On by default, like the away summary: nothing is sent without
+    /// a key.
+    var macAdvisor: Bool = true
     /// A system-wide shortcut reads aloud what Claude last said in the chat
     /// the user is looking at (`ClaudeReplyReader`).
     var listenShortcut: Bool = true
@@ -284,6 +289,7 @@ struct Config: Codable, Equatable, Sendable {
         autoApprovePermissions = try c.decodeIfPresent(Bool.self, forKey: .autoApprovePermissions) ?? d.autoApprovePermissions
         launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? d.launchAtLogin
         launchAtLoginInstall = try c.decodeIfPresent(String.self, forKey: .launchAtLoginInstall)
+        macAdvisor = try c.decodeIfPresent(Bool.self, forKey: .macAdvisor) ?? d.macAdvisor
         screenPermissionInstall = try c.decodeIfPresent(String.self, forKey: .screenPermissionInstall)
     }
 }

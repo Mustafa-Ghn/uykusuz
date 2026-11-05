@@ -19,6 +19,9 @@ struct SettingsView: View {
     var waitingAlerts: WaitingAlerts? = nil
     /// Replies from the phone (fork addition); nil leaves them out.
     var pushGate: ClaudePushGate? = nil
+    /// The notebook; nil leaves its section out.
+    var advisor: MacAdvisor? = nil
+    var openNotebook: () -> Void = {}
 
     @State private var newPreset = ""
     @State private var presetError: String?
@@ -54,6 +57,9 @@ struct SettingsView: View {
             agentModeSection
             if awaySummary != nil {
                 awaySummarySection
+            }
+            if advisor != nil {
+                notebookSection
             }
             if replyReader != nil {
                 replyReadingSection
@@ -487,6 +493,33 @@ struct SettingsView: View {
                 .foregroundStyle(.secondary)
         }
         .task { await refreshAPIKeyStatus() }
+    }
+
+    static let notebookToggle = "Mac'i arada bir gözden geçir, öneriyi deftere yaz"
+    static let notebookNote = "Claude API anahtarı kayıtlıyken Uykusuz, siz Mac'in başındayken iki saatte bir açık simülatörlere, çalışan Docker kapsayıcılarına, en çok bellek ve işlemci kullanan uygulamalara, belleğe, takasa, pile ve diske bakar ve Claude'a ne yapılabileceğini sorar. Söylenecek bir şey varsa deftere yazar; bildirim en fazla dört saatte bir gelir. Bildirimden ya da menüdeki Defter'den yanıt yazarsınız, Claude da yanıt verir. Bir simülatörü kapatmak, bir uygulamadan çıkmak ya da bir Docker kapsayıcısını durdurmak gibi bir işi Uykusuz yalnızca siz onaylarsanız yapar. Claude'a uygulama, simülatör ve kapsayıcı adlarıyla sayılar gider; pencere başlıkları, dosya adları ve komut satırları gitmez. Her bakış bir API isteğidir ve özeti yazan model kullanılır."
+
+    private var notebookSection: some View {
+        Section("Defter") {
+            Toggle(Self.notebookToggle, isOn: bind(\.macAdvisor))
+            Text(Self.notebookNote)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            if let advisor {
+                HStack {
+                    Button("Defteri aç") { openNotebook() }
+                    Button("Şimdi bak") {
+                        openNotebook()
+                        Task { await advisor.lookNow() }
+                    }
+                    .disabled(advisor.isBusy)
+                }
+                if let line = advisor.statusLine {
+                    Text(line)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
     }
 
     private var replyReadingSection: some View {

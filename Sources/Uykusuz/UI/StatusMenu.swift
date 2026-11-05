@@ -35,6 +35,8 @@ enum StatusMenu {
             /// Draw an area of the screen and hear what is written in it.
             /// `shortcut`: the system-wide shortcut is on, and the item says so.
             case listenToArea(shortcut: Bool)
+            /// Open the notebook (`MacAdvisor`).
+            case showNotebook
         }
 
         let title: String
@@ -50,6 +52,10 @@ enum StatusMenu {
     static let showSummaryTitle = "Son özeti göster"
     static let listenToReplyTitle = "Son yanıtı dinle"
     static let listenToAreaTitle = "Alan seçip dinle"
+    /// The notebook's item, with how many entries the user has not seen.
+    static func notebookTitle(unread: Int) -> String {
+        unread > 0 ? "Defter (\(unread) yeni)" : "Defter"
+    }
     static let pauseTitle = "Otomatik oturumu duraklat"
     static let resumeTitle = "Otomatik oturumu sürdür"
 
@@ -138,6 +144,7 @@ enum StatusMenu {
         hasSummary: Bool = false,
         listenShortcut: Bool? = nil,
         listenAreaShortcut: Bool? = nil,
+        notebookTitle: String? = nil,
         machine: String?,
         actions: String?,
         throttledBrowsers: [ThrottledBrowser],
@@ -172,6 +179,9 @@ enum StatusMenu {
         }
         if let listenAreaShortcut {
             out.append(Item(title: listenToAreaTitle, kind: .listenToArea(shortcut: listenAreaShortcut)))
+        }
+        if let notebookTitle {
+            out.append(Item(title: notebookTitle, kind: .showNotebook))
         }
         if let machine = present(machine) {
             out.append(Item(title: machine, kind: .info))
@@ -243,7 +253,8 @@ enum StatusMenu {
         resumeAuto: Selector? = nil,
         showSummary: Selector? = nil,
         listenToReply: Selector? = nil,
-        listenToArea: Selector? = nil
+        listenToArea: Selector? = nil,
+        showNotebook: Selector? = nil
     ) -> NSMenu {
         let menu = NSMenu()
         menu.autoenablesItems = false
@@ -296,6 +307,9 @@ enum StatusMenu {
                 let entry = action(title: item.title, selector: listenToArea, key: shortcut ? "s" : "", target: target)
                 if shortcut { entry.keyEquivalentModifierMask = [.control, .option] }
                 menu.addItem(entry)
+            case .showNotebook:
+                guard let showNotebook else { continue }
+                menu.addItem(action(title: item.title, selector: showNotebook, key: "", target: target))
             }
         }
         return menu

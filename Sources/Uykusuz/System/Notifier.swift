@@ -96,4 +96,16 @@ final class ForegroundNotifications: NSObject, UNUserNotificationCenterDelegate,
     ) async -> UNNotificationPresentationOptions {
         Self.presentation
     }
+
+    /// A click on a notification or on one of its buttons. The notebook's
+    /// go to `AdviceNotifications.onResponse`; the others need nothing.
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse
+    ) async {
+        let entry = response.notification.request.content.userInfo[AdviceNotifications.entryKey] as? String
+        let text = (response as? UNTextInputNotificationResponse)?.userText
+        guard let answer = AdviceNotifications.response(action: response.actionIdentifier, entry: entry, text: text) else { return }
+        await MainActor.run { AdviceNotifications.onResponse?(answer) }
+    }
 }

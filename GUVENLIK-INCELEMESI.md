@@ -48,9 +48,11 @@ Claude Code çalışırken oturumu kendiliğinden açıp kapatıyor.
   ve istekler kaldırıldı. 0.3.0 ile eklenen tek istek isteğe bağlı "Sen yokken"
   özetidir ve yalnızca kullanıcı bir Claude API anahtarı kaydettiyse yapılır
   ([Sonraki değişiklikler](#sonraki-değişiklikler)). Kaynakta `URLSession` ve
-  `URLRequest` yalnızca `ClaudeSummaryClient.swift` içinde kullanılır; tek
-  adres `https://api.anthropic.com/v1/messages`'tır. `NWConnection` kullanımı
-  yoktur.
+  `URLRequest` yalnızca `ClaudeSummaryClient.swift` ve defterin
+  `MacAdvisor.swift` dosyasında kullanılır; tek adres
+  `https://api.anthropic.com/v1/messages`'tır. Defter (0.15.0), anahtar kayıtlıysa
+  ve Ayarlar'da açıksa kullanıcı Mac'in başındayken iki saatte bir kendiliğinden
+  bir istek gönderir. `NWConnection` kullanımı yoktur.
 - `NWPathMonitor` yalnızca Wi-Fi bağlantısının durumunu izler, ağ trafiği
   oluşturmaz.
 - Betiklerde `curl`, `wget`, `nc`, `ssh` ya da indirilen bir içeriği çalıştırma
@@ -216,6 +218,17 @@ macOS'un sorduğu Otomasyon (Mesajlar) iznidir.
   çerezsiz tek bir HTTPS isteğiyle `api.anthropic.com`'a gönderilir. Anahtar
   giriş Anahtar Zinciri'nde, okunması istem açmayan bir kayıtta tutulur;
   config.json'a ve günlüğe yazılmaz.
+- **Defter (0.15.0):** Anahtar kayıtlıysa ve Ayarlar > Defter açıksa, kullanıcı
+  Mac'in başındayken iki saatte bir ve kullanıcı yanıt yazınca
+  `api.anthropic.com`'a birer istek gider. İstekte simülatör, kapsayıcı ve
+  uygulama adlarıyla bellek, işlemci, takas, pil, ısı ve disk sayıları, defterin
+  son kayıtları ve notlar bulunur; pencere başlıkları, dosya adları, yollar ve komut
+  satırları bulunmaz. Yanıt yapılandırılmış JSON'dur ve hiçbir komut çalıştırmaz;
+  Uykusuz yalnızca kendi önerdiği tek işi kullanıcı onaylayınca yapar
+  (`xcrun simctl shutdown`, `NSRunningApplication.terminate`, `docker stop`). Hedef
+  o anki okumadan alınır; UDID ve kapsayıcı kimliğinin biçimi denetlenir, terminal
+  ve ajan uygulamaları ile Uykusuz önerilemez. Defter `defter.json` dosyasında,
+  sahibine özel izinlerle tutulur. Yeni izin ya da kalıcı bileşen yoktur.
 - **Claude'un yanıtını dinleme (0.8.0; 0.10.0'dan beri yalnızca istek üzerine):**
   Yalnızca kullanıcı ⌃⌥D kısayoluna ya da menüdeki öğeye basınca çalışır.
   Claude uygulamasının `claude-code-sessions` kayıtlarından yalnızca `lastFocusedAt`

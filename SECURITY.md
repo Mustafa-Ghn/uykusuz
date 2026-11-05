@@ -22,8 +22,8 @@ değildir: aynı kullanıcıyla çalışan diğer süreçler de bu komutları
 çalıştırabilir. Bu dört komut dışında root olarak çalışan bir şey yoktur.
 
 **Ağ.** Uykusuz güncelleme denetlemez, kullanım verisi ya da çökme raporu
-göndermez. Ağ istekleri yalnızca isteğe bağlı "Sen yokken" özeti ve iPhone'a
-giden mesajdır. `https://api.anthropic.com/v1/messages` adresine yalnızca
+göndermez. Ağ istekleri yalnızca isteğe bağlı "Sen yokken" özeti, iPhone'a
+giden mesaj ve defterdir (aşağıdaki "Defter"). `https://api.anthropic.com/v1/messages` adresine yalnızca
 kullanıcı Ayarlar'da bir Claude API anahtarı kaydettiyse gidilir: kapak
 açıldığında ya da Ayarlar'daki düğmeyle özet için, kullanıcı uzaktayken bir
 Claude oturumu onu beklemeye başlayınca da iPhone'a gidecek mesaj için birer
@@ -156,6 +156,30 @@ kapalıysa ya da çalışamazsa uyarılar `/usr/bin/say` ile söylenir, özet ve
 `AVSpeechSynthesizer` ile okunur; metin `say` komutuna tek bir argüman olarak, `--`
 ayıracından sonra verilir. Bu durumda ses, Mac'te kurulu sesler arasından seçilen
 en iyi Türkçe sestir; listesi sistemden (`AVSpeechSynthesisVoice`) yalnızca okunur.
+
+## Defter
+
+Ayarlar > Defter açıksa (varsayılan olarak açıktır, ama API anahtarı kayıtlı
+değilse hiçbir şey yapılmaz) Uykusuz, kullanıcı Mac'in başındayken iki saatte bir
+`api.anthropic.com`'a bir istek gönderir; kullanıcı deftere ya da bildirime yanıt
+yazınca da birer istek gider. İstekte açık simülatörlerin adı, sürümü ve UDID'si;
+çalışan Docker kapsayıcılarının adı, imajı, kimliği, durumu ve kullanımı; en çok
+bellek ve işlemci kullanan uygulamaların adı, bundle kimliği, kullanımı ve en son
+ne zaman öne geldiği; bellek, takas, pil, ısı ve disk durumu; defterin son
+kayıtları ve Claude'un notları bulunur. Pencere başlıkları, dosya adları, klasör
+yolları, komut satırları ve dosya içerikleri bulunmaz. Süreçler bu kullanıcının
+kendi süreçleridir ve `proc_pid_rusage` ile yalnızca okunur; simülatörler
+`xcrun simctl list`, kapsayıcılar Docker Desktop'ın kendi soketinde `docker ps` ve
+`docker stats --no-stream` ile okunur. Defter `defter.json` dosyasında, sahibine
+özel izinlerle tutulur.
+
+Uykusuz yalnızca önerdiği işi ve yalnızca kullanıcı onaylayınca yapar: bir
+simülatörü kapatmak (`xcrun simctl shutdown`), bir uygulamaya çıkma isteği
+göndermek (`NSRunningApplication.terminate`; uygulama kaydetmeyi sorabilir) ya da
+bir kapsayıcıyı durdurmak (`docker stop`). Hedef, Claude'un yanıtından değil o anki
+okumadan alınır ve biçimi yeniden denetlenir; listede olmayan bir hedef, terminal
+uygulamaları, ajan uygulamaları ve Uykusuz önerilemez. Bunun dışında Claude'un
+yanıtı hiçbir komut çalıştırmaz.
 
 ## iPhone'a iMessage
 
