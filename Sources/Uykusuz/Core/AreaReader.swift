@@ -18,7 +18,7 @@ final class AreaReader {
     static let title = "Seçilen alan"
     static let nothingToRead = "Seçilen alanda okunacak yazı bulunamadı."
     static let unreadable = "Seçilen alan okunamadı."
-    static let needsPermission = "Alan okumak için ekran kaydı izni gerekiyor. Sistem Ayarları > Gizlilik ve Güvenlik > Ekran ve Sistem Sesi Kaydı bölümünde Uykusuz'u açın; açık görünüyorsa kapatıp yeniden açın. Sonra Uykusuz'dan çıkıp yeniden başlatın. Uykusuz ekrana yalnızca siz okuma isteyince bakar."
+    static let needsPermission = "Alan okumak için ekran kaydı izni gerekiyor. Açılan Sistem Ayarları > Gizlilik ve Güvenlik > Ekran ve Sistem Sesi Kaydı bölümünde Uykusuz'u açın; macOS Uykusuz'u yeniden açmayı önerince kabul edin. Uykusuz orada açık göründüğü hâlde bu mesaj geliyorsa onu seçip – düğmesiyle kaldırın ve \u{2303}\u{2325}S'ye yeniden basın. Uykusuz ekrana yalnızca siz okuma isteyince bakar."
 
     /// One of this reader's own messages, not text from the screen.
     static func isMessage(_ text: String) -> Bool {
@@ -93,6 +93,7 @@ final class AreaReader {
             return
         }
         guard hasPermission() else {
+            Log.info("area reader: no screen recording permission; System Settings opened")
             askPermission()
             await show(Self.needsPermission, autoplay: false)
             return

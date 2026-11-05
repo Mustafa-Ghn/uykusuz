@@ -448,3 +448,46 @@ final class GlobalHotKeySeparationTests: XCTestCase {
         XCTAssertEqual(heard, 0)
     }
 }
+
+final class ScreenPermissionTests: XCTestCase {
+    func testOnlyANewInstallDropsTheGrant() async {
+        var resets = 0
+        let dropped = { (recorded: String?) in
+            await ScreenPermission.dropStaleGrant(install: "b", recorded: recorded) {
+                resets += 1
+                return true
+            }
+        }
+        let same = await dropped("b")
+        XCTAssertFalse(same)
+        XCTAssertEqual(resets, 0, "the grant of this very install is kept")
+        let other = await dropped("a")
+        XCTAssertTrue(other)
+        let none = await dropped(nil)
+        XCTAssertTrue(none, "a config from before the record: dropped once")
+        XCTAssertEqual(resets, 2)
+    }
+
+    func testAResetThatFailsIsTriedAgainNextLaunch() async {
+        let dropped = await ScreenPermission.dropStaleGrant(install: "b", recorded: "a") { false }
+        XCTAssertFalse(dropped, "nothing is recorded, so the next launch tries again")
+    }
+
+    func testTheResetReportsHowTccutilEnded() async {
+        let ok = await ScreenPermission.resetGrant(bundleID: "com.example.none", tccutil: "/usr/bin/true")
+        XCTAssertTrue(ok)
+        let refused = await ScreenPermission.resetGrant(bundleID: "com.example.none", tccutil: "/usr/bin/false")
+        XCTAssertFalse(refused)
+        let missing = await ScreenPermission.resetGrant(bundleID: "com.example.none", tccutil: "/nonexistent/tccutil")
+        XCTAssertFalse(missing)
+    }
+
+    func testTheRecordIsKeptInTheConfig() throws {
+        XCTAssertNil(try JSONDecoder().decode(Config.self, from: Data("{}".utf8)).screenPermissionInstall)
+        var config = Config()
+        config.screenPermissionInstall = "install"
+        let back = try JSONDecoder().decode(Config.self, from: JSONEncoder().encode(config))
+        XCTAssertEqual(back.screenPermissionInstall, "install")
+    }
+}
+

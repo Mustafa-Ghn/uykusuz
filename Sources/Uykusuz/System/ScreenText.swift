@@ -2,29 +2,50 @@ import AppKit
 import ScreenCaptureKit
 import Vision
 
-/// The permission a picture of the screen needs. macOS asks once; after that
-/// only System Settings can give it.
+/// The permission a picture of the screen needs. macOS 26 never asks for it
+/// (tccd: "does not allow prompting"): a request only puts the app on System
+/// Settings' list, switched off, so asking takes the user there.
 @MainActor
 final class ScreenPermission {
-    private var asked = false
+    static let tccutilPath = "/usr/bin/tccutil"
 
     var isGranted: Bool { CGPreflightScreenCaptureAccess() }
 
     func ask() {
-        guard asked else {
-            asked = true
-            _ = CGRequestScreenCaptureAccess()
-            return
-        }
         openSettings()
     }
 
-    /// Where a grant a new install has lost is given again: macOS asks nothing then.
     func openSettings() {
         // Puts the app on the list if it has never been there.
         _ = CGRequestScreenCaptureAccess()
         guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") else { return }
         NSWorkspace.shared.open(url)
+    }
+
+    /// macOS keeps a grant for the signature it was given to, and install.sh
+    /// signs every build anew: after a new install the old grant still shows
+    /// switched on but no longer counts, and switching it off and on does not
+    /// renew it. So the first launch of a new install drops it (`reset`), and
+    /// the next request puts this install on the list afresh. True when the
+    /// grant was dropped and `install` should be recorded.
+    static func dropStaleGrant(install: String, recorded: String?, reset: () async -> Bool) async -> Bool {
+        guard recorded != install else { return false }
+        return await reset()
+    }
+
+    /// Only this app's own entry: `tccutil reset ScreenCapture <bundle id>`.
+    static func resetGrant(bundleID: String, tccutil: String = ScreenPermission.tccutilPath) async -> Bool {
+        do {
+            let result = try await Shell.run(tccutil, ["reset", "ScreenCapture", bundleID], timeout: 10)
+            if result.succeeded {
+                Log.info("screen recording: dropped the grant an earlier install had")
+                return true
+            }
+            Log.error("screen recording: tccutil exited \(result.status): \(result.stderr.trimmingCharacters(in: .whitespacesAndNewlines))")
+        } catch {
+            Log.error("screen recording: tccutil failed: \(error.localizedDescription)")
+        }
+        return false
     }
 }
 

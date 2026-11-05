@@ -103,7 +103,10 @@ Uykusuz başka tuş görmez ve bunun için izin istemez.
 
 **Seçilen alanı dinleme.** Yalnızca kullanıcı ⌃⌥S kısayoluna ya da menüdeki öğeye
 basıp fareyle bir alan çizince çalışır. macOS'un ekran kaydı iznini ister; izin
-verilmezse yalnızca bu özellik çalışmaz. İzin varken de Uykusuz ekrana kendiliğinden
+verilmezse yalnızca bu özellik çalışmaz. macOS izni uygulamanın imzasına bağlar ve
+her kurulum yeni bir imza olduğu için eski izin geçersiz kalır: yeni bir kurulumun ilk
+açılışında Uykusuz `tccutil reset ScreenCapture com.mustafaghn.uykusuz` ile yalnızca
+kendi eski kaydını siler, başka bir uygulamanın iznine dokunmaz. İzin varken de Uykusuz ekrana kendiliğinden
 bakmaz: çizilen alanın `SCScreenshotManager` ile tek bir görüntüsü alınır, Uykusuz'un
 kendi pencereleri bu görüntüye girmez. Görüntü yalnızca bellekte tutulur, yazı
 macOS'un Vision çerçevesiyle bu Mac'te tanınır. Görüntü ve yazı diske ve günlüğe

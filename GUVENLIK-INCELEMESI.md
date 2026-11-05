@@ -97,7 +97,10 @@ Root olarak çalışan başka bir şey yoktur.
 - **Ekran kaydı izni (0.12.0):** Yalnızca kullanıcı bir alan çizip dinlemek
   istediğinde ve okunan kelimenin ekranda işaretlenmesi için gerekir. Ekrana yalnızca
   kullanıcının başlattığı bir okuma sırasında bakılır; ayrıntılar aşağıda "Seçilen
-  alanı dinleme" ve "Okunan kelimeyi ekranda işaretleme" maddelerindedir.
+  alanı dinleme" ve "Okunan kelimeyi ekranda işaretleme" maddelerindedir. İzin
+  imzaya bağlı olduğu için yeni bir kurulumun ilk açılışında uygulama
+  `tccutil reset ScreenCapture com.mustafaghn.uykusuz` ile yalnızca kendi eski
+  kaydını siler (0.14.1); başka bir uygulamanın iznine dokunmaz.
 - **Okunmayan veriler:** Pano, başka uygulamalara yazılanlar, tarayıcı geçmişi
   ya da sekmeleri, SSH anahtarları ve kabuk geçmişi okunmaz. Ekran içeriği yalnızca
   kullanıcının başlattığı bir okuma sırasında okunur ve bellekte kalır (0.12.0, 0.13.0).

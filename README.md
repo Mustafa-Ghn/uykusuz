@@ -521,12 +521,16 @@ okunacak alanı fareyle çizin ve alandaki yazı okunsun. Çizerken Esc ya da ye
   gibi okunan kelime ekrandaki yazının üzerinde işaretlenir; sağ üstteki pencerede
   ❚❚ durdurur, ◀◀ ve ▶▶ beşer kelime gider, çubuk istediğiniz yere götürür. Okuma
   sürerken yeniden ⌃⌥S okumayı durdurur.
-- **İzin.** Görüntü için macOS ekran kaydı izni gerekir. İlk basışta macOS sorar;
-  Sistem Ayarları > Gizlilik ve Güvenlik > Ekran ve Sistem Sesi Kaydı bölümünden
-  Uykusuz'u açın ve Uykusuz'u yeniden başlatın. Uygulama her kurulumda yeniden
-  imzalandığı için bu izni yeni bir kurulumdan sonra yenilemek gerekir: Uykusuz
-  orada açık görünse de kapatıp yeniden açın. macOS bu izni zaman zaman yeniden
-  sorabilir. İzin yoksa pencere bunu söyler, Uykusuz'un geri kalanı etkilenmez.
+- **İzin.** Görüntü için macOS ekran kaydı izni gerekir. İlk basışta Sistem
+  Ayarları > Gizlilik ve Güvenlik > Ekran ve Sistem Sesi Kaydı açılır; orada
+  Uykusuz'u açın ve macOS Uykusuz'u yeniden açmayı önerince kabul edin. macOS izni
+  uygulamanın imzasına bağlar, Uykusuz da her kurulumda yeniden imzalanır: eski izin
+  orada açık görünse de yeni kurulumda geçmez ve kapatıp açmak onu yenilemez. Bu
+  yüzden Uykusuz yeni bir kurulumun ilk açılışında kendi eski izin kaydını siler ve
+  ilk basışta izni yeniden verirsiniz. Uykusuz orada açık göründüğü hâlde pencere
+  izin istiyorsa onu seçip – düğmesiyle kaldırın ve ⌃⌥S'ye yeniden basın. macOS bu
+  izni zaman zaman yeniden sorabilir. İzin yoksa pencere bunu söyler, Uykusuz'un
+  geri kalanı etkilenmez.
 - **Gizlilik.** Uykusuz ekrana yalnızca siz okuma isteyince bakar: yazıyı almak
   için çizdiğiniz alana bir kez, okunan kelimeyi işaretlemek için okuma sürerken
   birkaç saniyede bir. Kendi pencereleri görüntüye girmez. Görüntü bellekte kalır,

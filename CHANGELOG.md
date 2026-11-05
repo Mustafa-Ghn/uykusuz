@@ -4,6 +4,13 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.14.1 — 2026-11-05
+
+### Düzeltilenler
+
+- **⌃⌥S yeni bir kurulumdan sonra da çalışır.** macOS ekran kaydı iznini uygulamanın imzasına bağlar ve Uykusuz her kurulumda yeniden imzalanır; eski izin Sistem Ayarları'nda açık görünse de geçmiyor, kapatıp açmak da onu yenilemiyordu. Artık yeni bir kurulumun ilk açılışında Uykusuz kendi eski izin kaydını siler; ilk ⌃⌥S'de Sistem Ayarları açılır, orada Uykusuz'u açmanız yeter.
+- **İzin uyarısı doğru yolu gösterir.** Pencere artık "kapatıp yeniden açın" demiyor: Uykusuz'u açmanızı, açık göründüğü hâlde çalışmıyorsa – düğmesiyle kaldırıp ⌃⌥S'ye yeniden basmanızı söyler. İlk basışta Sistem Ayarları doğrudan açılır.
+
 ## 0.14.0 — 2026-11-05
 
 ### Eklenenler

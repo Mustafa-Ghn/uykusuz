@@ -158,6 +158,10 @@ struct Config: Codable, Equatable, Sendable {
     /// the app respects. nil in a config written before this field; the
     /// first launch with the flag on registers once and records it.
     var launchAtLoginInstall: String?
+    /// The install (`LoginItem.install`) the screen recording grant was last
+    /// dropped for. A different one at launch is a new signature, whose old
+    /// grant no longer counts (`ScreenPermission.dropStaleGrant`).
+    var screenPermissionInstall: String?
 
     // One-time updates
     /// Whether this config has had the lid-close update
@@ -280,6 +284,7 @@ struct Config: Codable, Equatable, Sendable {
         autoApprovePermissions = try c.decodeIfPresent(Bool.self, forKey: .autoApprovePermissions) ?? d.autoApprovePermissions
         launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? d.launchAtLogin
         launchAtLoginInstall = try c.decodeIfPresent(String.self, forKey: .launchAtLoginInstall)
+        screenPermissionInstall = try c.decodeIfPresent(String.self, forKey: .screenPermissionInstall)
     }
 }
 

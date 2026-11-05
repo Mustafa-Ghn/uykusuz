@@ -150,6 +150,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 Log.error("could not save config after the launch at login check: \(error.localizedDescription)")
             }
         }
+        // The screen recording grant is tied to the signature too, and a
+        // stale one shows switched on but no longer counts: drop it, so ⌃⌥S
+        // puts this install on the list afresh.
+        let install = LoginItem.liveInstall()
+        if Notifier.runningInsideAppBundle(), let bundleID = Bundle.main.bundleIdentifier {
+            Task { @MainActor [manager] in
+                let recorded = manager.config.screenPermissionInstall
+                guard await ScreenPermission.dropStaleGrant(install: install, recorded: recorded, reset: { await ScreenPermission.resetGrant(bundleID: bundleID) }) else { return }
+                var config = manager.config
+                config.screenPermissionInstall = install
+                manager.config = config
+                do {
+                    try manager.store.saveConfig(config)
+                } catch {
+                    Log.error("could not save config after dropping the screen recording grant: \(error.localizedDescription)")
+                }
+            }
+        }
         let settings = SettingsWindow { [manager, secrets, locationPermission, loginItem, awaySummary, replyReader, areaReader, waitingAlerts, pushGate] in
             AnyView(
                 SettingsView(
