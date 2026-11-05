@@ -598,6 +598,10 @@ final class UIStatusTests: XCTestCase {
             return max(StatusItemController.makeHostingView(root).fittingSize.width.rounded(.up), 24)
         }
 
+        /// How long a wait for a landing gives up after. A fold has landed
+        /// 3.9 s after its Esc here while the main queue was served late.
+        static let landingLimit: TimeInterval = 10
+
         /// Let the layout report and the pills stagger in, at the pace the
         /// tests after it were written against. The focus glow is the last
         /// thing an open does, and its timer starts only once the last
@@ -606,11 +610,9 @@ final class UIStatusTests: XCTestCase {
         /// comes fails here.
         func settleOpen(file: StaticString = #filePath, line: UInt = #line) async {
             try? await Task.sleep(for: .milliseconds(300))
-            let deadline = Date().addingTimeInterval(5)
-            while !openHasLanded, Date() < deadline {
-                try? await Task.sleep(for: .milliseconds(5))
+            await waitFor(openHasLanded, file: file, line: line) {
+                "the open never landed: \(model.visiblePills) pills, glow \(model.focusVisible)"
             }
-            XCTAssertTrue(openHasLanded, "the open never landed: \(model.visiblePills) pills, glow \(model.focusVisible)", file: file, line: line)
         }
 
         private var openHasLanded: Bool {
@@ -618,11 +620,57 @@ final class UIStatusTests: XCTestCase {
         }
 
         /// Wait out a close: the fold's stagger and settle, then the
-        /// layout's own report of the landed width has time to arrive.
-        func settleClose() async {
-            let landed = Int((Motion.staggerDelay(index: 2, count: 3, reversed: false) + Motion.retractSettle()) * 1000) + 250
-            try? await Task.sleep(for: .milliseconds(landed))
+        /// layout's own report of the landed width, at the pace the tests
+        /// after it were written against. The settle timer starts only once
+        /// the last pill's step has run, so a main queue served late pushes
+        /// the landing past any fixed sleep: then wait for the slots to
+        /// leave and the width to be reported. One that never comes fails
+        /// here. A fold that must not land is `settleReopen`'s.
+        func settleClose(file: StaticString = #filePath, line: UInt = #line) async {
+            try? await Task.sleep(for: .milliseconds(Int(foldDuration * 1000) + 350))
+            await waitFor(closeHasLanded, file: file, line: line) {
+                "the close never landed: slots \(model.slotsPresent), folding \(model.pillsCollapsing), phase \(model.phase), width \(controller.widthTarget)"
+            }
+        }
+
+        private var closeHasLanded: Bool {
+            !model.slotsPresent && !model.pillsCollapsing && controller.widthTarget == widthWithoutSlots(phase: model.phase)
+        }
+
+        /// Wait out a reopen under a fold (the eye clicked, or a refused
+        /// start): the pills are back, and the fold it dropped has had as
+        /// long as it would take to land, so the test can pin that it never
+        /// does. Nothing to poll for when nothing must happen, so this runs
+        /// the fold's own two hops on the main queue, the last pill's step
+        /// and then the settle timer that step starts: begun after the
+        /// fold's, they run after its landing however late the queue is
+        /// served.
+        func settleReopen(file: StaticString = #filePath, line: UInt = #line) async {
+            await settleOpen(file: file, line: line)
+            let lastStep = Motion.staggerDelay(index: 2, count: 3, reversed: false)
+            let settle = Motion.retractSettle()
+            await withCheckedContinuation { (passed: CheckedContinuation<Void, Never>) in
+                DispatchQueue.main.asyncAfter(deadline: .now() + lastStep) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + settle) {
+                        passed.resume()
+                    }
+                }
+            }
+            // And for the layout to report a landing, had there been one.
             try? await Task.sleep(for: .milliseconds(100))
+        }
+
+        /// From a fold's first step to its landing, with no lateness.
+        private var foldDuration: TimeInterval {
+            Motion.staggerDelay(index: 2, count: 3, reversed: false) + Motion.retractSettle()
+        }
+
+        private func waitFor(_ landed: @autoclosure () -> Bool, file: StaticString, line: UInt, _ state: () -> String) async {
+            let deadline = Date().addingTimeInterval(Self.landingLimit)
+            while !landed(), Date() < deadline {
+                try? await Task.sleep(for: .milliseconds(5))
+            }
+            XCTAssertTrue(landed(), state(), file: file, line: line)
         }
     }
 
@@ -691,11 +739,10 @@ final class UIStatusTests: XCTestCase {
         XCTAssertTrue(controller.model.slotsPresent, "the bar must not snap under a pill that is still visible")
         XCTAssertEqual(controller.widthTarget, pillsWidth)
         XCTAssertEqual(lab.probe.applied.count, written, "no width write before the slots leave")
-        try? await Task.sleep(for: .milliseconds(Int(Motion.retractSettleDuration * 1000) + 100))
+        await lab.settleClose()
         XCTAssertFalse(controller.model.slotsPresent)
         XCTAssertFalse(controller.model.pillsCollapsing, "the fold ends with the slots")
         XCTAssertEqual(controller.model.phase, .idle)
-        try? await Task.sleep(for: .milliseconds(100))
         XCTAssertEqual(controller.widthTarget, lab.widthWithoutSlots(phase: .idle), "the width moves on the layout's report")
         XCTAssertEqual(lab.probe.applied.count, written + 1, "one write, after the slots left")
         XCTAssertEqual(lab.probe.applied.last, controller.widthTarget)
@@ -806,7 +853,7 @@ final class UIStatusTests: XCTestCase {
 
         // Poll for the slots leaving: the flag must be down in that same step.
         let lastStep = Motion.staggerDelay(index: 2, count: 3, reversed: false)
-        let deadline = began.addingTimeInterval(lastStep + Motion.retractSettle() + 0.5)
+        let deadline = Date().addingTimeInterval(Lab.landingLimit)
         while controller.model.slotsPresent, Date() < deadline {
             XCTAssertTrue(controller.model.pillsCollapsing, "still folding while the slots are up")
             try? await Task.sleep(for: .milliseconds(5))
@@ -838,14 +885,16 @@ final class UIStatusTests: XCTestCase {
         let written = lab.probe.applied.count
 
         controller.commit()
-        await gate.waitUntilStarted()
+        // Before the first suspension: the fold can land while the manager
+        // is still on its way to the gate.
         XCTAssertEqual(controller.model.phase, .starting)
         XCTAssertTrue(controller.model.pillsCollapsing, "Enter folds the pills the same way")
         XCTAssertTrue(controller.model.slotsPresent)
         XCTAssertNotNil(controller.model.pendingCountdown)
         XCTAssertEqual(controller.widthTarget, pillsWidth, "the width stays while the pills fold")
+        await gate.waitUntilStarted()
 
-        let deadline = Date().addingTimeInterval(Motion.staggerDelay(index: 2, count: 3, reversed: false) + Motion.retractSettle() + 0.5)
+        let deadline = Date().addingTimeInterval(Lab.landingLimit)
         while controller.model.slotsPresent, Date() < deadline {
             XCTAssertTrue(controller.model.pillsCollapsing)
             XCTAssertEqual(lab.probe.applied.count, written, "no width write while the pills fold")
@@ -949,7 +998,7 @@ final class UIStatusTests: XCTestCase {
         XCTAssertEqual(controller.model.phase, .entering(.start), "reopened, not committed")
         XCTAssertNil(controller.model.pendingCountdown)
         XCTAssertNil(controller.model.input.total, "the reopen path starts fresh")
-        await lab.settleClose()
+        await lab.settleReopen()
         XCTAssertTrue(controller.model.slotsPresent, "the dropped folds never take the slots out")
         XCTAssertEqual(controller.model.visiblePills, DurationInput.Field.allCases.count)
         XCTAssertEqual(controller.widthTarget, pillsWidth)
@@ -976,7 +1025,7 @@ final class UIStatusTests: XCTestCase {
         controller.iconTapped()
         XCTAssertEqual(controller.model.phase, .entering(.extend))
         XCTAssertTrue(controller.model.slotsPresent)
-        await lab.settleClose()
+        await lab.settleReopen()
         XCTAssertTrue(controller.model.slotsPresent, "the dropped fold never takes the slots out")
         XCTAssertEqual(controller.model.visiblePills, DurationInput.Field.allCases.count)
         XCTAssertEqual(controller.model.phase, .entering(.extend))
@@ -1006,12 +1055,14 @@ final class UIStatusTests: XCTestCase {
         XCTAssertTrue(controller.model.input.append(digit: 2, to: .hours))
 
         controller.commit()
-        await gate.waitUntilStarted()
+        // Before waiting for the manager: the fold can land while it is
+        // still on its way to the gate.
         XCTAssertEqual(controller.model.phase, .starting)
         XCTAssertTrue(controller.model.pillsCollapsing)
         try? await Task.sleep(for: .milliseconds(100))
         XCTAssertEqual(controller.model.visiblePills, 0, "every pill on its way to the eye")
         XCTAssertTrue(controller.model.slotsPresent, "mid-fold")
+        await gate.waitUntilStarted()
         await gate.open()
 
         let deadline = Date().addingTimeInterval(2)
@@ -1026,7 +1077,7 @@ final class UIStatusTests: XCTestCase {
         XCTAssertEqual(controller.model.input.text(for: .hours), "2")
         XCTAssertEqual(controller.model.startError, MenuBarModel.startFailedText)
 
-        await lab.settleClose()
+        await lab.settleReopen()
         XCTAssertTrue(controller.model.slotsPresent, "the cancelled fold never takes the slots out")
         XCTAssertEqual(controller.model.startError, MenuBarModel.startFailedText)
         XCTAssertTrue(controller.model.startErrorShown)
@@ -1081,7 +1132,7 @@ final class UIStatusTests: XCTestCase {
             try? await Task.sleep(for: .milliseconds(10))
         }
         XCTAssertEqual(controller.model.phase, .entering(.start))
-        await lab.settleClose()
+        await lab.settleReopen()
         XCTAssertEqual(controller.model.startError, MenuBarModel.startFailedText)
         let withLabel = controller.widthTarget
         XCTAssertGreaterThan(withLabel, pillsWidth)
@@ -1099,7 +1150,7 @@ final class UIStatusTests: XCTestCase {
         XCTAssertTrue(controller.model.slotsPresent)
         XCTAssertEqual(lab.probe.writesWhileFolding, 0, lab.probe.foldingWrites.joined(separator: "; "))
 
-        await lab.settleClose()
+        await lab.settleReopen()
         XCTAssertTrue(controller.model.slotsPresent, "the dropped fold never takes the slots out")
         XCTAssertEqual(controller.model.visiblePills, DurationInput.Field.allCases.count)
         XCTAssertEqual(controller.widthTarget, pillsWidth, "back to the pills' width without the label")
@@ -1118,16 +1169,16 @@ final class UIStatusTests: XCTestCase {
         defer { lab.tearDown() }
         let controller = lab.controller
 
-        // Esc as soon as the first pill is up, well inside the stagger.
+        // Esc with the first pill up, well inside the stagger. The steps are
+        // 40 ms apart and a main queue served late runs all three in one
+        // drain, so no poll is sure to catch the stagger half done. The
+        // first pill is put up here as its step would, with no suspension
+        // between the open and the Esc: none of the steps can run first,
+        // and the Esc's generation bump drops all three.
         controller.expand(mode: .start)
-        let firstPillBy = Date().addingTimeInterval(1)
-        while controller.model.visiblePills == 0, Date() < firstPillBy {
-            try? await Task.sleep(for: .milliseconds(1))
-        }
-        XCTAssertTrue(controller.model.slotsPresent)
-        XCTAssertGreaterThan(controller.model.visiblePills, 0, "the stagger has begun")
-        XCTAssertLessThan(controller.model.visiblePills, DurationInput.Field.allCases.count, "and has not finished")
+        controller.model.visiblePills = 1
         controller.collapse()
+        XCTAssertTrue(controller.model.slotsPresent)
         XCTAssertTrue(controller.model.pillsCollapsing)
         XCTAssertEqual(controller.model.phase, .entering(.start))
         await lab.settleClose()
@@ -1144,11 +1195,13 @@ final class UIStatusTests: XCTestCase {
         let changes = controller.widthTargetChangeCount
         controller.expand(mode: .start)
         controller.commit()
-        await gate.waitUntilStarted()
+        // Before the first suspension: the fold can land while the manager
+        // is still on its way to the gate.
         XCTAssertEqual(controller.model.phase, .starting)
         XCTAssertTrue(controller.model.slotsPresent)
         XCTAssertTrue(controller.model.pillsCollapsing)
         XCTAssertNotNil(controller.model.pendingCountdown)
+        await gate.waitUntilStarted()
         await lab.settleClose()
         XCTAssertFalse(controller.model.slotsPresent, "left once")
         XCTAssertFalse(controller.model.pillsCollapsing)
