@@ -68,7 +68,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 await panel.show(
                     ClaudeReplySpeech.plain(reply.text),
                     told: reply.at,
-                    title: reply.title,
+                    title: ClaudeReplyReader.title(of: reply),
                     autoplay: true,
                     // "Nothing to read" is not on the screen to be found.
                     onScreen: !reply.session.isEmpty,

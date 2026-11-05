@@ -4,6 +4,13 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.14.0 — 2026-11-05
+
+### Eklenenler
+
+- **⌃⌥D onay bekleyen planı okur.** Claude bir plan sunup onayınızı bekliyorsa ⌃⌥D ve Son yanıtı dinle son mesajın yerine planı okur; pencerenin başlığında sohbetin adından önce "Plan" yazar. Plan, `~/.claude/plans` altındaki dosyasından okunur, böylece dosyada sonradan değiştirdikleriniz de okunur; dosya orada değilse Claude'un onaya sunduğu metin okunur.
+- **Yalnızca onay aşamasında.** Planı onaylayınca ya da geri çevirince ⌃⌥D yine son mesajı okur; üzerinde çalışılan bir plan her basışta yeniden okunmaz. Claude planı düzeltip yeniden sunarsa yeni plan okunur.
+
 ## 0.13.0 — 2026-11-01
 
 ### Eklenenler

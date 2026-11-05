@@ -2,7 +2,8 @@ import Foundation
 import Observation
 
 /// Reads aloud what Claude last said in the chat the user is looking at, when
-/// they ask for it (fork addition): a system-wide shortcut, or the menu. It
+/// they ask for it (fork addition): a system-wide shortcut, or the menu. While
+/// the chat waits on the user to approve a plan, the plan is read instead. It
 /// comes in the summary's window (`SummaryPanel`), and nothing is ever read
 /// on its own. Pressing again in the same chat ends the reading; pressing in
 /// another chat, or once Claude has said something new, reads that instead.
@@ -15,6 +16,13 @@ final class ClaudeReplyReader {
     /// As Settings and the menu show the shortcut.
     static let shortcutLabel = "\u{2303}\u{2325}D"
     nonisolated static let nothingToRead = "Okunacak bir Claude yanıtı bulunamadı."
+    /// Before the chat's title in the window, for a plan.
+    static let planTitle = "Plan"
+
+    /// The window's title: the chat's, and for a plan that it is one.
+    static func title(of reply: ClaudeReply) -> String {
+        reply.isPlan ? "\(planTitle) · \(reply.title)" : reply.title
+    }
 
     typealias Present = @MainActor (_ reply: ClaudeReply, _ onFinish: @escaping @MainActor () -> Void, _ onClose: @escaping @MainActor () -> Void) async -> Void
 
@@ -91,7 +99,7 @@ final class ClaudeReplyReader {
         shown = reply
         lingering?.cancel()
         lingering = nil
-        Log.info("claude reply: reading \(reply.text.count) characters aloud")
+        Log.info("claude reply: reading \(reply.isPlan ? "a plan of " : "")\(reply.text.count) characters aloud")
         Task { [weak self, present] in
             await present(reply, { self?.finished(id) }, { self?.closed(id) })
         }

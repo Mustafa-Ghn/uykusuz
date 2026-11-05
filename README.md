@@ -70,9 +70,10 @@ Claude çalışırken bunu kendiliğinden de yapar.
   vurgulanır ve çubukla ileri geri gidersiniz; bir Claude API anahtarı
   kaydederseniz özeti Claude yazar.
 - **Claude'un yanıtını dinleme.** Baktığınız Claude sohbetinin son mesajını
-  ⌃⌥D ile dinlersiniz; okunan kelime sohbetteki yazının üzerinde işaretlenir,
-  sağ üstte durdurma düğmesi ve ileri geri çubuğu kalır. Ara adımlar okunmaz ve
-  siz istemeden hiçbir şey okunmaz.
+  ⌃⌥D ile dinlersiniz; Claude bir planı onaylamanızı bekliyorsa plan okunur.
+  Okunan kelime sohbetteki yazının üzerinde işaretlenir, sağ üstte durdurma
+  düğmesi ve ileri geri çubuğu kalır. Ara adımlar okunmaz ve siz istemeden
+  hiçbir şey okunmaz.
 - **Seçilen alanı dinleme.** ⌃⌥S ile ekranda bir alan çizersiniz; o alandaki yazı
   aynı küçük pencerede okunur. Yazı bu Mac'te tanınır, görüntü hiçbir yere
   gönderilmez.
@@ -456,14 +457,20 @@ Ayarlar > Sen yokken özeti bölümündeki **Son 2 saati şimdi özetle** düğm
 
 Claude uygulamasında baktığınız sohbetin son mesajını dinlemek için **⌃⌥D**
 kısayoluna basın ya da göze sağ tıklayınca açılan menüden **Son yanıtı dinle**
-öğesini seçin. Yalnızca o mesaj okunur; önceki adımlar ve araç çıktıları
-okunmaz. Siz istemeden hiçbir şey okunmaz.
+öğesini seçin. Yalnızca o mesaj ya da onayınızı bekleyen plan okunur; önceki
+adımlar ve araç çıktıları okunmaz. Siz istemeden hiçbir şey okunmaz.
 
 - **Hangi sohbet.** Uykusuz, Claude uygulamasının sohbet kayıtlarından en son
   odaklandığınız sohbeti bulur. Bu kayıtlar yoksa, örneğin Claude Code'u yalnızca
   terminalde kullanıyorsanız, en son yazılan oturumun yanıtı okunur.
   `~/Applications/Uykusuz.app/Contents/MacOS/Uykusuz --last-reply` okunacak
   sohbeti ve metni ses çıkarmadan yazdırır.
+- **Onay bekleyen plan.** Claude bir plan sunup onayınızı bekliyorsa son
+  mesajın yerine plan okunur ve pencerenin başlığında sohbetin adından önce
+  "Plan" yazar. Plan, `~/.claude/plans` altındaki dosyasından okunur; dosya
+  orada değilse Claude'un onaya sunduğu metin okunur. Bu yalnızca onay
+  aşamasında olur: planı onaylayınca ya da geri çevirince yine son mesaj okunur,
+  üzerinde çalışılan plan her basışta yeniden okunmaz.
 - **Yeniden basınca.** Aynı sohbette okuma sürerken basmak okumayı durdurur.
   Başka bir sohbete geçip basmak o sohbetin yanıtını okur; Claude bu arada yeni
   bir şey yazdıysa yenisi okunur.

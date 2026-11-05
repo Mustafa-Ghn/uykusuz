@@ -224,6 +224,13 @@ macOS'un sorduğu Otomasyon (Mesajlar) iznidir.
   0.8.0 ile 0.9.x'in `Stop` hook'una eklediği, yanıtı geçici olarak `claude-replies`
   klasörüne yazan yol kaldırıldı; uygulama açılışta bu klasörden kalanı siler. Yeni
   izin, ağ isteği ya da kalıcı bileşen yoktur.
+- **Onay bekleyen planı dinleme (0.14.0):** Claude'un son mesajı bir planı onaya
+  sunuyorsa (`ExitPlanMode`) ve bu çağrıya henüz yanıt verilmemişse ⌃⌥D son mesaj
+  yerine planı okur. Çağrıdaki `planFilePath` `~/.claude/plans` klasöründe en çok
+  1 MB'lık bir `.md` dosyasını gösteriyorsa plan o dosyadan, değilse kayıttaki
+  plan metninden alınır; başka bir dosya açılmaz. Dosya yalnızca okunur, metin
+  diske ve günlüğe yazılmaz (günlüğe yalnızca karakter sayısı yazılır), ağa
+  gitmez. Yeni izin, ağ isteği ya da kalıcı bileşen yoktur.
 - **Doğal Türkçe ses (0.11.0):** Uyarıları, özeti ve Claude'un yanıtını paketteki
   `Contents/Resources/Voice` klasöründen yüklenen konuşma modeli okur; imzanın mührü
   bu dosyaları da kapsar. Model Core ML ile yalnızca işlemcide çalışır. Sayı ve tarih

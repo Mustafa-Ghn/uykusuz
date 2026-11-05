@@ -92,7 +92,10 @@ alır.
 menüdeki öğeye basınca çalışır. `~/Library/Application Support/Claude/claude-code-sessions`
 altındaki Claude uygulaması kayıtlarından yalnızca `lastFocusedAt` ve `cliSessionId`
 alanları, o oturumun `~/.claude/projects` altındaki kaydından da başlık, klasör
-adı ve son mesaj alınır. Bu dosyalar yalnızca okunur. Metin diske ve günlüğe
+adı ve son mesaj alınır. Claude bir planın onayını bekliyorsa son mesajın yerine
+plan alınır: planın `~/.claude/plans` klasöründeki en çok 1 MB'lık `.md` dosyası
+okunur, dosya orada değilse kayıttaki plan metni kullanılır; başka bir dosya
+açılmaz. Bu dosyalar yalnızca okunur. Metin diske ve günlüğe
 yazılmaz, ağa gitmez; okuma bu Mac'te yapılır (aşağıdaki "Doğal Türkçe ses").
 Kısayol `RegisterEventHotKey` ile
 kaydedilir: sistem uygulamaya yalnızca bu tuş birleşimi basılınca haber verir,

@@ -7,6 +7,7 @@ final class ClaudeChatsTests: XCTestCase {
     private var root: URL!
     private var sessions: URL { root.appendingPathComponent("claude-code-sessions", isDirectory: true) }
     private var projects: URL { root.appendingPathComponent("projects", isDirectory: true) }
+    private var plans: URL { root.appendingPathComponent("plans", isDirectory: true) }
     private let fm = FileManager.default
 
     override func setUpWithError() throws {
@@ -36,9 +37,29 @@ final class ClaudeChatsTests: XCTestCase {
         return file
     }
 
+    private func quoted(_ text: String) -> String {
+        String(String(decoding: try! JSONSerialization.data(withJSONObject: [text], options: .fragmentsAllowed), as: UTF8.self).dropFirst().dropLast())
+    }
+
     private func said(_ text: String, id: String = "m1", extra: String = "") -> String {
-        let quoted = String(decoding: try! JSONSerialization.data(withJSONObject: [text], options: .fragmentsAllowed), as: UTF8.self).dropFirst().dropLast()
-        return #"{"type":"assistant","timestamp":"2026-10-31T10:00:00Z","cwd":"/Users/me/proje"\#(extra),"message":{"id":"\#(id)","model":"claude","content":[{"type":"text","text":\#(quoted)}]}}"#
+        #"{"type":"assistant","timestamp":"2026-10-31T10:00:00Z","cwd":"/Users/me/proje"\#(extra),"message":{"id":"\#(id)","model":"claude","content":[{"type":"text","text":\#(quoted(text))}]}}"#
+    }
+
+    /// Claude hands a plan in and waits for the user's approval.
+    private func handedIn(plan: String, path: String? = nil, call: String = "p1", id: String = "m2", extra: String = "") -> String {
+        let file = path.map { #","planFilePath":\#(quoted($0))"# } ?? ""
+        return #"{"type":"assistant","timestamp":"2026-10-31T11:00:00Z","cwd":"/Users/me/proje"\#(extra),"message":{"id":"\#(id)","model":"claude","content":[{"type":"tool_use","id":"\#(call)","name":"ExitPlanMode","input":{"plan":\#(quoted(plan))\#(file)}}]}}"#
+    }
+
+    private func answer(_ call: String, _ text: String = "User has approved your plan.", error: Bool = false) -> String {
+        #"{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"\#(call)","content":\#(quoted(text))\#(error ? #","is_error":true"# : "")}]}}"#
+    }
+
+    private func plan(_ name: String, _ text: String) throws -> URL {
+        try fm.createDirectory(at: plans, withIntermediateDirectories: true)
+        let file = plans.appendingPathComponent(name)
+        try text.write(to: file, atomically: true, encoding: .utf8)
+        return file
     }
 
     private func ran(id: String) -> String {
@@ -147,6 +168,108 @@ final class ClaudeChatsTests: XCTestCase {
         try transcript("gizli", lines: [said("Okunmamalı.")])
         XCTAssertNil(ClaudeChats.transcript(of: "../-Users-me-proje/gizli", in: projects))
         XCTAssertNotNil(ClaudeChats.transcript(of: "gizli", in: projects))
+    }
+
+    func testAPlanWaitingForApprovalIsReadInsteadOfTheLastMessage() throws {
+        let file = try plan("ornek-plan.md", "# Plan\n\n- Birinci adım\n")
+        let chat = try transcript("s1", lines: [
+            prompt,
+            said("Planı son hâline getiriyorum.", id: "m1"),
+            ran(id: "m1"),
+            answer("w1", "Dosya yazıldı."),
+            handedIn(plan: "# Plan", path: file.path),
+            #"{"type":"custom-title","customTitle":"Örnek sohbet"}"#,
+        ])
+        let reply = try XCTUnwrap(ClaudeChats.reply(in: chat, plans: plans))
+        XCTAssertTrue(reply.isPlan)
+        XCTAssertEqual(reply.text, "# Plan\n\n- Birinci adım", "its file")
+        XCTAssertEqual(reply.title, "Örnek sohbet")
+        XCTAssertEqual(reply.session, "s1")
+        XCTAssertEqual(reply.at, ClaudeDigest.timestamp("2026-10-31T11:00:00Z"))
+        XCTAssertFalse(try XCTUnwrap(ClaudeChats.reply(in: try transcript("s2", lines: [said("Bitti.")]), plans: plans)).isPlan)
+    }
+
+    func testAPlanIsReadAsTheUserChangedItsFile() throws {
+        let file = try plan("ornek-plan.md", "Değiştirilen plan.")
+        let chat = try transcript("s1", lines: [handedIn(plan: "Claude'un verdiği plan.", path: file.path)])
+        XCTAssertEqual(ClaudeChats.reply(in: chat, plans: plans)?.text, "Değiştirilen plan.")
+    }
+
+    func testAPlanIsReadEvenWhenClaudeSaidNothingBeforeIt() throws {
+        let chat = try transcript("s1", lines: [prompt, handedIn(plan: "Tek başına plan.")])
+        XCTAssertEqual(ClaudeChats.reply(in: chat, plans: plans)?.text, "Tek başına plan.")
+    }
+
+    func testOnlyAPlanFileOfClaudeCodesIsReadOtherwiseThePlanHandedIn() throws {
+        let outside = root.appendingPathComponent("baska.md")
+        try "Başka bir dosya.".write(to: outside, atomically: true, encoding: .utf8)
+        let paths = [
+            outside.path,
+            plans.path + "/../baska.md",
+            "plans/ornek-plan.md",
+            try plan("ornek.txt", "Metin dosyası.").path,
+            try plan("bos.md", " \n").path,
+            try plan("buyuk.md", String(repeating: "a", count: ClaudeChats.planFileBytes + 1)).path,
+            plans.appendingPathComponent("yok.md").path,
+        ]
+        try plan("ornek-plan.md", "Okunmamalı.")
+        for (index, path) in paths.enumerated() {
+            let chat = try transcript("s\(index)", lines: [handedIn(plan: "Claude'un verdiği plan.", path: path)])
+            XCTAssertEqual(ClaudeChats.reply(in: chat, plans: plans)?.text, "Claude'un verdiği plan.", path)
+        }
+    }
+
+    func testAnApprovedOrTurnedDownPlanIsNotReadAgain() throws {
+        let file = try plan("ornek-plan.md", "# Plan").path
+        let approved = try transcript("s1", lines: [said("Plan hazır.", id: "m1"), handedIn(plan: "# Plan", path: file), answer("p1")])
+        let reply = try XCTUnwrap(ClaudeChats.reply(in: approved, plans: plans))
+        XCTAssertEqual(reply.text, "Plan hazır.", "approved: the last message, as before the plan")
+        XCTAssertFalse(reply.isPlan)
+        let working = try transcript("s2", lines: [handedIn(plan: "# Plan", path: file), answer("p1"), said("Başlıyorum.", id: "m3"), ran(id: "m3")])
+        XCTAssertEqual(ClaudeChats.reply(in: working, plans: plans)?.text, "Başlıyorum.")
+        let turnedDown = try transcript("s3", lines: [
+            said("Plan hazır.", id: "m1"),
+            handedIn(plan: "# Plan", path: file),
+            answer("p1", "The user doesn't want to proceed with this tool use.", error: true),
+            #"{"type":"user","message":{"role":"user","content":[{"type":"text","text":"[Request interrupted by user for tool use]"}]}}"#,
+        ])
+        XCTAssertEqual(ClaudeChats.reply(in: turnedDown, plans: plans)?.text, "Plan hazır.")
+        let revised = try transcript("s4", lines: [
+            handedIn(plan: "Birinci plan.", call: "p1", id: "m1"),
+            answer("p1", "Şunu değiştir.", error: true),
+            said("Düzeltiyorum.", id: "m2"),
+            handedIn(plan: "İkinci plan.", call: "p2", id: "m3"),
+        ])
+        XCTAssertEqual(ClaudeChats.reply(in: revised, plans: plans)?.text, "İkinci plan.", "handed in again: waiting again")
+    }
+
+    func testAPlanStillWaitsWhileAnotherToolOfItsMessageIsAnswered() throws {
+        let edit = #"{"type":"assistant","message":{"id":"m2","model":"claude","content":[{"type":"tool_use","id":"e1","name":"Edit","input":{}}]}}"#
+        let chat = try transcript("s1", lines: [said("Son düzeltme.", id: "m1"), edit, handedIn(plan: "Bekleyen plan.", id: "m2"), answer("e1", "Dosya düzenlendi.")])
+        XCTAssertEqual(ClaudeChats.reply(in: chat, plans: plans)?.text, "Bekleyen plan.")
+    }
+
+    func testAPlanNothingAnsweredIsNotReadOnceTheChatWentOn() throws {
+        let asked = try transcript("s1", lines: [said("Önceki yanıt.", id: "m1"), handedIn(plan: "Eski plan."), prompt])
+        XCTAssertEqual(ClaudeChats.reply(in: asked, plans: plans)?.text, "Önceki yanıt.")
+        let answered = try transcript("s2", lines: [handedIn(plan: "Eski plan."), prompt, said("Yeni yanıt.", id: "m3")])
+        XCTAssertEqual(ClaudeChats.reply(in: answered, plans: plans)?.text, "Yeni yanıt.")
+    }
+
+    func testASubagentsPlanOrAnEmptyOneIsNotRead() throws {
+        let subagent = try transcript("s1", lines: [said("Asıl yanıt.", id: "m1"), handedIn(plan: "Alt ajanın planı.", extra: #","isSidechain":true"#)])
+        XCTAssertEqual(ClaudeChats.reply(in: subagent, plans: plans)?.text, "Asıl yanıt.")
+        let empty = try transcript("s2", lines: [said("Asıl yanıt.", id: "m1"), handedIn(plan: " ")])
+        XCTAssertEqual(ClaudeChats.reply(in: empty, plans: plans)?.text, "Asıl yanıt.")
+    }
+
+    func testThePlanOfTheChatInFrontIsReadFromItsFile() throws {
+        let file = try plan("ornek-plan.md", "Dosyadaki plan.")
+        try record("a", session: "onde", focus: 2_000)
+        try transcript("onde", lines: [handedIn(plan: "Claude'un verdiği plan.", path: file.path)])
+        let reply = try XCTUnwrap(ClaudeChats.lastReply(sessions: sessions, projects: projects, plans: plans))
+        XCTAssertEqual(reply.text, "Dosyadaki plan.")
+        XCTAssertTrue(reply.isPlan)
     }
 
     func testTheCommandSaysWhatWouldBeRead() {
@@ -341,6 +464,26 @@ final class ClaudeReplyReaderTests: XCTestCase {
         await press(r)
         XCTAssertEqual(dismissals, 1, "the second window is still known as up")
         XCTAssertEqual(shown, ["Birinci.", "İkinci."])
+    }
+
+    func testAPlanSaysSoInTheWindowsTitle() async {
+        var plan = reply("# Plan")
+        XCTAssertEqual(ClaudeReplyReader.title(of: plan), "t")
+        plan.isPlan = true
+        XCTAssertEqual(ClaudeReplyReader.title(of: plan), "Plan · t")
+    }
+
+    func testOnceThePlanIsApprovedAPressReadsTheNewReply() async {
+        var plan = reply("# Plan")
+        plan.isPlan = true
+        found.reply = plan
+        let r = reader()
+        await press(r)
+        windowReading = true
+        found.reply = reply("Başlıyorum.")
+        await press(r)
+        XCTAssertEqual(shown, ["# Plan", "Başlıyorum."])
+        XCTAssertEqual(dismissals, 0)
     }
 
     func testWithNoReplyItSaysSo() async {
