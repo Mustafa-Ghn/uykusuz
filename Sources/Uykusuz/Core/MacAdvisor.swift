@@ -24,12 +24,18 @@ final class MacAdvisor {
     static let declinedFor: TimeInterval = 24 * 3600
     static let recentEntries = 12
     static let title = "Uykusuz defteri"
-    /// Never asked to quit, whatever Claude says: what Uykusuz keeps awake,
-    /// where Claude Code runs, and macOS itself.
+    /// Never asked to quit, whatever Claude says: macOS itself, and where
+    /// Claude Code or another agent runs (terminals, Claude, Codex, editors).
+    /// The settings' agent list is not this: it keeps apps from being frozen
+    /// with the lid closed, and holds browsers and Docker Desktop too, which
+    /// may well be worth quitting.
     static let neverQuit: Set<String> = [
         "com.apple.finder", "com.apple.dock", "com.apple.systemuiserver", "com.apple.loginwindow",
         "com.apple.Terminal", "com.googlecode.iterm2", "dev.warp.Warp-Stable", "com.mitchellh.ghostty",
         "net.kovidgoyal.kitty", "org.alacritty", "com.github.wez.wezterm",
+        "com.anthropic.claudefordesktop", "com.openai.codex", "com.microsoft.VSCode",
+        "com.todesktop.230313mzl4w4u92", "dev.zed.Zed", "com.google.antigravity",
+        "com.t3tools.t3code", "com.t3tools.t3code.reasoning", "com.conductor.app",
     ]
 
     enum Ask: Equatable {
@@ -137,7 +143,7 @@ final class MacAdvisor {
     }
 
     private func look(notifying: Bool) async {
-        guard let key = await readKey() else { return }
+        guard let key = await readKey(logging: !notifying) else { return }
         busy += 1
         defer { busy -= 1 }
         let now = clock()
@@ -145,7 +151,7 @@ final class MacAdvisor {
         expireGoneOffer(mac)
         let advice: Advice
         do {
-            advice = try await writer(key, config().summaryModel).advise(Self.prompt(.look, notebook: notebook, snapshot: mac, now: now))
+            advice = try await writer(key, config().summaryModel).advise(Self.prompt(.look, notebook: notebook, snapshot: mac, now: now, protected: protectedApps()))
         } catch {
             Log.error("mac advisor: the look failed: \(error.localizedDescription)")
             statusLine = "Bakılamadı: \(error.localizedDescription)"
@@ -171,6 +177,10 @@ final class MacAdvisor {
             return
         }
         statusLine = nil
+        logDropped(advice.offer, kept: offer)
+        // Something new to say: an earlier offer left unanswered goes, so a
+        // yes is always to the last message.
+        notebook.closeOpenOffer(as: .expired)
         let entry = Notebook.Entry(date: now, author: .uykusuz, text: message, offer: offer)
         notebook.append(entry)
         Log.info("mac advisor: wrote an entry\(offer.map { " offering \($0.kind.rawValue)" } ?? "")")
@@ -187,14 +197,14 @@ final class MacAdvisor {
         guard !text.isEmpty else { return }
         notebook.append(Notebook.Entry(date: clock(), author: .user, text: text))
         persist()
-        guard let key = await readKey() else { return }
+        guard let key = await readKey(logging: true) else { return }
         busy += 1
         defer { busy -= 1 }
         let mac = await snapshot(lastActive, startedAt)
         expireGoneOffer(mac)
         let advice: Advice
         do {
-            advice = try await writer(key, config().summaryModel).advise(Self.prompt(.reply, notebook: notebook, snapshot: mac, now: clock()))
+            advice = try await writer(key, config().summaryModel).advise(Self.prompt(.reply, notebook: notebook, snapshot: mac, now: clock(), protected: protectedApps()))
         } catch {
             Log.error("mac advisor: the reply failed: \(error.localizedDescription)")
             statusLine = "Yanıt alınamadı: \(error.localizedDescription)"
@@ -206,8 +216,14 @@ final class MacAdvisor {
         if advice.declineOpenOffer, !advice.approveOpenOffer, let open {
             notebook.setOffer(of: open.entry.id, to: .declined)
         }
-        let message = advice.message.trimmingCharacters(in: .whitespacesAndNewlines)
+        var message = advice.message.trimmingCharacters(in: .whitespacesAndNewlines)
         let offer = advice.approveOpenOffer ? nil : validated(advice.offer, in: mac)
+        if !advice.approveOpenOffer { logDropped(advice.offer, kept: offer) }
+        if message.isEmpty, !advice.approveOpenOffer {
+            Log.error("mac advisor: Claude answered the user with nothing")
+            message = Self.emptyAnswer
+        }
+        Log.info("mac advisor: replied\(advice.approveOpenOffer ? "; the open offer accepted" : "")\(advice.declineOpenOffer ? "; the open offer declined" : "")\(offer.map { "; offering \($0.kind.rawValue)" } ?? "")")
         var answer = message
         var answered: UUID?
         // A yes to an offer that went away meanwhile: Claude's "I'll do it" would mislead.
@@ -248,6 +264,14 @@ final class MacAdvisor {
     }
 
     static let gone = "Bu öneri artık geçerli değil; Defter'de güncelini görebilirsiniz."
+    static let emptyAnswer = "Claude bu kez boş bir yanıt verdi. Yeniden yazabilir ya da Şimdi bak'a basabilirsiniz."
+
+    /// An offer Claude made that Uykusuz may not carry out: the message stays,
+    /// without a button.
+    private func logDropped(_ proposal: Advice.Proposal, kept: Notebook.Offer?) {
+        guard kept == nil, proposal.kind != Advice.Proposal.none.kind else { return }
+        Log.info("mac advisor: dropped an offer to \(proposal.kind) \(proposal.target): not in the snapshot or protected")
+    }
 
     /// The window's "Gerek yok": not offered again for `declinedFor`, and
     /// Claude reads the answer in the notebook.
@@ -278,7 +302,8 @@ final class MacAdvisor {
     }
 
     /// Claude's proposal as an offer, only for something in the snapshot and
-    /// never for an app on `neverQuit`, an agent app or Uykusuz itself.
+    /// never for an app on `neverQuit`, an automatic session's agent or
+    /// Uykusuz itself.
     func validated(_ proposal: Advice.Proposal, in mac: MacSnapshot) -> Notebook.Offer? {
         let target = proposal.target.trimmingCharacters(in: .whitespacesAndNewlines)
         switch Notebook.Offer.Kind(rawValue: proposal.kind) {
@@ -298,8 +323,7 @@ final class MacAdvisor {
     }
 
     func protectedApps() -> Set<String> {
-        let c = config()
-        var out = Self.neverQuit.union(c.autoSessionAgents).union(c.agentList)
+        var out = Self.neverQuit.union(config().autoSessionAgents)
         if let ownBundleID { out.insert(ownBundleID) }
         return out
     }
@@ -316,7 +340,9 @@ final class MacAdvisor {
         if !present { notebook.setOffer(of: open.entry.id, to: .expired) }
     }
 
-    private func readKey() async -> String? {
+    /// `logging`: the user asked, so a missing key is worth a log line; the
+    /// clock's ticks would write one every five minutes.
+    private func readKey(logging: Bool) async -> String? {
         switch await keyStore.read() {
         case let .key(key):
             return key
@@ -327,6 +353,7 @@ final class MacAdvisor {
         case let .error(message):
             statusLine = "API anahtarı okunamadı: \(message)"
         }
+        if logging, let statusLine { Log.info("mac advisor: no key to ask with (\(statusLine))") }
         return nil
     }
 
@@ -350,7 +377,7 @@ final class MacAdvisor {
     // MARK: The request
 
     /// What Claude reads: the task, the open offer, the notes, the last entries and the Mac now.
-    static func prompt(_ ask: Ask, notebook: Notebook, snapshot: MacSnapshot, now: Date) -> String {
+    static func prompt(_ ask: Ask, notebook: Notebook, snapshot: MacSnapshot, now: Date, protected: Set<String> = []) -> String {
         var parts: [String] = []
         switch ask {
         case .look: parts.append("Görev: bak. Mac'te boşuna kaynak harcayan bir şey var mı?")
@@ -375,7 +402,7 @@ final class MacAdvisor {
             }
             parts.append(lines.joined(separator: "\n"))
         }
-        parts.append("Mac'in durumu:\n" + snapshot.text(now: now))
+        parts.append("Mac'in durumu:\n" + snapshot.text(now: now, protected: protected))
         return parts.joined(separator: "\n\n")
     }
 
@@ -447,14 +474,15 @@ struct AnthropicAdviceClient: AdviceWriting {
     dolduran bir uygulama, pil azken çalışan ağır bir iş gibi.
 
     Her istekte bir görev, Uykusuz defterinin son kayıtları, kalıcı notların ve Mac'in şu anki durumu \
-    gelir. Defteri hafızan say: kullanıcı bir şeyin açık kalmasını istediyse onu bir daha önerme, aynı \
-    şeyi yeniden söyleme; durum öncekinden pek farklı değilse söyleyecek bir şey yoktur.
+    gelir. Defteri hafızan say: kullanıcı bir şeyin açık kalmasını istediyse onu bir daha önerme.
 
     Görev "bak" ise: yalnızca gerçekten işe yarayacak bir şey varsa tell true olsun. Kullanıcı sık \
-    bildirim istemiyor; emin değilsen ya da kazanç küçükse tell false, message boş olsun.
-    Görev kullanıcıya yanıt vermekse: tell true olsun ve message ona yanıt versin. Kullanıcı açık \
-    öneriyi açıkça kabul ettiyse approve_open_offer, açıkça istemediyse decline_open_offer true olsun; \
-    ikisi birden true olmaz. Emin değilsen ikisi de false olsun ve sor.
+    bildirim istemiyor: aynı şeyi yeniden söyleme; durum öncekinden pek farklı değilse, emin değilsen \
+    ya da kazanç küçükse tell false, message boş olsun.
+    Görev kullanıcıya yanıt vermekse: tell true olsun ve message'da ona mutlaka yanıt ver, boş bırakma. \
+    Bir şey sorduysa durum dökümüne bakarak yanıtla; söylenecek yeni bir şey yoksa bunu söyle. Kullanıcı \
+    açık öneriyi açıkça kabul ettiyse approve_open_offer, açıkça istemediyse decline_open_offer true \
+    olsun; ikisi birden true olmaz. Emin değilsen ikisi de false olsun ve sor.
 
     message: Türkçe, en fazla iki kısa cümle; kullanıcıya "siz" diye hitap et ve nedenini sayıyla \
     söyle (örneğin "2,8 GB bellek"). Markdown, liste ve emoji kullanma.
@@ -462,9 +490,10 @@ struct AnthropicAdviceClient: AdviceWriting {
     offer: Uykusuz, kullanıcı onaylarsa şu işlerden birini yapabilir: bir simülatörü kapatmak \
     (shutdown_simulator; target: simülatörün udid'i), bir uygulamadan çıkmak (quit_app; target: \
     uygulamanın bundle id'si), bir Docker kapsayıcısını durdurmak (stop_container; target: kapsayıcının \
-    id'si). Hedefi yalnızca durum dökümünden al ve önerdiğin işi message'da adıyla an. Bunlardan biri \
-    değilse kind "none" ve target boş olsun; kullanıcının kendisi yapabileceği bir şeyse nasıl \
-    yapacağını message'da söyle.
+    id'si). Hedefi yalnızca durum dökümünden al ve önerdiğin işi message'da adıyla an. Dökümde "Uykusuz \
+    bundan çıkmaz" yazan bir uygulama için quit_app önerme. Bunlardan biri değilse kind "none" ve \
+    target boş olsun; kullanıcının kendisi yapabileceği bir şeyse nasıl yapacağını message'da söyle ve \
+    Uykusuz'un yapacağı bir iş gibi sorma.
 
     notes: İleride işine yarayacak kalıcı notların tam listesi, en fazla 12 kısa madde (örneğin \
     "ornek-db kapsayıcısı açık kalsın"). Değişmediyse aynısını geri ver.

@@ -480,9 +480,11 @@ menüdeki **Defter** penceresine yazar.
   edince: bir simülatörü kapatmak (`xcrun simctl shutdown`), bir uygulamadan
   çıkmak (kaydedilmemiş bir şey varsa uygulama sorar) ya da bir Docker
   kapsayıcısını durdurmak (`docker stop`; `docker start` ile yeniden açılır).
-  Hedef, o anki durumda gerçekten açık olan bir şey olmalıdır. Terminal
-  uygulamalarından, ajan uygulamalarından ve Uykusuz'dan hiçbir zaman çıkılmaz.
-  **Gerek yok** öneriyi kapatır.
+  Hedef, o anki durumda gerçekten açık olan bir şey olmalıdır. Terminallerden,
+  Claude, Codex ve kod düzenleyicileri gibi ajanların çalıştığı uygulamalardan ve
+  Uykusuz'dan hiçbir zaman çıkılmaz; Ayarlar'daki ajan listesinde olsalar da Docker
+  Desktop ya da bir tarayıcı önerilebilir. **Gerek yok** öneriyi kapatır; yeni bir
+  öneri gelince yanıtlanmamış eskisi kapanır, böylece "evet" hep son mesaja gider.
 - **Claude'a giden.** Açık simülatörlerin adı ve sürümü; çalışan Docker
   kapsayıcılarının adı, imajı, durumu ve kullanımı; en çok bellek ve işlemci
   kullanan uygulamaların adı, bundle kimliği, kullanımı ve en son ne zaman öne

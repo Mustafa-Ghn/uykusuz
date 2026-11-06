@@ -177,8 +177,9 @@ Uykusuz yalnızca önerdiği işi ve yalnızca kullanıcı onaylayınca yapar: b
 simülatörü kapatmak (`xcrun simctl shutdown`), bir uygulamaya çıkma isteği
 göndermek (`NSRunningApplication.terminate`; uygulama kaydetmeyi sorabilir) ya da
 bir kapsayıcıyı durdurmak (`docker stop`). Hedef, Claude'un yanıtından değil o anki
-okumadan alınır ve biçimi yeniden denetlenir; listede olmayan bir hedef, terminal
-uygulamaları, ajan uygulamaları ve Uykusuz önerilemez. Bunun dışında Claude'un
+okumadan alınır ve biçimi yeniden denetlenir; listede olmayan bir hedef,
+terminaller, Claude, Codex ve kod düzenleyicileri gibi ajanların çalıştığı
+uygulamalar ve Uykusuz önerilemez. Bunun dışında Claude'un
 yanıtı hiçbir komut çalıştırmaz.
 
 ## iPhone'a iMessage

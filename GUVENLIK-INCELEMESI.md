@@ -226,8 +226,9 @@ macOS'un sorduğu Otomasyon (Mesajlar) iznidir.
   satırları bulunmaz. Yanıt yapılandırılmış JSON'dur ve hiçbir komut çalıştırmaz;
   Uykusuz yalnızca kendi önerdiği tek işi kullanıcı onaylayınca yapar
   (`xcrun simctl shutdown`, `NSRunningApplication.terminate`, `docker stop`). Hedef
-  o anki okumadan alınır; UDID ve kapsayıcı kimliğinin biçimi denetlenir, terminal
-  ve ajan uygulamaları ile Uykusuz önerilemez. Defter `defter.json` dosyasında,
+  o anki okumadan alınır; UDID ve kapsayıcı kimliğinin biçimi denetlenir,
+  terminaller, ajanların çalıştığı uygulamalar (Claude, Codex, kod düzenleyicileri)
+  ve Uykusuz önerilemez. Defter `defter.json` dosyasında,
   sahibine özel izinlerle tutulur. Yeni izin ya da kalıcı bileşen yoktur.
 - **Claude'un yanıtını dinleme (0.8.0; 0.10.0'dan beri yalnızca istek üzerine):**
   Yalnızca kullanıcı ⌃⌥D kısayoluna ya da menüdeki öğeye basınca çalışır.

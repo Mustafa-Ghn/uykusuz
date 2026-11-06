@@ -19,8 +19,9 @@ private func sampleMac(now: Date, simulator: Bool = true, container: Bool = true
         .init(name: "Terminal", bundleID: "com.apple.Terminal", memory: 200_000_000, cpu: 1, lastActive: nil, canQuit: true),
         .init(name: "Claude", bundleID: "com.anthropic.claudefordesktop", memory: 900_000_000, cpu: 2, lastActive: nil, canQuit: true),
         .init(name: MacSnapshot.simulatorsGroup, bundleID: nil, memory: 2_500_000_000, cpu: 9, lastActive: nil, canQuit: false),
+        .init(name: "Docker", bundleID: MacSnapshot.dockerBundleID, memory: 500_000_000, cpu: 1, lastActive: nil, canQuit: true, menuBar: true),
     ]
-    mac.runningBundleIDs = ["com.example.browser", "com.apple.Terminal", "com.anthropic.claudefordesktop"]
+    mac.runningBundleIDs = ["com.example.browser", "com.apple.Terminal", "com.anthropic.claudefordesktop", MacSnapshot.dockerBundleID]
     mac.memoryTotal = 24 * 1_073_741_824
     mac.memoryPressure = 2
     mac.swapUsed = 20 * 1_073_741_824
@@ -212,6 +213,8 @@ final class MacAdvisorTests: XCTestCase {
         XCTAssertNil(a.validated(.init(kind: "erase_simulator", target: simulatorUDID), in: mac), "not a kind Uykusuz does")
         XCTAssertNil(a.validated(.init(kind: "quit_app", target: "com.apple.Terminal"), in: mac), "Claude Code runs there")
         XCTAssertNil(a.validated(.init(kind: "quit_app", target: "com.anthropic.claudefordesktop"), in: mac), "an agent app")
+        XCTAssertTrue(config.agentList.contains(MacSnapshot.dockerBundleID))
+        XCTAssertEqual(a.validated(.init(kind: "quit_app", target: MacSnapshot.dockerBundleID), in: mac)?.label, "Docker", "the lid's agent list does not keep an idle Docker Desktop from being offered")
         XCTAssertNil(a.validated(.init(kind: "quit_app", target: "com.example.missing"), in: mac))
         XCTAssertEqual(a.validated(.init(kind: "quit_app", target: "com.example.browser"), in: mac)?.label, "Örnek Tarayıcı")
         XCTAssertEqual(a.validated(.init(kind: "stop_container", target: "ornek-db"), in: mac)?.target, containerID, "by name, kept by id")
@@ -244,6 +247,28 @@ final class MacAdvisorTests: XCTestCase {
         later(MacAdvisor.declinedFor)
         await a.lookNow()
         XCTAssertEqual(a.notebook.entries.count, 3, "a day later it may be")
+    }
+
+    func testSomethingNewClosesTheOfferLeftUnanswered() async {
+        let a = make()
+        writer.enqueue(advice("Kapatayım mı?", offer: shutdown))
+        await a.lookNow()
+        writer.enqueue(advice("Takas dolmak üzere; tarayıcıdaki sekmeleri azaltın."))
+        later(MacAdvisor.lookEvery)
+        await a.lookNow()
+        XCTAssertEqual(a.notebook.entries.first?.offer?.state, .expired)
+        XCTAssertNil(a.notebook.openOffer, "a yes now could only mean the last message")
+        writer.enqueue(advice("Evet, kapatıyorum.", approve: true))
+        await a.reply("evet")
+        XCTAssertTrue(runner.runs.isEmpty, "the older offer is not carried out")
+    }
+
+    func testAReplyIsNeverLeftUnanswered() async {
+        let a = make()
+        writer.enqueue(advice(tell: false, ""))
+        await a.reply("ne durumda, boşta kullanılmayan bir şey var mı?")
+        XCTAssertEqual(a.notebook.entries.map(\.author), [.user, .uykusuz])
+        XCTAssertEqual(a.notebook.entries.last?.text, MacAdvisor.emptyAnswer)
     }
 
     func testAnOfferWhoseSimulatorWentAwayExpires() async {
@@ -354,6 +379,10 @@ final class MacAdvisorTests: XCTestCase {
         XCTAssertTrue(prompt.contains("- Örnek Tarayıcı (com.example.browser): 2,8 GB bellek, işlemci %4, en son 2 dakika önce öne geldi"))
         XCTAssertTrue(prompt.contains("takas 20,0 GB / 22,0 GB dolu"))
         XCTAssertTrue(prompt.contains("Pil: %41, pilde"))
+        let marked = MacAdvisor.prompt(.look, notebook: notebook, snapshot: mac, now: now, protected: make().protectedApps())
+        let lines = marked.split(separator: "\n").map(String.init)
+        XCTAssertEqual(lines.first { $0.hasPrefix("- Terminal ") }, "- Terminal (com.apple.Terminal): 191 MB bellek, işlemci %1, son 6 saat içinde hiç öne gelmedi, Uykusuz bundan çıkmaz")
+        XCTAssertEqual(lines.first { $0.hasPrefix("- Docker ") }, "- Docker (com.docker.docker): 477 MB bellek, işlemci %1, menü çubuğu uygulaması", "Docker can be offered, and a menu bar app's silence says nothing")
     }
 
     func testTheRequestAsksForTheSchemaAndFallsBackOnlyWhereItCan() throws {

@@ -71,8 +71,9 @@ struct MacSnapshot: Equatable, Sendable {
 
     // MARK: As text
 
-    /// The snapshot as the lines Claude reads, in Turkish.
-    func text(now: Date) -> String {
+    /// The snapshot as the lines Claude reads, in Turkish. `protected`: apps
+    /// Uykusuz never asks to quit, marked so Claude does not offer it.
+    func text(now: Date, protected: Set<String> = []) -> String {
         var lines: [String] = []
         lines.append("Mac \(Self.span(uptime)) önce açıldı.")
         var memory = "Bellek: \(Self.bytes(memoryTotal))"
@@ -123,6 +124,7 @@ struct MacSnapshot: Equatable, Sendable {
                 line += ", son \(Self.span(now.timeIntervalSince(since))) içinde hiç öne gelmedi"
             }
             if app.menuBar { line += ", menü çubuğu uygulaması" }
+            if let id = app.bundleID, protected.contains(id) { line += ", Uykusuz bundan çıkmaz" }
             lines.append(line)
         }
         return lines.joined(separator: "\n")

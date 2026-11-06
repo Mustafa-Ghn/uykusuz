@@ -4,6 +4,14 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.15.1 — 2026-11-06
+
+### Düzeltilenler
+
+- **Defter her yazdığınıza yanıt verir.** Deftere bir soru yazınca Claude bazen boş yanıt veriyor ve hiçbir şey görünmüyordu. Artık sorunuzu durum dökümüne bakarak yanıtlar; yine boş dönerse defter bunu söyler.
+- **Docker Desktop ve tarayıcılar önerilebilir.** "Docker Desktop'tan çıkmamı ister misiniz?" gibi mesajların altında düğme yoktu: Ayarlar'daki ajan listesindeki uygulamaların hiçbiri önerilemiyordu. Artık yalnızca terminaller, Claude, Codex ve kod düzenleyicileri gibi ajanların çalıştığı uygulamalar ve Uykusuz korunur; Claude da hangilerinden çıkılamayacağını bilir.
+- **"Evet" son mesaja gider.** Yeni bir öneri gelince yanıtlanmamış eskisi kapanır; böylece onayınız önünüzdeki mesaj yerine eski bir öneriyi çalıştırmaz.
+
 ## 0.15.0 — 2026-11-05
 
 ### Eklenenler
