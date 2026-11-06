@@ -483,9 +483,13 @@ menüdeki **Defter** penceresine yazar.
   Hedef, o anki durumda gerçekten açık olan bir şey olmalıdır. Terminallerden,
   Claude, Codex ve kod düzenleyicileri gibi ajanların çalıştığı uygulamalardan ve
   Uykusuz'dan hiçbir zaman çıkılmaz; Ayarlar'daki ajan listesinde olsalar da Docker
-  Desktop ya da bir tarayıcı önerilebilir. **Gerek yok** öneriyi kapatır; yeni bir
+  Desktop ya da bir tarayıcı önerilebilir. Bir Claude Code oturumunun çalıştığı ya
+  da bir sürecin bağlı olduğu simülatör, Simulator uygulaması kapalı olsa bile
+  önerilmez: Uykusuz bunun için son altı saatte yazılmış oturum kayıtlarının son
+  2 MB'ında simülatörün kimliğini (UDID) arar ve süreçlerin argümanlarına bakar. **Gerek yok** öneriyi kapatır; yeni bir
   öneri gelince yanıtlanmamış eskisi kapanır, böylece "evet" hep son mesaja gider.
-- **Claude'a giden.** Açık simülatörlerin adı ve sürümü; çalışan Docker
+- **Claude'a giden.** Açık simülatörlerin adı, sürümü, içinde açık uygulamalar ve
+  bir oturumun ya da sürecin onu kullanıp kullanmadığı; çalışan Docker
   kapsayıcılarının adı, imajı, durumu ve kullanımı; en çok bellek ve işlemci
   kullanan uygulamaların adı, bundle kimliği, kullanımı ve en son ne zaman öne
   geldiği; bellek, takas, pil, ısı ve disk durumu; defterin son kayıtları ve

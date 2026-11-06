@@ -12,6 +12,17 @@ struct MacSnapshot: Equatable, Sendable {
         var name: String
         var runtime: String
         var bootedAt: Date?
+        /// Apps running inside it.
+        var openApps: [String] = []
+        /// Processes outside it that name it, such as `simctl spawn … log
+        /// stream` or a test run.
+        var attached = 0
+        /// When the newest Claude Code session that names it last wrote,
+        /// within `sessionWindow`.
+        var sessionWrote: Date?
+
+        /// Someone is using it: never offered for a shutdown.
+        var inUse: Bool { sessionWrote != nil || attached > 0 }
     }
 
     struct Container: Equatable, Sendable {
@@ -99,6 +110,10 @@ struct MacSnapshot: Equatable, Sendable {
             for s in simulators {
                 var line = "- \(s.name) (\(s.runtime)), udid \(s.udid)"
                 if let booted = s.bootedAt { line += ", \(Self.span(now.timeIntervalSince(booted))) önce açıldı" }
+                if !s.openApps.isEmpty { line += ", içinde açık: \(s.openApps.joined(separator: ", "))" }
+                if let wrote = s.sessionWrote { line += ", bir Claude Code oturumu bununla çalışıyor (\(Self.span(now.timeIntervalSince(wrote))) önce yazdı)" }
+                if s.attached > 0 { line += ", \(s.attached) süreç buna bağlı" }
+                if !s.inUse { line += ", kullanan bir oturum ya da süreç görünmüyor" }
                 lines.append(line)
             }
         }
@@ -294,6 +309,70 @@ struct MacSnapshot: Equatable, Sendable {
 
     static let cpuWindow: Duration = .seconds(2)
     static let commandTimeout: TimeInterval = 15
+    /// How recent a session's transcript has to be for its simulators to count as in use.
+    static let sessionWindow: TimeInterval = 6 * 3600
+    /// How much of a transcript's end is searched for a simulator's UDID.
+    static let transcriptTail = 2 << 20
+
+    /// Which simulators a Claude Code session is working with: the UDID in the
+    /// end of a transcript written within `sessionWindow` (a name such as
+    /// "iPhone 17 Pro" is too common to tell). Only searched: nothing of the
+    /// transcripts is kept or sent.
+    nonisolated static func sessionUse(of udids: [String], projects: URL, now: Date, tail: Int = transcriptTail) -> [String: Date] {
+        guard !udids.isEmpty, let files = FileManager.default.enumerator(at: projects, includingPropertiesForKeys: [.contentModificationDateKey, .isRegularFileKey]) else { return [:] }
+        let needles = udids.map { ($0, Data($0.utf8)) }
+        var out: [String: Date] = [:]
+        for case let url as URL in files where url.pathExtension == "jsonl" {
+            guard let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .isRegularFileKey]),
+                  values.isRegularFile == true,
+                  let wrote = values.contentModificationDate,
+                  now.timeIntervalSince(wrote) <= sessionWindow,
+                  let handle = try? FileHandle(forReadingFrom: url) else { continue }
+            defer { try? handle.close() }
+            let size = (try? handle.seekToEnd()) ?? 0
+            try? handle.seek(toOffset: size > UInt64(tail) ? size - UInt64(tail) : 0)
+            guard let data = try? handle.readToEnd() else { continue }
+            for (udid, needle) in needles where data.range(of: needle) != nil {
+                out[udid] = max(out[udid] ?? .distantPast, wrote)
+            }
+        }
+        return out
+    }
+
+    /// For each simulator, the processes outside it whose arguments or
+    /// environment name its UDID. What runs inside one (under its
+    /// `launchd_sim`) names it too, and does not count.
+    nonisolated static func attachedCounts(_ udids: [String], processes: [BashToolWatcher.Process], arguments: (pid_t) -> String?) -> [String: Int] {
+        guard !udids.isEmpty else { return [:] }
+        var children: [pid_t: [pid_t]] = [:]
+        for p in processes { children[p.ppid, default: []].append(p.pid) }
+        var inside = Set<pid_t>()
+        var stack = processes.filter { $0.name == "launchd_sim" }.map(\.pid)
+        while let pid = stack.popLast() {
+            guard inside.insert(pid).inserted else { continue }
+            stack += children[pid] ?? []
+        }
+        var out: [String: Int] = [:]
+        for p in processes where !inside.contains(p.pid) {
+            guard let text = arguments(p.pid) else { continue }
+            for udid in udids where text.contains(udid) { out[udid, default: 0] += 1 }
+        }
+        return out
+    }
+
+    /// The apps running inside each simulator, from their executables' paths.
+    static func simulatorApps(paths: [String]) -> [String: [String]] {
+        var out: [String: Set<String>] = [:]
+        for path in paths {
+            guard let devices = path.range(of: "/CoreSimulator/Devices/"),
+                  let bundle = path.range(of: "/data/Containers/Bundle/Application/", range: devices.upperBound..<path.endIndex) else { continue }
+            let udid = String(path[devices.upperBound..<bundle.lowerBound])
+            let rest = path[bundle.upperBound...].split(separator: "/")
+            guard UUID(uuidString: udid) != nil, rest.count >= 2, rest[1].hasSuffix(".app") else { continue }
+            out[udid, default: []].insert(String(rest[1].dropLast(4)))
+        }
+        return out.mapValues { $0.sorted() }
+    }
 
     /// The Mac now. `lastActive`: bundle id to when it last came to the front.
     @MainActor
@@ -304,14 +383,14 @@ struct MacSnapshot: Equatable, Sendable {
         }
         let ids = Set(running.map(\.bundleID))
         let own = Bundle.main.bundleIdentifier
-        let measured = await Task.detached(priority: .utility) { () -> (apps: [App], hasSimulators: Bool, hasDockerVM: Bool) in
+        let measured = await Task.detached(priority: .utility) { () -> (apps: [App], simulatorApps: [String: [String]], hasSimulators: Bool, hasDockerVM: Bool) in
             let first = liveReadings()
             try? await Task.sleep(for: cpuWindow)
             let second = liveReadings()
             let seconds = Double(cpuWindow.components.seconds)
             let apps = apps(second, before: first.mapValues(\.cpuTime), seconds: seconds, running: running, lastActive: lastActive, ownBundleID: own)
             let names = second.values.map(\.name)
-            return (apps, names.contains("launchd_sim"), names.contains(where: DockerWatcher.isVirtualMachine))
+            return (apps, simulatorApps(paths: second.values.compactMap(\.path)), names.contains("launchd_sim"), names.contains(where: DockerWatcher.isVirtualMachine))
         }.value
         var snapshot = MacSnapshot(taken: now)
         snapshot.apps = measured.apps
@@ -319,7 +398,21 @@ struct MacSnapshot: Equatable, Sendable {
         snapshot.runningBundleIDs = ids
         snapshot.xcodeRunning = ids.contains(xcodeBundleID)
         snapshot.simulatorAppRunning = ids.contains(simulatorBundleID)
-        if measured.hasSimulators { snapshot.simulators = await liveSimulators() }
+        if measured.hasSimulators {
+            var simulators = await liveSimulators()
+            let udids = simulators.map(\.udid)
+            let use = await Task.detached(priority: .utility) { () -> (sessions: [String: Date], attached: [String: Int]) in
+                (sessionUse(of: udids, projects: ClaudeDigest.defaultProjectsDirectory, now: now),
+                 attachedCounts(udids, processes: BashToolWatcher.liveProcesses(), arguments: ClaudeActivity.arguments))
+            }.value
+            for i in simulators.indices {
+                let udid = simulators[i].udid
+                simulators[i].openApps = measured.simulatorApps[udid] ?? []
+                simulators[i].sessionWrote = use.sessions[udid]
+                simulators[i].attached = use.attached[udid] ?? 0
+            }
+            snapshot.simulators = simulators
+        }
         if measured.hasDockerVM { snapshot.containers = await liveContainers() }
         snapshot.memoryTotal = ProcessInfo.processInfo.physicalMemory
         snapshot.memoryPressure = sysctlInt32("kern.memorystatus_vm_pressure_level").map(Int.init)

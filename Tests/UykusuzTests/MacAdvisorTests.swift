@@ -207,6 +207,18 @@ final class MacAdvisorTests: XCTestCase {
 
     // MARK: Offers are checked
 
+    func testASimulatorInUseIsNeverOffered() {
+        let a = make()
+        mac.simulators[0].sessionWrote = now.addingTimeInterval(-600)
+        XCTAssertNil(a.validated(shutdown, in: mac), "a Claude Code session works with it")
+        mac.simulators[0].sessionWrote = nil
+        mac.simulators[0].attached = 1
+        XCTAssertNil(a.validated(shutdown, in: mac), "something streams its log")
+        mac.simulators[0].attached = 0
+        mac.simulators[0].openApps = ["OrnekUygulama"]
+        XCTAssertNotNil(a.validated(shutdown, in: mac), "an app left open alone does not make it busy")
+    }
+
     func testOnlyWhatTheSnapshotHoldsCanBeOffered() {
         let a = make()
         XCTAssertNil(a.validated(.init(kind: "shutdown_simulator", target: "11111111-2222-3333-4444-555555555555"), in: mac), "no such simulator")
@@ -374,7 +386,12 @@ final class MacAdvisorTests: XCTestCase {
         XCTAssertTrue(prompt.contains("Açık öneri: iPhone 17 Pro simülatörünü kapat (shutdown_simulator, hedef \(simulatorUDID))."))
         XCTAssertTrue(prompt.contains("- ornek-db açık kalsın."))
         XCTAssertTrue(prompt.contains("Uykusuz: Kapatayım mı? [öneri: iPhone 17 Pro simülatörünü kapat; yanıt bekliyor]"))
-        XCTAssertTrue(prompt.contains("- iPhone 17 Pro (iOS 26.0), udid \(simulatorUDID), 5 saat önce açıldı"))
+        XCTAssertTrue(prompt.contains("- iPhone 17 Pro (iOS 26.0), udid \(simulatorUDID), 5 saat önce açıldı, kullanan bir oturum ya da süreç görünmüyor"))
+        var busy = mac!
+        busy.simulators[0].openApps = ["OrnekUygulama"]
+        busy.simulators[0].sessionWrote = now.addingTimeInterval(-25 * 60)
+        busy.simulators[0].attached = 2
+        XCTAssertTrue(busy.text(now: now).contains("udid \(simulatorUDID), 5 saat önce açıldı, içinde açık: OrnekUygulama, bir Claude Code oturumu bununla çalışıyor (25 dakika önce yazdı), 2 süreç buna bağlı\n"))
         XCTAssertTrue(prompt.contains("- ornek-db (postgres:16), id \(containerID), Up 3 days, işlemci 0.10%, bellek 120MiB / 7.6GiB"))
         XCTAssertTrue(prompt.contains("- Örnek Tarayıcı (com.example.browser): 2,8 GB bellek, işlemci %4, en son 2 dakika önce öne geldi"))
         XCTAssertTrue(prompt.contains("takas 20,0 GB / 22,0 GB dolu"))
@@ -502,6 +519,43 @@ final class MacSnapshotTests: XCTestCase {
         let listed = MacSnapshot.apps(many, before: [:], seconds: 2, running: docker, lastActive: [:], ownBundleID: "com.mustafaghn.uykusuz")
         XCTAssertEqual(listed.count, MacSnapshot.appsByMemory + 1)
         XCTAssertEqual(listed.last?.bundleID, MacSnapshot.dockerBundleID, "Docker Desktop is listed however little it holds")
+    }
+
+    func testASessionWorkingWithASimulatorIsFoundInItsTranscript() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("transcripts-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let project = root.appendingPathComponent("-Users-me-ornek", isDirectory: true)
+        try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
+        let other = "11111111-2222-3333-4444-555555555555"
+        let now = Date()
+        func write(_ name: String, _ text: String, age: TimeInterval) throws {
+            let url = project.appendingPathComponent(name)
+            try Data(text.utf8).write(to: url)
+            try FileManager.default.setAttributes([.modificationDate: now.addingTimeInterval(-age)], ofItemAtPath: url.path)
+        }
+        try write("a.jsonl", String(repeating: "x", count: 5000) + "{\"device\":\"\(simulatorUDID)\"}", age: 60)
+        try write("b.jsonl", "{\"device\":\"\(other)\"}", age: MacSnapshot.sessionWindow + 60)
+        try write("c.txt", simulatorUDID, age: 1)
+        let use = MacSnapshot.sessionUse(of: [simulatorUDID, other], projects: root, now: now, tail: 1000)
+        XCTAssertEqual(Set(use.keys), [simulatorUDID], "only a recent transcript, in its end")
+        XCTAssertEqual(use[simulatorUDID]?.timeIntervalSince1970 ?? 0, now.addingTimeInterval(-60).timeIntervalSince1970, accuracy: 1)
+        XCTAssertTrue(MacSnapshot.sessionUse(of: [simulatorUDID], projects: root, now: now, tail: 10).isEmpty, "beyond the searched end")
+    }
+
+    func testWhatRunsInsideASimulatorDoesNotCountAsAttached() {
+        let p = { (pid: pid_t, ppid: pid_t, name: String) in BashToolWatcher.Process(pid: pid, ppid: ppid, name: name, started: Date()) }
+        let processes = [p(10, 1, "launchd_sim"), p(11, 10, "SpringBoard"), p(20, 5, "simctl"), p(30, 5, "zsh")]
+        let args: [pid_t: String] = [10: "launchd_sim /Devices/\(simulatorUDID)/data", 11: "SIMULATOR_UDID=\(simulatorUDID)", 20: "simctl spawn \(simulatorUDID) log stream", 30: "zsh"]
+        XCTAssertEqual(MacSnapshot.attachedCounts([simulatorUDID], processes: processes, arguments: { args[$0] }), [simulatorUDID: 1])
+    }
+
+    func testTheAppsOpenInASimulatorAreRead() {
+        let paths = [
+            "/Users/me/Library/Developer/CoreSimulator/Devices/\(simulatorUDID)/data/Containers/Bundle/Application/0A0B/OrnekUygulama.app/OrnekUygulama",
+            "/Users/me/Library/Developer/CoreSimulator/Devices/\(simulatorUDID)/data/Containers/Bundle/Application/0C0D/Widget.app/PlugIns/W.appex/W",
+            "/Library/Developer/CoreSimulator/Volumes/iOS/RuntimeRoot/System/Library/CoreServices/SpringBoard.app/SpringBoard",
+        ]
+        XCTAssertEqual(MacSnapshot.simulatorApps(paths: paths), [simulatorUDID: ["OrnekUygulama", "Widget"]])
     }
 
     func testFiguresReadTurkish() {

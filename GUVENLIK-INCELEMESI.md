@@ -223,7 +223,10 @@ macOS'un sorduğu Otomasyon (Mesajlar) iznidir.
   `api.anthropic.com`'a birer istek gider. İstekte simülatör, kapsayıcı ve
   uygulama adlarıyla bellek, işlemci, takas, pil, ısı ve disk sayıları, defterin
   son kayıtları ve notlar bulunur; pencere başlıkları, dosya adları, yollar ve komut
-  satırları bulunmaz. Yanıt yapılandırılmış JSON'dur ve hiçbir komut çalıştırmaz;
+  satırları bulunmaz. Bir simülatörün kullanımda olup olmadığı, son altı saatte
+  yazılmış Claude Code kayıtlarının son 2 MB'ında ve süreç argümanlarında UDID'si
+  aranarak anlaşılır (0.15.3); kullanımdaki bir simülatör kapatılmak üzere
+  önerilemez. Yanıt yapılandırılmış JSON'dur ve hiçbir komut çalıştırmaz;
   Uykusuz yalnızca kendi önerdiği tek işi kullanıcı onaylayınca yapar
   (`xcrun simctl shutdown`, `NSRunningApplication.terminate`, `docker stop`). Hedef
   o anki okumadan alınır; UDID ve kapsayıcı kimliğinin biçimi denetlenir,

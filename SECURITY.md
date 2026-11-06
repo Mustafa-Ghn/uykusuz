@@ -167,7 +167,11 @@ yazınca da birer istek gider. İstekte açık simülatörlerin adı, sürümü 
 bellek ve işlemci kullanan uygulamaların adı, bundle kimliği, kullanımı ve en son
 ne zaman öne geldiği; bellek, takas, pil, ısı ve disk durumu; defterin son
 kayıtları ve Claude'un notları bulunur. Pencere başlıkları, dosya adları, klasör
-yolları, komut satırları ve dosya içerikleri bulunmaz. Süreçler bu kullanıcının
+yolları, komut satırları ve dosya içerikleri bulunmaz. Bir simülatörü kullanan
+olup olmadığını anlamak için son altı saatte yazılmış Claude Code kayıtlarının son
+2 MB'ında ve süreçlerin argümanlarında (`KERN_PROCARGS2`) simülatörün UDID'si aranır;
+istekte yalnızca "bir oturum bununla çalışıyor" ve bağlı süreç sayısı bulunur,
+kayıtlardan ve argümanlardan başka bir şey alınmaz. Süreçler bu kullanıcının
 kendi süreçleridir ve `proc_pid_rusage` ile yalnızca okunur; simülatörler
 `xcrun simctl list`, kapsayıcılar Docker Desktop'ın kendi soketinde `docker ps` ve
 `docker stats --no-stream` ile okunur. Defter `defter.json` dosyasında, sahibine

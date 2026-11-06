@@ -4,6 +4,12 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.15.3 — 2026-11-06
+
+### Düzeltilenler
+
+- **Defter kullanımdaki simülatörü kapatmayı önermez.** Simulator uygulaması kapalıyken açık duran simülatörler boşta sanılıyordu; oysa bu simülatörleri çoğu zaman başka Claude Code oturumları kullanıyor. Artık Uykusuz, bir oturumun son altı saatte bir simülatörle çalıştığını kayıtlarından, ona bağlı bir süreç olduğunu da süreç listesinden anlar ve böyle bir simülatörü önermez; Claude da hangisinde hangi uygulamanın açık olduğunu görür.
+
 ## 0.15.2 — 2026-11-06
 
 ### Düzeltilenler

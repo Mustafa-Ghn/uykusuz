@@ -308,7 +308,8 @@ final class MacAdvisor {
         let target = proposal.target.trimmingCharacters(in: .whitespacesAndNewlines)
         switch Notebook.Offer.Kind(rawValue: proposal.kind) {
         case .shutdownSimulator?:
-            guard let simulator = mac.simulators.first(where: { $0.udid.caseInsensitiveCompare(target) == .orderedSame }) else { return nil }
+            // One a session or a tool is using is not idle, however it looks.
+            guard let simulator = mac.simulators.first(where: { $0.udid.caseInsensitiveCompare(target) == .orderedSame }), !simulator.inUse else { return nil }
             return Notebook.Offer(kind: .shutdownSimulator, target: simulator.udid, label: simulator.name)
         case .quitApp?:
             guard !protectedApps().contains(target), let app = mac.apps.first(where: { $0.bundleID == target && $0.canQuit }) else { return nil }
@@ -491,7 +492,9 @@ struct AnthropicAdviceClient: AdviceWriting {
     (shutdown_simulator; target: simülatörün udid'i), bir uygulamadan çıkmak (quit_app; target: \
     uygulamanın bundle id'si), bir Docker kapsayıcısını durdurmak (stop_container; target: kapsayıcının \
     id'si). Hedefi yalnızca durum dökümünden al ve önerdiğin işi message'da adıyla an. Dökümde "Uykusuz \
-    bundan çıkmaz" yazan bir uygulama için quit_app önerme. Bunlardan biri değilse kind "none" ve \
+    bundan çıkmaz" yazan bir uygulama için quit_app önerme. Bu Mac'te simülatörleri Claude Code \
+    oturumları kullanır: dökümde bir oturumun çalıştığı ya da bir sürecin bağlı olduğu yazan \
+    simülatörü boşta sayma ve kapatmayı önerme; Simulator uygulamasının kapalı olması bir şey söylemez. Bunlardan biri değilse kind "none" ve \
     target boş olsun; kullanıcının kendisi yapabileceği bir şeyse nasıl yapacağını message'da söyle ve \
     Uykusuz'un yapacağı bir iş gibi sorma.
 
