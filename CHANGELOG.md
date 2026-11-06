@@ -4,6 +4,12 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.15.2 — 2026-11-06
+
+### Düzeltilenler
+
+- **Tek bir başarısız pil okumasına yine 30 saniye tanınır.** Pil okunamadığında Uykusuz düzeyi 30 saniye sonra yeniden okur. Arada menüyü açtığınızda pil okunabildiyse bu yeniden okuma artık iptal edilir; önceden eski zamanında yine yapılıyordu ve menü o arada pili yine okuyamadıysa ikinci başarısız okuma 30 saniye beklenmeden sayılıp pil gücündeki oturum bitebiliyordu.
+
 ## 0.15.1 — 2026-11-06
 
 ### Düzeltilenler

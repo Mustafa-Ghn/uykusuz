@@ -45,17 +45,22 @@ final class PowerMonitor {
 
     private let reader: Reader
     private let recheckDelay: Duration
+    private let observesSystem: Bool
     private var source: CFRunLoopSource?
     private var thermalObserver: NSObjectProtocol?
     private var running = false
     private var recheck: Task<Void, Never>?
 
-    /// `reader` and `recheckDelay` are injection points for tests; the
-    /// defaults read IOKit and wait 30 s between re-reads of an unreadable
-    /// battery.
-    init(reader: @escaping Reader = { PowerMonitor.readBattery() }, recheckDelay: Duration = .seconds(30)) {
+    /// `reader`, `recheckDelay` and `observesSystem` are injection points
+    /// for tests; the defaults read IOKit, wait 30 s between re-reads of an
+    /// unreadable battery, and listen for IOKit's power source events and
+    /// thermal state changes while started. A test that counts reads or
+    /// changes passes `observesSystem: false`: a laptop posts a power source
+    /// event about once a minute, and each one calls the reader.
+    init(reader: @escaping Reader = { PowerMonitor.readBattery() }, recheckDelay: Duration = .seconds(30), observesSystem: Bool = true) {
         self.reader = reader
         self.recheckDelay = recheckDelay
+        self.observesSystem = observesSystem
     }
 
     func start() {
@@ -66,20 +71,22 @@ final class PowerMonitor {
         refreshBattery()
         thermalState = ProcessInfo.processInfo.thermalState
 
-        let refcon = Unmanaged.passUnretained(self).toOpaque()
-        if let s = IOPSNotificationCreateRunLoopSource(Self.callback, refcon)?.takeRetainedValue() {
-            source = s
-            CFRunLoopAddSource(CFRunLoopGetMain(), s, .commonModes)
-        } else {
-            Log.error("power monitor: IOPSNotificationCreateRunLoopSource failed")
-        }
+        if observesSystem {
+            let refcon = Unmanaged.passUnretained(self).toOpaque()
+            if let s = IOPSNotificationCreateRunLoopSource(Self.callback, refcon)?.takeRetainedValue() {
+                source = s
+                CFRunLoopAddSource(CFRunLoopGetMain(), s, .commonModes)
+            } else {
+                Log.error("power monitor: IOPSNotificationCreateRunLoopSource failed")
+            }
 
-        thermalObserver = NotificationCenter.default.addObserver(
-            forName: ProcessInfo.thermalStateDidChangeNotification,
-            object: nil,
-            queue: nil
-        ) { [weak self] _ in
-            Task { @MainActor in self?.handleThermal() }
+            thermalObserver = NotificationCenter.default.addObserver(
+                forName: ProcessInfo.thermalStateDidChangeNotification,
+                object: nil,
+                queue: nil
+            ) { [weak self] _ in
+                Task { @MainActor in self?.handleThermal() }
+            }
         }
         Log.info("power monitor started (battery \(Self.describe(battery)), \(isCharging ? "charging" : "on battery"), thermal \(Self.name(thermalState)))")
     }
@@ -103,8 +110,11 @@ final class PowerMonitor {
     /// path and the recheck count them, so a menu opened during a transient
     /// miss cannot be the second one, and the count never moves without
     /// `handleBattery` seeing the move and running the floor rules. A battery
-    /// that stays unreadable keeps its count; one that has just become
-    /// unreadable gets a recheck if none is pending.
+    /// that stays unreadable keeps its count and its pending recheck, so
+    /// opening the menu again and again cannot put the second read off; one
+    /// that has just become unreadable gets a recheck, and one read again
+    /// drops it, as on the event path, so the recheck for a later miss comes
+    /// a full `recheckDelay` after that miss.
     func refreshBattery() {
         let snap = reader()
         if case .unreadable = snap.battery, case .unreadable = battery {
@@ -113,7 +123,11 @@ final class PowerMonitor {
             battery = snap.battery
         }
         isCharging = snap.charging
-        if recheck == nil { scheduleRecheckIfUnreadable() }
+        if case .unreadable = battery, recheck != nil {
+            // Keep the pending recheck.
+        } else {
+            scheduleRecheckIfUnreadable()
+        }
     }
 
     /// The read behind IOKit events and the recheck. A miss after a miss

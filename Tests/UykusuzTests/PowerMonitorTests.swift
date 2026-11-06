@@ -3,7 +3,8 @@ import XCTest
 @testable import Uykusuz
 
 /// `PowerMonitor` with power source descriptions built by hand and an
-/// injected reader. Nothing here changes power state.
+/// injected reader. Nothing here changes power state, and no monitor here
+/// listens for the Mac's own power source or thermal events.
 @MainActor
 final class PowerMonitorTests: XCTestCase {
     private func battery(current: Int? = 50, max: Int? = 100, state: String = kIOPSBatteryPowerValue, charging: Bool = false) -> [String: Any] {
@@ -102,6 +103,16 @@ final class PowerMonitorTests: XCTestCase {
         }
     }
 
+    /// A monitor that reads only through `reads` and listens for none of
+    /// the Mac's own events. A laptop posts a power source event about once
+    /// a minute, and a monitor listening for them calls `reads.read()` for
+    /// each: one that came within the last 200 ms of
+    /// `testUnreadableBatteryIsRecheckedWhileStarted` failed it with a read
+    /// after the recovery.
+    private func makeMonitor(_ reads: Reads, recheckDelay: Duration = .milliseconds(50)) -> PowerMonitor {
+        PowerMonitor(reader: { reads.read() }, recheckDelay: recheckDelay, observesSystem: false)
+    }
+
     private func waitUntil(_ what: String, _ condition: () -> Bool) async {
         let deadline = Date().addingTimeInterval(5)
         while !condition(), Date() < deadline {
@@ -115,7 +126,7 @@ final class PowerMonitorTests: XCTestCase {
     /// replaces the state, and a miss after it starts the count over.
     func testMenuRefreshKeepsTheMissCountWhereItIs() {
         let reads = Reads()
-        let monitor = PowerMonitor(reader: { reads.read() }, recheckDelay: .seconds(3600))
+        let monitor = makeMonitor(reads, recheckDelay: .seconds(3600))
         XCTAssertEqual(monitor.battery, .none)
         monitor.refreshBattery()
         XCTAssertEqual(monitor.battery, .unreadable(misses: 1))
@@ -139,7 +150,7 @@ final class PowerMonitorTests: XCTestCase {
     /// one; the recheck makes it two and reports the change.
     func testMenuRefreshDuringAMissDoesNotHideTheSecondMissFromTheFloorRules() async {
         let reads = Reads()
-        let monitor = PowerMonitor(reader: { reads.read() }, recheckDelay: .milliseconds(50))
+        let monitor = makeMonitor(reads)
         var changes = 0
         monitor.onChange = { changes += 1 }
 
@@ -160,7 +171,7 @@ final class PowerMonitorTests: XCTestCase {
     func testMenuRefreshStartsTheRecheckWhenTheBatteryTurnsUnreadable() async {
         let reads = Reads()
         reads.next = (.percent(80), false)
-        let monitor = PowerMonitor(reader: { reads.read() }, recheckDelay: .milliseconds(50))
+        let monitor = makeMonitor(reads)
         var changes = 0
         monitor.onChange = { changes += 1 }
 
@@ -175,6 +186,25 @@ final class PowerMonitorTests: XCTestCase {
         XCTAssertEqual(changes, 1)
     }
 
+    /// A menu refresh that reads the battery again drops the pending
+    /// recheck, as the event path does. Left pending, it still read on its
+    /// old schedule, and if the menu had seen a new miss by then, it counted
+    /// the second miss sooner than a full `recheckDelay` after that one.
+    func testMenuRefreshThatReadsTheBatteryAgainDropsThePendingRecheck() async {
+        let reads = Reads()
+        let monitor = makeMonitor(reads)
+
+        monitor.start()
+        defer { monitor.stop() }
+        XCTAssertEqual(monitor.battery, .unreadable(misses: 1))
+        reads.next = (.percent(80), false)
+        monitor.refreshBattery()
+        XCTAssertEqual(monitor.battery, .percent(80))
+        let after = reads.count
+        try? await Task.sleep(for: .milliseconds(200))
+        XCTAssertEqual(reads.count, after, "the recheck from before the recovery still read")
+    }
+
     /// IOKit sends no event for a read that keeps failing. While started
     /// and unreadable, the monitor re-reads on its own and reports the
     /// second miss as a change; the count is capped there, so a battery
@@ -182,7 +212,7 @@ final class PowerMonitorTests: XCTestCase {
     /// readable again it stops re-reading.
     func testUnreadableBatteryIsRecheckedWhileStarted() async {
         let reads = Reads()
-        let monitor = PowerMonitor(reader: { reads.read() }, recheckDelay: .milliseconds(50))
+        let monitor = makeMonitor(reads)
         var changes = 0
         monitor.onChange = { changes += 1 }
 
@@ -209,7 +239,7 @@ final class PowerMonitorTests: XCTestCase {
     /// Misses before a stop are not consecutive with the next start.
     func testStartBeginsAFreshCount() async {
         let reads = Reads()
-        let monitor = PowerMonitor(reader: { reads.read() }, recheckDelay: .milliseconds(50))
+        let monitor = makeMonitor(reads)
         monitor.start()
         await waitUntil("second miss never reported") { monitor.battery == .unreadable(misses: 2) }
         monitor.stop()
@@ -220,7 +250,7 @@ final class PowerMonitorTests: XCTestCase {
 
     func testStopCancelsTheRecheck() async {
         let reads = Reads()
-        let monitor = PowerMonitor(reader: { reads.read() }, recheckDelay: .milliseconds(50))
+        let monitor = makeMonitor(reads)
         monitor.start()
         monitor.stop()
         let after = reads.count
