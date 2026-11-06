@@ -674,10 +674,46 @@ final class UIStatusTests: XCTestCase {
         }
     }
 
+    /// Every change of the pills' phase, as the phase left and whether the
+    /// slots were still in the layout. Observation calls back before a
+    /// change is stored, so each entry is read in the turn that makes the
+    /// change, however late the main queue serves that turn.
+    @MainActor
+    private final class PhaseLog {
+        private(set) var left: [(phase: MenuBarModel.Phase, slotsPresent: Bool)] = []
+        private let model: MenuBarModel
+
+        init(_ model: MenuBarModel) {
+            self.model = model
+            watch()
+        }
+
+        private func watch() {
+            withObservationTracking {
+                _ = model.phase
+            } onChange: { [weak self] in
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    self.left.append((self.model.phase, self.model.slotsPresent))
+                    self.watch()
+                }
+            }
+        }
+    }
+
     /// The pills take a moment to fold, and the session can end inside
     /// that window: the deadline fires between the Esc and the slots
     /// leaving. The landing is read when the slots leave, so the countdown
     /// does not come back for a session that is already over.
+    ///
+    /// The Esc comes in the main-queue turn that ends the session, just
+    /// before the session is cleared, so the end is inside the fold however
+    /// late the queue is served. Asked for after the Esc, the end could
+    /// outlast the fold: each of its awaits waits for a turn of the main
+    /// queue, which an async test serves up to ~400 ms late, and the
+    /// landing would then read a live session. `end` returns turns after
+    /// the session is cleared, at times after the landing, so the pills
+    /// are read as each change is made (`PhaseLog`), not when it returns.
     @MainActor
     func testCollapseReadsTheSessionWhenTheSlotsLeaveNotWhenThePillsStartFolding() async throws {
         try XCTSkipIf(Motion.reduceMotion, "needs a non-zero pill stagger")
@@ -689,19 +725,30 @@ final class UIStatusTests: XCTestCase {
         lab.controller.expand(mode: .extend)
         await lab.settleOpen()
 
-        lab.controller.collapse()
-        XCTAssertTrue(lab.model.pillsCollapsing)
-        // The session ends while the pills are still folding.
+        let phases = PhaseLog(lab.model)
+        let atEsc = Locked<(sessionActive: Bool, folding: Bool)?>(nil)
+        withObservationTracking {
+            _ = lab.manager.session
+        } onChange: { [manager = lab.manager, controller = lab.controller] in
+            // The end is clearing the session: Esc, before it is stored.
+            MainActor.assumeIsolated {
+                let active = manager.isActive
+                controller.collapse()
+                atEsc.value = (active, controller.model.pillsCollapsing)
+            }
+        }
         await lab.manager.end(reason: .user)
-        try? await Task.sleep(for: .milliseconds(50))
-        XCTAssertTrue(lab.model.slotsPresent, "still closing")
-        XCTAssertEqual(lab.model.phase, .entering(.start), "the ended session turns the extend pills into start pills")
+        let esc = try XCTUnwrap(atEsc.value, "the end never cleared the session")
+        XCTAssertTrue(esc.sessionActive, "the pills start folding over a live session")
+        XCTAssertTrue(esc.folding)
 
         await lab.settleClose()
         XCTAssertFalse(lab.manager.isActive)
         XCTAssertEqual(lab.model.phase, .idle, "read at the landing: no countdown for a session that is over")
         XCTAssertEqual(lab.model.visiblePills, 0)
         XCTAssertFalse(lab.model.slotsPresent)
+        XCTAssertEqual(phases.left.map { $0.phase }, [.entering(.extend), .entering(.start)], "the ended session turns the extend pills into start pills, then the slots leave")
+        XCTAssertEqual(phases.left.first?.slotsPresent, true, "still closing when the end reaches the pills")
     }
 
     /// Opening puts the three slots in the layout before any pill shows
