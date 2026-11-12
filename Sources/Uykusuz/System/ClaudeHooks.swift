@@ -15,7 +15,9 @@ import Foundation
 /// file per Claude Code session under the app support folder while a task
 /// runs. `ClaudeActivity` reads them. With automatic approval on, the
 /// `PermissionRequest` hook also answers a permission request
-/// (`ClaudeHookCommand.decision`).
+/// (`ClaudeHookCommand.decision`). The `StopFailure` hook stays in the
+/// background for a turn a network outage ended and wakes the session when
+/// the network is back (`ClaudeOutageResume`).
 enum ClaudeHooks {
     static let flag = "--claude-hook"
     static let events = [
@@ -37,12 +39,35 @@ enum ClaudeHooks {
     /// nothing otherwise, and a missing or broken Uykusuz still never
     /// blocks Claude Code: no output is no decision.
     static let answeringCommand = #""$HOME/Applications/Uykusuz.app/Contents/MacOS/Uykusuz" --claude-hook 2>/dev/null || true"#
+    /// For `StopFailure`: what it writes to stderr and a status of
+    /// `ClaudeOutageResume.wakeStatus` reach Claude Code, which wakes the
+    /// session on that status alone. Any other ending, a missing or broken
+    /// Uykusuz among them, is status 0 and changes nothing.
+    static let resumingCommand = #""$HOME/Applications/Uykusuz.app/Contents/MacOS/Uykusuz" --claude-hook >/dev/null; [ $? -eq 2 ] && exit 2; exit 0"#
     static let timeout = 10
+    /// How long Claude Code lets the `StopFailure` hook wait for the
+    /// network: a day, so a Mac that slept through the night still resumes
+    /// when it wakes. The hook ends itself much sooner
+    /// (`ClaudeOutageResume.maxWait`).
+    static let resumingTimeout = 24 * 3600
     /// Where the first install keeps the file as it was.
     static let backupSuffix = ".uykusuz-yedek"
 
     static func command(for event: String) -> String {
-        event == "PermissionRequest" ? answeringCommand : command
+        switch event {
+        case "PermissionRequest": answeringCommand
+        case "StopFailure": resumingCommand
+        default: command
+        }
+    }
+
+    /// The hook as it goes into the settings. `StopFailure` runs in the
+    /// background and may wake the session (`asyncRewake`).
+    static func entry(for event: String) -> [String: Any] {
+        guard event == "StopFailure" else {
+            return ["type": "command", "command": command(for: event), "timeout": timeout]
+        }
+        return ["type": "command", "command": resumingCommand, "timeout": resumingTimeout, "asyncRewake": true]
     }
 
     static var defaultSettingsURL: URL {
@@ -81,7 +106,7 @@ enum ClaudeHooks {
                 changed = true
             }
             if !groups.contains(where: containsOurHook) {
-                var group: [String: Any] = ["hooks": [["type": "command", "command": wanted, "timeout": timeout]]]
+                var group: [String: Any] = ["hooks": [entry(for: event)]]
                 if let matcher = matchers[event] { group["matcher"] = matcher }
                 groups.append(group)
                 changed = true
@@ -245,16 +270,23 @@ struct ClaudeTaskMarker: Codable, Equatable, Sendable {
 /// session's marker; Claude stopping for the user marks it waiting, and the
 /// next sign of work clears that; Claude finishing or the session ending
 /// removes it. Always exits 0 and prints nothing, so it changes no tool
-/// call, with one exception the user turns on: with automatic approval on
-/// (`Config.autoApprovePermissions`), a permission request that is not a
-/// question or a plan to approve gets an approval on stdout, and the
-/// session goes on as at work rather than waiting.
+/// call, with two exceptions the user can turn off or on: with automatic
+/// approval on (`Config.autoApprovePermissions`), a permission request that
+/// is not a question or a plan to approve gets an approval on stdout, and
+/// the session goes on as at work rather than waiting; and for a turn a
+/// network outage ended (`Config.resumeAfterOutage`), `StopFailure` waits
+/// for the network and then exits with `ClaudeOutageResume.wakeStatus`.
 enum ClaudeHookCommand {
     struct Input: Decodable {
         let session_id: String?
         let hook_event_name: String?
         let notification_type: String?
         let tool_name: String?
+        /// `StopFailure`: what Claude Code filed the failure under.
+        let error: String?
+        let transcript_path: String?
+        /// `UserPromptSubmit`: what starts the turn.
+        let prompt: String?
     }
 
     /// The approval Claude Code reads from a `PermissionRequest` hook.
@@ -315,7 +347,8 @@ enum ClaudeHookCommand {
         now: Date = Date(),
         claudeProcess: () -> (pid: Int32, identity: ProcessIdentity?)? = ClaudeHookCommand.findClaudeProcess,
         autoApprove: (Paths) -> Bool = ClaudeHookCommand.liveAutoApprove,
-        write: (String) -> Void = { print($0) }
+        write: (String) -> Void = { print($0) },
+        outage: @autoclosure () -> ClaudeOutageResume.Environment = .live
     ) -> Int32? {
         guard arguments.first == ClaudeHooks.flag else { return nil }
         guard let input = try? JSONDecoder().decode(Input.self, from: readInput()),
@@ -327,6 +360,17 @@ enum ClaudeHookCommand {
             effect = .busy
         }
         guard let name = markerName(input.session_id) else { return 0 }
+        if event == "StopFailure" {
+            return ClaudeOutageResume.handle(
+                session: name, error: input.error, transcript: input.transcript_path,
+                paths: paths, now: now, claudeProcess: claudeProcess, environment: outage()
+            )
+        }
+        // Any other sign of life ends a wait for the network and its count
+        // of resumes, except the prompt a resume itself made.
+        if effect != nil, !(event == "UserPromptSubmit" && ClaudeOutageResume.isResumePrompt(input.prompt)) {
+            ClaudeOutageResume.clear(session: name, paths: paths)
+        }
         let dir = markerDirectory(paths)
         let file = dir.appendingPathComponent(name)
         switch effect {
@@ -335,22 +379,25 @@ enum ClaudeHookCommand {
             // repeat it (a dialog's request, then its notification).
             let since = kind == .waiting ? (readMarker(file)?.waitingSince ?? now) : nil
             let process = claudeProcess()
-            let marker = ClaudeTaskMarker(pid: process?.pid ?? 0, identity: process?.identity, event: event, updatedAt: now, waitingSince: since)
-            do {
-                _ = try OwnerOnly.createDirectory(dir)
-                let encoder = JSONEncoder()
-                encoder.dateEncodingStrategy = .iso8601
-                try encoder.encode(marker).write(to: file, options: .atomic)
-                chmod(file.path, 0o600)
-            } catch {
-                Log.error("claude hook: could not write \(file.path): \(error.localizedDescription)")
-            }
+            writeMarker(ClaudeTaskMarker(pid: process?.pid ?? 0, identity: process?.identity, event: event, updatedAt: now, waitingSince: since), to: file)
         case .idle?:
             try? FileManager.default.removeItem(at: file)
         default:
             break
         }
         return 0
+    }
+
+    static func writeMarker(_ marker: ClaudeTaskMarker, to file: URL) {
+        do {
+            _ = try OwnerOnly.createDirectory(file.deletingLastPathComponent())
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            try encoder.encode(marker).write(to: file, options: .atomic)
+            chmod(file.path, 0o600)
+        } catch {
+            Log.error("claude hook: could not write \(file.path): \(error.localizedDescription)")
+        }
     }
 
     static func readMarker(_ file: URL) -> ClaudeTaskMarker? {

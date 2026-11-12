@@ -52,7 +52,9 @@ Claude Code çalışırken oturumu kendiliğinden açıp kapatıyor.
   `MacAdvisor.swift` dosyasında kullanılır; tek adres
   `https://api.anthropic.com/v1/messages`'tır. Defter (0.15.0), anahtar kayıtlıysa
   ve Ayarlar'da açıksa kullanıcı Mac'in başındayken iki saatte bir kendiliğinden
-  bir istek gönderir. `NWConnection` kullanımı yoktur.
+  bir istek gönderir. `NWConnection` yalnızca `ClaudeOutageResume.swift`
+  dosyasındaki ağ denetiminde kullanılır (0.16.0): Claude'un API sunucusuna
+  açılan ve üzerinden veri gönderilmeyen bir TCP bağlantısı.
 - `NWPathMonitor` yalnızca Wi-Fi bağlantısının durumunu izler, ağ trafiği
   oluşturmaz.
 - Betiklerde `curl`, `wget`, `nc`, `ssh` ya da indirilen bir içeriği çalıştırma
@@ -327,6 +329,26 @@ macOS'un sorduğu Otomasyon (Mesajlar) iznidir.
   Claude Code'un deny ve ask kuralları onaylanan bir çağrıya yine uygulanır.
   Etkisi bypass moduna yakındır: Claude'u yönlendiren bir içerik zararlı bir
   komutu onaylatabilir.
+- **Ağ kesintisinden sonra kendiliğinden sürdürme (0.16.0):** Varsayılan olarak
+  açıktır ve Ayarlar'dan kapatılır. `StopFailure` hook'u artık arka planda
+  çalışır (`asyncRewake`, süre sınırı 24 saat) ve çıkış kodu Claude Code'a
+  ulaşır; komut yalnızca Uykusuz 2 ile çıktığında 2, başka her durumda (Uykusuz
+  yoksa ya da çökerse de) 0 döndürür. Hook yalnızca Claude Code'un
+  `server_error` saydığı ve API sunucusuna ulaşılamayan ya da kayıttaki son
+  denemede `isNetworkDown` görülen bir turda bekler; `rate_limit`,
+  `billing_error`, `authentication_failed`, `invalid_request` gibi diğer
+  hatalarda hemen 0 ile çıkar. Ağ gelince stderr'e sabit bir Türkçe not yazıp 2
+  ile çıkar ve Claude Code oturumu o notla uyandırır; nota dışarıdan gelen
+  hiçbir metin girmez, hook bir izne yanıt vermez. Ağ denetimi beş saniyede bir
+  `api.anthropic.com:443` adresine (oturumun `ANTHROPIC_BASE_URL` değeri bu
+  Mac'i göstermiyorsa oraya) açılan ve üzerinden veri gönderilmeyen bir TCP
+  bağlantısıdır. Kayıt dosyasının yalnızca `.jsonl` uzantılı olanının son 512
+  KB'ı okunur ve oradan yalnızca son denemenin ağ durumu alınır. Bekleme
+  sırasında oturumun işaret dosyası bir saat tutulur (Mac uyanık kalır);
+  `claude-outages` klasörüne oturum başına 0600 izinli bir bekleme dosyası
+  yazılır. Bir oturum art arda en çok üç kez sürdürülür, hook en çok altı saat
+  bekler; kullanıcı o oturuma yazarsa ya da Claude kapanırsa hook hiçbir şey
+  eklemeden çıkar. Yeni `sudo` komutu ya da kalıcı bileşen yoktur.
 - **Güncelleme denetimi:** Kaldırıldı; incelenen sürümün tek ağ isteği buydu.
 
 ## Kötü amaçlı olmayan zayıf noktalar

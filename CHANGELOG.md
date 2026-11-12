@@ -4,6 +4,19 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.16.0 — 2026-11-12
+
+### Eklenenler
+
+- **Ağ kesintisinden duran Claude oturumu kendiliğinden sürer.** İnternet kesilince Claude Code yaklaşık üç dakika dener, sonra turu hatayla bitirir ve ağ geri gelse de siz "Try again" düğmesine basana kadar bekler. Artık Uykusuz ağın geri gelmesini bekler ve oturumu uyandırır; Claude yarım kalan işi kaldığı yerden sürdürür. Ayarlar > Claude, kod modu ve ekran bölümündeki "Ağ kesintisinden duran Claude oturumunu kendiliğinden sürdür" ile kapatılır.
+- **Yalnızca ağ kesintisinde.** Kullanım ya da harcama sınırı, biten kredi, oturum açma sorunu, reddedilen bir istek ya da güvenlik nedeniyle gelen bir kısıtlama yüzünden duran oturuma dokunulmaz; onu yeniden denemek size kalır.
+- **Beklerken Mac uyanık kalır.** Ağ beklenirken oturum bir saate kadar çalışıyor sayılır; böylece kapak kapalıyken Mac uyumaz ve hotspot'a geçiş denenmeye devam eder. Sonra Mac uyuyabilir; ağ altı saat içinde gelirse oturum yine sürdürülür. Bir oturum art arda en çok üç kez kendiliğinden sürdürülür; beklerken o oturuma siz yazarsanız Uykusuz hiçbir şey eklemez.
+
+### Değişenler
+
+- **Claude Code hook'u yenilenir.** Uykusuz açılışta kurulu `StopFailure` hook'unu arka planda çalışan yenisiyle değiştirir; yeni açılan Claude oturumlarında geçerli olur.
+- **Yeni ağ bağlantısı.** Ağ kesintisinden duran bir oturum beklenirken beş saniyede bir Claude'un API sunucusuna (`api.anthropic.com`) bağlanmak denenir; bağlantı üzerinden hiçbir veri gönderilmez.
+
 ## 0.15.3 — 2026-11-06
 
 ### Düzeltilenler

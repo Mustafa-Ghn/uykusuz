@@ -65,6 +65,10 @@ Claude çalışırken bunu kendiliğinden de yapar.
 - **Claude ile otomatik oturum.** Claude Code bir görev yürüttüğü sürece oturum
   kendiliğinden açılır, uzar ve Claude durunca kapanır; Claude sizden yanıt
   beklerken bir süre sonra kapanır ve istediğinizde belli bir süre duraklatılır.
+- **Ağ kesintisinden sonra kendiliğinden sürdürme.** İnternet kesildiği için
+  yarıda kalan bir Claude oturumu, bağlantı geri gelince kendiliğinden sürer;
+  "Try again" düğmesine basmanız gerekmez. Kullanım ya da kredi sınırı gibi
+  başka bir nedenle duran oturum size kalır.
 - **Sen yokken özeti.** Kapak ya da kilit açılınca Claude'un siz yokken yaptıkları küçük bir
   pencerede bir iki cümleyle anlatılır; ▶ ile dinlersiniz, okunan kelime
   vurgulanır ve çubukla ileri geri gidersiniz; bir Claude API anahtarı
@@ -110,7 +114,9 @@ Claude çalışırken bunu kendiliğinden de yapar.
   geçebilir; isterseniz tmux'ta çalışan kodlama ajanınıza `continue` yazar.
 - **Gizlilik.** Uykusuz yalnızca siz bir Claude API anahtarı kaydettiyseniz ve
   yalnızca "Sen yokken" özetini ve defteri yazdırmak için `api.anthropic.com`'a
-  istek yapar; başka hiçbir ağ isteği yapmaz. Ayarlar ve günlükler yalnızca sizin
+  istek yapar. Bunun dışında yalnızca, ağ kesintisinden duran bir Claude
+  oturumunu beklerken ağın geri gelip gelmediğine bakar: Claude'un API sunucusuna
+  hiçbir veri göndermeden bağlanmayı dener. Ayarlar ve günlükler yalnızca sizin
   hesabınızın okuyabildiği dosyalarda, anahtar giriş Anahtar Zinciri'nde tutulur.
 
 ## Gereksinimler
@@ -226,7 +232,7 @@ Ayarlar penceresi göze sağ tıklayınca açılan menüden (⌘,) açılır:
 | Kapak kapanınca yapılacaklar | Ekran ve klavye ışığı, dondurma listesi, diğer tüm uygulamalar, Docker, ses, Düşük Güç Modu, sesli uyarı, doğal Türkçe ses, kullanılan ses ve Dinle |
 | Ajan uygulamaları | Hiçbir zaman dondurulmayan ya da kısıtlanmayan uygulamalar, App Nap |
 | Pil ve ısı | Düşük Güç Modu ve oturum sonu eşikleri, ısı kuralları |
-| Claude, kod modu ve ekran | Claude Code hook'ları, izin isteklerini otomatik onaylama, otomatik oturum, yanıt beklerken bitirme ve bekleme süresi, kod modu, boşta siyah ekran süreleri ve kilitleme |
+| Claude, kod modu ve ekran | Claude Code hook'ları, izin isteklerini otomatik onaylama, ağ kesintisinden duran oturumu kendiliğinden sürdürme, otomatik oturum, yanıt beklerken bitirme ve bekleme süresi, kod modu, boşta siyah ekran süreleri ve kilitleme |
 | Sen yokken özeti | Kapak ya da kilit açılınca özet penceresi, Claude API anahtarı, özeti yazan model, son 2 saati şimdi özetle |
 | Defter | Mac'i arada bir gözden geçirip öneriyi deftere yazma, Defteri aç, Şimdi bak |
 | Claude'un yanıtını dinle | ⌃⌥D kısayolunu açıp kapatma, okunan kelimeyi ekrandaki yazının üzerinde işaretleme |
@@ -300,7 +306,8 @@ uyandıktan sonraki ilk 2 dakikadaki işlemci kullanımı da iş sayılmaz. Derl
 test gibi işler sayılır. Hook'lar ayrıca
 Claude'un bir onay penceresi açtığını, soru sorduğunu ya da plan onayı
 beklediğini bildirir. Hiçbir çıktı vermezler, bu yüzden bir izne yanıt vermez ve
-bir aracı değiştirmezler; tek istisna aşağıdaki otomatik onaydır. Uykusuz
+bir aracı değiştirmezler; iki istisna aşağıdaki otomatik onay ve
+[ağ kesintisinden sonra kendiliğinden sürdürme](#ağ-kesintisinden-sonra-kendiliğinden-sürdürme)'dir. Uykusuz
 açılışta, daha eski bir sürümün kurduğu hook'lara eksik olayları ekler ve
 komutu değişmiş olanı yeniler. Hook'lar
 `~/.claude/settings.json` dosyasına eklenir ve dosyanın eski hâli
@@ -319,6 +326,45 @@ yazmaz ve karar size kalır. Bu, bypass moduna yakın bir güvenlik düzeyidir:
 Claude'un okuduğu bir içerik onu zararlı bir komuta yönlendirirse o komut da
 onaylanır. Ayar varsayılan olarak kapalıdır, hook'ların kurulu olmasını ister ve
 yeni açılan oturumlarda geçerli olur.
+
+### Ağ kesintisinden sonra kendiliğinden sürdürme
+
+İnternet kesilince Claude Code isteğini yaklaşık üç dakika boyunca on kez
+yeniden dener, sonra turu "API Error: Can't reach the API server" hatasıyla
+bitirir. Ağ birkaç dakika sonra geri gelse de oturum orada kalır ve siz **Try
+again** düğmesine basana kadar bekler. Ayarlar > Claude, kod modu ve ekran
+bölümündeki **Ağ kesintisinden duran Claude oturumunu kendiliğinden sürdür**
+açıkken (varsayılan) Uykusuz bunu sizin yerinize yapar: tur bir ağ hatasıyla
+bitince Claude'un API sunucusuna yeniden ulaşılana kadar bekler, sonra oturumu
+uyandırır ve Claude yarım kalan işi kaldığı yerden sürdürür.
+
+- **Yalnızca ağ kesintisi.** Uykusuz yalnızca Claude Code'un sunucu hatası
+  saydığı ve o sırada API sunucusuna ulaşılamayan (ya da Claude Code'un son
+  denemesinde ağı kapalı bulduğu) bir turu sürdürür. Oturum kullanım ya da
+  harcama sınırı, biten kredi, oturum açma sorunu, reddedilen ya da geçersiz
+  bir istek, güvenlik nedeniyle gelen bir kısıtlama ya da sunucunun aşırı
+  yüklenmesi yüzünden durduysa Uykusuz dokunmaz; yeniden denemek size kalır.
+- **Beklerken Mac uyanık kalır.** Ağ beklenirken oturum bir saate kadar
+  çalışıyor sayılır; otomatik oturum açıksa kapak kapalıyken de Mac uyumaz ve
+  [hotspot'a geçiş](#ek-özellikler) denenmeye devam eder. Bir saatin sonunda
+  Mac uyuyabilir; Uykusuz ağı toplam altı saat (Mac'in uyanık geçirdiği süre)
+  bekler ve ağ o arada gelirse oturumu yine sürdürür. Süre dolarsa oturum
+  olduğu gibi kalır.
+- **Siz araya girerseniz.** Beklerken o oturuma kendiniz bir şey yazarsanız ya
+  da oturumu kapatırsanız Uykusuz hiçbir şey eklemez.
+- **En çok üç kez.** Bir oturum art arda en çok üç kez kendiliğinden
+  sürdürülür; ağ gidip geliyorsa dördüncüsünde size bırakılır. Claude bir araç
+  çalıştırınca, bir turu hatasız bitirince ya da siz bir şey yazınca sayaç
+  sıfırlanır.
+
+Bunu `StopFailure` hook'u yapar: Claude Code bu hook'u arka planda çalıştırır
+ve hook ağ gelince Claude'a sabit bir not bırakır ("İnternet bağlantısı
+kesildiği için önceki istek yanıtsız kaldı; bağlantı geri geldi…"). Ağı
+denetlemek için Uykusuz beş saniyede bir Claude'un API sunucusuna
+(`api.anthropic.com`; oturumunuz başka bir adres kullanıyorsa o adrese)
+bağlanmayı dener; bağlantı üzerinden hiçbir veri gönderilmez. Hook'ların kurulu
+olması gerekir ve ayar yeni açılan oturumlarda geçerli olur. Arka planda çalışan
+hook'ları tanıyan güncel bir Claude Code gerekir (2.1.321 ile denendi).
 
 ### Telefondan yanıt
 
@@ -761,6 +807,9 @@ kaydettiyseniz "Sen yokken" özeti, iPhone'a gidecek mesaj ve defter için
 [Defter](#defter));
 iMessage'ı Mac'teki Mesajlar uygulaması gönderir (bkz.
 [Claude sizi beklerken iPhone'a haber](#claude-sizi-beklerken-iphonea-haber)).
+Ağ kesintisinden duran bir Claude oturumu beklenirken ayrıca Claude'un API
+sunucusuna veri göndermeden bağlanmak denenir (bkz.
+[Ağ kesintisinden sonra kendiliğinden sürdürme](#ağ-kesintisinden-sonra-kendiliğinden-sürdürme)).
 [docs/extras.md](docs/extras.md#yapılandırma-ve-gizlilik) ayrıntıları içerir.
 
 </details>

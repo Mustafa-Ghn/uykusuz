@@ -1024,10 +1024,50 @@ final class ClaudeHooksSettingsTests: XCTestCase {
         XCTAssertEqual(ClaudeHooks.command(for: "UserPromptSubmit"), ClaudeHooks.command, "a prompt hook's output would join the prompt")
     }
 
+    func testTheStopFailureHookRunsInTheBackgroundAndWakesOnlyOnItsOwnStatus() throws {
+        XCTAssertEqual(ClaudeHooks.command(for: "StopFailure"), ClaudeHooks.resumingCommand)
+        XCTAssertTrue(ClaudeHooks.resumingCommand.contains("Uykusuz.app/Contents/MacOS/Uykusuz\" --claude-hook >/dev/null;"), "stderr reaches Claude Code, stdout does not")
+        XCTAssertFalse(ClaudeHooks.resumingCommand.contains("2>"), ClaudeHooks.resumingCommand)
+        XCTAssertTrue(ClaudeHooks.resumingCommand.hasSuffix("[ $? -eq 2 ] && exit 2; exit 0"), "a missing or broken Uykusuz is status 0")
+
+        let settings = dir.appendingPathComponent("settings.json")
+        XCTAssertEqual(try ClaudeHooks.install(settingsURL: settings), .installed)
+        let hooks = try XCTUnwrap(try json(settings)["hooks"] as? [String: Any])
+        func entry(_ event: String) throws -> [String: Any] {
+            try XCTUnwrap(((hooks[event] as? [[String: Any]])?.first?["hooks"] as? [[String: Any]])?.first, event)
+        }
+        let failure = try entry("StopFailure")
+        XCTAssertEqual(failure["asyncRewake"] as? Bool, true)
+        XCTAssertEqual(failure["timeout"] as? Int, 24 * 3600)
+        XCTAssertEqual(failure["command"] as? String, ClaudeHooks.resumingCommand)
+        for event in ClaudeHooks.events where event != "StopFailure" {
+            let other = try entry(event)
+            XCTAssertNil(other["asyncRewake"], "\(event) answers at once")
+            XCTAssertEqual(other["timeout"] as? Int, ClaudeHooks.timeout, event)
+        }
+    }
+
+    func testAnEarlierStopFailureHookIsReplacedByTheResumingOne() throws {
+        let settings = dir.appendingPathComponent("settings.json")
+        let earlier: [String: Any] = ["hooks": Dictionary(uniqueKeysWithValues: ClaudeHooks.events.map { event in
+            (event, [["hooks": [["type": "command", "command": event == "StopFailure" ? ClaudeHooks.command : ClaudeHooks.command(for: event), "timeout": 10]]]])
+        })]
+        try JSONSerialization.data(withJSONObject: earlier).write(to: settings)
+        XCTAssertEqual(ClaudeHooks.missingEvents(settingsURL: settings), ["StopFailure"])
+
+        XCTAssertEqual(try ClaudeHooks.upgradeIfInstalled(settingsURL: settings), ["StopFailure"])
+        let hooks = try XCTUnwrap(try json(settings)["hooks"] as? [String: Any])
+        let entries = (hooks["StopFailure"] as? [[String: Any]] ?? []).flatMap { $0["hooks"] as? [[String: Any]] ?? [] }
+        XCTAssertEqual(entries.count, 1, "one hook of ours")
+        XCTAssertEqual(entries.first?["command"] as? String, ClaudeHooks.resumingCommand)
+        XCTAssertEqual(entries.first?["asyncRewake"] as? Bool, true)
+        XCTAssertEqual(try ClaudeHooks.upgradeIfInstalled(settingsURL: settings), [])
+    }
+
     func testAnEarlierPermissionHookIsReplacedByTheAnsweringOne() throws {
         let settings = dir.appendingPathComponent("settings.json")
         let earlier: [String: Any] = ["hooks": Dictionary(uniqueKeysWithValues: ClaudeHooks.events.map { event in
-            (event, [["hooks": [["type": "command", "command": ClaudeHooks.command]]]])
+            (event, [["hooks": [["type": "command", "command": ClaudeHooks.command(for: event)]]]])
         }).merging(["PermissionRequest": [
             ["hooks": [["type": "command", "command": ClaudeHooks.command], ["type": "command", "command": "say izin"]]],
         ]]) { $1 }]

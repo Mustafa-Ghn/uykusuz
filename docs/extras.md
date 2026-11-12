@@ -59,6 +59,11 @@ konumunuzu hiçbir zaman istemez.
 
 ## tmux dürtmesi
 
+Claude masaüstü uygulamasındaki oturumlar için tmux gerekmez: ağ kesintisinden
+duran bir Claude oturumu ağ gelince kendiliğinden sürer
+([Ağ kesintisinden sonra kendiliğinden sürdürme](../README.md#ağ-kesintisinden-sonra-kendiliğinden-sürdürme)).
+Aşağıdaki dürtme, tmux'ta çalışan başka ajanlar içindir.
+
 Uzun bir kesintiden sonra (varsayılan olarak 90 saniye) Uykusuz ayarlanmış
 her tmux hedefine `continue` yazar. Varsayılan hedef listesi boştur ve
 listelenen bir bölme yalnızca onu kendiniz işaretlediyseniz dürtülür; bu
@@ -117,7 +122,7 @@ Claude API anahtarı kaydettiyseniz gidilir. Özetin ve mesajın isteği yalnız
 oturum başlıklarını, araç sayılarını, düzenlenen dosyaların adlarını, Claude'un
 komut açıklamalarını ve son mesajlarının sonunu içerir; defterin isteği
 simülatör, kapsayıcı ve uygulama adlarıyla kullanım sayılarını ve defterin son
-kayıtlarını içerir (ayrıntılar: [Defter](../README.md#defter)). iPhone'a giden iMessage'ı Mac'teki Mesajlar
+kayıtlarını içerir (ayrıntılar: [Defter](../README.md#defter)). Ağ kesintisinden duran bir Claude oturumu beklenirken ayrıca beş saniyede bir Claude'un API sunucusuna veri göndermeden bağlanmak denenir ([Ağ kesintisinden sonra kendiliğinden sürdürme](../README.md#ağ-kesintisinden-sonra-kendiliğinden-sürdürme)). iPhone'a giden iMessage'ı Mac'teki Mesajlar
 uygulaması gönderir; Uykusuz yalnızca Mesajlar'a metni ve alıcıyı verir. Docker
 mesajları yerelde yazılır ve API'ye gitmez: kapsayıcıların adını ve işin süresini
 içerir.

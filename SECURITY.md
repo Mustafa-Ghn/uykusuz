@@ -23,7 +23,10 @@ değildir: aynı kullanıcıyla çalışan diğer süreçler de bu komutları
 
 **Ağ.** Uykusuz güncelleme denetlemez, kullanım verisi ya da çökme raporu
 göndermez. Ağ istekleri yalnızca isteğe bağlı "Sen yokken" özeti, iPhone'a
-giden mesaj ve defterdir (aşağıdaki "Defter"). `https://api.anthropic.com/v1/messages` adresine yalnızca
+giden mesaj ve defterdir (aşağıdaki "Defter"). Bunların dışındaki tek ağ
+bağlantısı, ağ kesintisinden duran bir Claude oturumu beklenirken yapılan
+denetimdir (aşağıdaki "Claude entegrasyonu"): üzerinden veri gönderilmeyen bir
+TCP bağlantısı. `https://api.anthropic.com/v1/messages` adresine yalnızca
 kullanıcı Ayarlar'da bir Claude API anahtarı kaydettiyse gidilir: kapak
 açıldığında ya da Ayarlar'daki düğmeyle özet için, kullanıcı uzaktayken bir
 Claude oturumu onu beklemeye başlayınca da iPhone'a gidecek mesaj için birer
@@ -77,12 +80,26 @@ hiçbir çıktı vermeyen ve hep başarılı dönen bir komut ekler, dosyanın e
 hâlini yedekler. Komut, uygulama destek klasörüne oturum başına 0600 izinli
 bir işaret dosyası yazar ya da onu siler; Claude bir onay ya da yanıt
 beklerken dosyaya bekleme zamanını yazar. Komut hiçbir çıktı vermediği için
-bir izin isteğine yanıt vermez ve bir aracı değiştirmez. Tek istisnayı kullanıcı
-açar: "Claude'un izin isteklerini otomatik onayla" açıkken onay penceresi
-olayının hook'u (çıktısı Claude Code'a giden tek hook) bir soru ya da plan onayı
-olmayan her izin isteğine "onay" yazar. Bu, bypass moduna yakın bir güvenlik
-düzeyidir; Claude Code'un deny kuralları yine uygulanır. Ayar her istekte
-config.json'dan okunur; okunamazsa kapalı sayılır. Claude'un başlattığı
+bir izin isteğine yanıt vermez ve bir aracı değiştirmez. İki istisna vardır.
+Birincisini kullanıcı açar: "Claude'un izin isteklerini otomatik onayla" açıkken
+onay penceresi olayının hook'u bir soru ya da plan onayı olmayan her izin
+isteğine "onay" yazar. Bu, bypass moduna yakın bir güvenlik düzeyidir; Claude
+Code'un deny kuralları yine uygulanır. Ayar her istekte config.json'dan okunur;
+okunamazsa kapalı sayılır. İkincisi varsayılan olarak açıktır ve Ayarlar'dan
+kapatılır: "Ağ kesintisinden duran Claude oturumunu kendiliğinden sürdür"
+açıkken API hatasıyla biten tur olayının (`StopFailure`) hook'u arka planda
+çalışır (`asyncRewake`). Yalnızca Claude Code'un sunucu hatası saydığı ve API
+sunucusuna ulaşılamayan bir turda bekler; kullanım ya da harcama sınırı,
+faturalama, oturum açma ve geçersiz istek hatalarında hemen çıkar. Ağ gelince
+stderr'e sabit bir Türkçe not yazıp 2 koduyla çıkar ve Claude Code oturumu o
+notla uyandırır. Notun içine oturumdan, ağdan ya da başka bir yerden gelen
+hiçbir metin girmez; hook bir izne yanıt vermez. Ağ denetimi beş saniyede bir
+`api.anthropic.com:443` adresine (oturumun `ANTHROPIC_BASE_URL` değeri başka
+bir makineyi gösteriyorsa oraya) açılan ve üzerinden veri gönderilmeyen bir TCP
+bağlantısıdır. Hook, Claude Code'un verdiği kayıt dosyasının yalnızca sonunu
+okur ve oradan yalnızca son denemenin ağ durumunu alır; uygulama destek
+klasörüne oturum başına 0600 izinli küçük bir bekleme dosyası yazar. Bir oturum
+art arda en çok üç kez sürdürülür ve hook en çok altı saat bekler. Claude'un başlattığı
 komutları ve iş yapıp yapmadıklarını algılamak için yalnızca kullanıcının
 kendi süreçlerinin adları, argümanları ve işlemci süreleri okunur. "Sen yokken" özeti `~/.claude/projects` altındaki Claude
 Code kayıtlarını yalnızca okur ve bunlardan yalnızca yukarıda sayılan alanları

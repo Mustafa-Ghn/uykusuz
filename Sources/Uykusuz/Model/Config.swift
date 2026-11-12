@@ -107,6 +107,11 @@ struct Config: Codable, Equatable, Sendable {
     /// question or a plan to approve: the `PermissionRequest` hook prints
     /// the approval (`ClaudeHookCommand.decision`).
     var autoApprovePermissions: Bool = false
+    /// Go on with a Claude Code session a network outage stopped once the
+    /// network is back: the `StopFailure` hook waits and wakes the session
+    /// (`ClaudeOutageResume`). A session stopped by anything else, a usage
+    /// or spend limit among them, is left for the user.
+    var resumeAfterOutage: Bool = true
     /// "While you were away": when the lid opens after a while, what Claude
     /// did is told in a small window that reads it aloud on request
     /// (`AwaySummary`, `SummaryPanel`). Claude writes it with `summaryModel`
@@ -287,6 +292,7 @@ struct Config: Codable, Equatable, Sendable {
         endWhileWaiting = try c.decodeIfPresent(Bool.self, forKey: .endWhileWaiting) ?? d.endWhileWaiting
         approvalWaitGrace = try c.decodeIfPresent(TimeInterval.self, forKey: .approvalWaitGrace) ?? d.approvalWaitGrace
         autoApprovePermissions = try c.decodeIfPresent(Bool.self, forKey: .autoApprovePermissions) ?? d.autoApprovePermissions
+        resumeAfterOutage = try c.decodeIfPresent(Bool.self, forKey: .resumeAfterOutage) ?? d.resumeAfterOutage
         launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? d.launchAtLogin
         launchAtLoginInstall = try c.decodeIfPresent(String.self, forKey: .launchAtLoginInstall)
         macAdvisor = try c.decodeIfPresent(Bool.self, forKey: .macAdvisor) ?? d.macAdvisor
