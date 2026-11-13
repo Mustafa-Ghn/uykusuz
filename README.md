@@ -111,7 +111,8 @@ Claude çalışırken bunu kendiliğinden de yapar.
   bile her dakika çalışan bir kurtarma ajanı Mac'i eski hâline döndürmeye
   çalışır.
 - **Ağ yedekleme.** Wi-Fi koparsa iPhone'unuzun kişisel erişim noktasına
-  geçebilir; isterseniz tmux'ta çalışan kodlama ajanınıza `continue` yazar.
+  geçebilir: kapalı duran hotspot'u telefondan kendisi açtırır, parola yazmanız
+  gerekmez. İsterseniz tmux'ta çalışan kodlama ajanınıza `continue` yazar.
 - **Gizlilik.** Uykusuz yalnızca siz bir Claude API anahtarı kaydettiyseniz ve
   yalnızca "Sen yokken" özetini ve defteri yazdırmak için `api.anthropic.com`'a
   istek yapar. Bunun dışında yalnızca, ağ kesintisinden duran bir Claude
@@ -187,7 +188,13 @@ Uykusuz güncelleme denetlemez. Güncellemek için
 cd uykusuz
 git pull
 ./scripts/install.sh
+open "$HOME/Applications/Uykusuz.app"
 ```
+
+Betik yeni sürümü eskisinin yerine koyar: eski sürümden Mac'te bir şey kalmaz,
+elle silmeniz gereken bir dosya yoktur. Çalışan uygulamayı kapatır ama yenisini
+başlatmaz; son satır onu açar. Uykusuz'u Mac'ten tümüyle kaldırmak için
+[Kaldırma](#kaldırma) bölümündeki komutu kullanın.
 
 Kurulum betiği çalışan uygulamadan kapanmasını ister. Geri alınmayı bekleyen
 bir değişiklik varken uygulama kapanmayı reddeder; betik o zaman durur ve
@@ -239,7 +246,7 @@ Ayarlar penceresi göze sağ tıklayınca açılan menüden (⌘,) açılır:
 | Seçilen alanı dinle | ⌃⌥S kısayolunu açıp kapatma |
 | Telefondan yanıt | Claude'un telefon bildirimleri yalnızca uzaktayken, yanıt için Mac'in uyanık kalacağı süre |
 | Claude sizi beklerken iPhone'a haber ver | iMessage gönder, alıcı (telefon numarası ya da Apple ID e-postası), deneme mesajı, Docker kullanılırken de haber ver |
-| Ağ yedekleme | iPhone kişisel erişim noktası, bilinen Wi-Fi ağına geri dönüş, tmux dürtmesi |
+| Ağ yedekleme | iPhone kişisel erişim noktası, hotspot'u telefondan açtırma, bilinen Wi-Fi ağına geri dönüş, tmux dürtmesi |
 | Uygulama | Girişte aç, yapılandırma klasörü, kurulu sürüm |
 
 ## Claude ile otomatik oturum
@@ -743,11 +750,23 @@ açıklar.
 Oturum sırasında Wi-Fi bağlantısı koparsa Uykusuz, iPhone'unuzun kişisel
 erişim noktasına (hotspot) katılabilir. Sistem Ayarları > Wi-Fi >
 "Erişim noktalarına katılmak için sor" (Ask to join hotspots) seçeneğini
-Otomatik yapın, ardından hotspot adını ve parolasını Uykusuz'un Ayarlar
-penceresine girin. Parola giriş anahtar zincirinizde saklanır. macOS, Wi-Fi
+Otomatik yapın, ardından hotspot'un adını Uykusuz'un Ayarlar penceresine girin.
+
+Kimseye bağlı olmayan bir iPhone ya da iPad hotspot'unu yayınlamaz; telefon
+cebinizde dursa da bir tarama onu bulamaz. Uykusuz bu yüzden önce, Wi-Fi
+menüsünün yaptığı gibi, o adı taşıyan ve Mac'inizle aynı Apple hesabındaki
+cihazdan Bluetooth üzerinden hotspot'unu açmasını ister (Ayarlar'daki
+**Hotspot'u telefondan açtır**, varsayılan olarak açık). Ağ adını ve parolayı
+cihaz verir: parola kaydetmeniz gerekmez, addaki kesme işaretinin biçimi
+(' ya da ’) de fark etmez. Bu yol yalnızca denendiği macOS sürümünde (26)
+kullanılır.
+
+Cihaz yanıt vermezse (başka marka bir telefon, kapalı Bluetooth, başka bir
+Apple hesabı) Uykusuz ağı adıyla tarar ve Ayarlar'a girdiğiniz parolayla
+katılır. Bu parola giriş anahtar zincirinizde saklanır; Uykusuz'u yeniden
+kurduktan sonra parolayı yeniden girin. macOS, Wi-Fi
 ağ adlarını okumak için Konum Servisleri iznini şart koştuğundan Uykusuz bu
-izni ister. Konumunuzu hiçbir zaman okumaz. Uykusuz'u yeniden kurduktan sonra
-parolayı yeniden girin. Hotspot ayarlıyken Ayarlar, "Erişim noktalarına katılmak
+izni ister. Konumunuzu hiçbir zaman okumaz. Hotspot ayarlıyken Ayarlar, "Erişim noktalarına katılmak
 için sor" seçeneğinin Otomatik olup olmadığını denetler; değilse turuncu bir
 uyarıyla Wi-Fi ayarlarını açan bir düğme gösterir ve oturum başlarken bunu
 günlüğe yazar.

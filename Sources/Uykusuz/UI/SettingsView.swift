@@ -619,8 +619,12 @@ struct SettingsView: View {
     private var networkSection: some View {
         Section {
             TextField("Hotspot ağ adı (SSID)", text: bind(\.hotspotSSID))
+            Toggle("Hotspot'u telefondan açtır", isOn: bind(\.wakeHotspot))
+            Text("Kimseye bağlı olmayan bir iPhone ya da iPad hotspot'unu yayınlamaz, tarama da onu bulamaz. Bu ayar açıkken Uykusuz, Wi-Fi menüsünün yaptığı gibi, yukarıdaki adı taşıyan ve bu Mac'le aynı Apple hesabındaki cihazdan Bluetooth üzerinden hotspot'unu açmasını ister. Ağ adını ve parolayı cihaz verir; parola kaydetmeniz gerekmez. Cihaz yanıt vermezse aşağıdaki kayıtlı parolayla taranır. Addaki kesme işaretinin biçimi (' ya da \u{2019}) fark etmez.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
             HStack {
-                SecureField("Hotspot parolası", text: Binding(get: { hotspot.password }, set: { hotspot.edit($0) }))
+                SecureField("Hotspot parolası (başka telefonlar için)", text: Binding(get: { hotspot.password }, set: { hotspot.edit($0) }))
                     .onSubmit(savePassword)
                 Button(hotspot.buttonTitle(ssid: manager.config.hotspotSSID), action: savePassword)
                     .disabled(hotspot.password.isEmpty || hotspot.saving)

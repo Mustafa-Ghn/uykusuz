@@ -164,7 +164,8 @@ görmek için diğer uygulamaların güç kilitlerini yalnızca okur
 (`IOPMCopyAssertionsByProcess`). Süre kutuları açıkken menü çubuğu, dışarı
 tıklanınca kutuları kapatmak için yalnızca fare tıklamalarını dinler. Ekran
 ve klavye parlaklığı için macOS'in özel DisplayServices ve CoreBrightness,
-hotspot katılma ayarını okumak için CoreWiFi, kararmış ekranı kilitlemek için
+hotspot katılma ayarını okumak için CoreWiFi, kapalı duran hotspot'u telefondan
+açtırmak için Sharing, kararmış ekranı kilitlemek için
 login çerçeveleri sabit sistem yollarından `dlopen` ile yüklenir; bunların
 dışında dışarıdan kod yüklenmez. Kilitleme, Denetim Merkezi'ndeki Ekranı Kilitle
 ile aynı çağrıdır (`SACLockScreenImmediate`) ve yalnızca ekran karardıktan sonra
@@ -244,6 +245,21 @@ parolalarını okumaz. Yalnızca bilinen ve parolalı bir ağ çevredeyken (ve
 bilinen parolasız bir ağ yokken) hotspot bağlantısını keser; hangi ağa
 katılacağına macOS karar verir. Mac parolasız bir ağa geçerse Uykusuz oradan
 ayrılır ve hotspot'a döner.
+
+## Hotspot'u telefondan açtırma
+
+Bir Wi-Fi kesintisinde, hotspot ayarlıyken ve Ayarlar'daki **Hotspot'u
+telefondan açtır** açıkken (varsayılan) Uykusuz, Wi-Fi menüsünün kullandığı
+özel Sharing çerçevesiyle (`SFRemoteHotspotSession`) yakındaki, aynı Apple
+hesabındaki cihazları sorar ve yalnızca adı Ayarlar'daki hotspot adıyla aynı
+olan cihazdan hotspot'unu açmasını ister. Başka bir cihaza istek gitmez.
+Cihazın verdiği ağ adı ve parola yalnızca o katılma denemesi için bellekte
+tutulur; diske, Anahtar Zinciri'ne ya da günlüğe yazılmaz ve Mac'ten çıkmaz.
+Yakındaki cihazları aramayı ve Bluetooth'u macOS'in kendi `sharingd` süreci
+yapar; Uykusuz Bluetooth izni istemez. Çağrı yalnızca denendiği macOS
+sürümünde (26) yapılır; sınıf ya da seçicilerden biri yoksa hiçbir çağrı
+yapılmaz. Belgelenmemiş bir arayüz olduğundan bir macOS güncellemesiyle
+çalışmaz hâle gelebilir; o zaman Uykusuz aşağıdaki kayıtlı parolayla tarar.
 
 ## Hotspot parolası
 

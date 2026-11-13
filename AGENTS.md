@@ -59,6 +59,27 @@ açıkça başka bir şey isterse onun isteği geçerlidir.
   sonları olduğu gibi görünür.
 - GitHub sürümünün notları bu maddelerle aynıdır.
 
+## Kurulum önerirken
+
+Kullanıcıya kurulum ya da güncelleme önerdiğin her seferde şunları birlikte
+ver:
+
+- Komutları, her biri kendi kod bloğunda: önce `./scripts/install.sh`, sonra
+  `open "$HOME/Applications/Uykusuz.app"`. Betik çalışan uygulamayı kapatır ama
+  yenisini başlatmaz; ikinci komutu atlarsan Uykusuz kapalı kalır.
+- Eski sürümün silinmesi gerekmediğini: betik yeni paketi eskisinin yerine
+  koyar, Mac'te ikinci bir kopya ya da eski sürümden bir dosya kalmaz. Bunu
+  söylemeden önce denetle:
+  `mdfind "kMDItemCFBundleIdentifier == 'com.mustafaghn.uykusuz'"` tek satır
+  (`~/Applications/Uykusuz.app`) döndürmelidir. Başka bir yerde kopya çıkarsa
+  onu silecek komutu da ver; kullanıcının yerine silme.
+- Uykusuz'u Mac'ten kaldıran komutu: `./scripts/uninstall.sh`; ayarlar ve
+  günlüklerle birlikte `./scripts/uninstall.sh --purge`.
+- Kurulumun sıfırladıklarını (ad-hoc imza her kuruluma yeni bir kimlik verir):
+  Ekran Kaydı izni ilk kullanımda yeniden istenir, kayıtlı hotspot parolası
+  okunamaz olur ve yeniden girilir. Claude Code hook'ları uygulama açılınca
+  kendiliğinden yenilenir ve yalnızca sonradan açılan oturumlarda geçerlidir.
+
 ## Aynı anda çalışan oturumlar
 
 Bu çalışma kopyasında birden fazla oturum aynı anda çalışabilir.
@@ -74,6 +95,11 @@ Bu çalışma kopyasında birden fazla oturum aynı anda çalışabilir.
 
 - Depo herkese açıktır (public); kullanıcı istemedikçe görünürlüğünü
   değiştirme.
+- Uygulama da herkes içindir: bir özelliği tek bir kullanıcının kurulumuna
+  göre yazma. Cihaz, ağ, klasör, hesap ya da uygulama adlarını koda gömme;
+  değeri ayardan ya da çalışma anında bulunandan al ve o değer yokken ne
+  olacağını da yaz. Yalnızca bir macOS sürümünde denenmiş bir yol başka
+  sürümde sessizce devre dışı kalmalı, uygulamayı bozmamalıdır.
 - Commit'lere, testlere ve belgelere kişisel ya da gizli veri koyma: gerçek
   Wi-Fi ağ adları, telefon numaraları, e-posta adresleri, API anahtarları,
   kişisel klasör yolları, iş ya da proje adları. Testlerde uydurma değerler

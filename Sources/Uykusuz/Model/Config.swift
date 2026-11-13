@@ -153,6 +153,10 @@ struct Config: Codable, Equatable, Sendable {
     /// During a session on the hotspot, leave it for a known Wi-Fi network
     /// that needs a password (`WiFiReturn`).
     var returnToKnownWiFi: Bool = true
+    /// Before a join, ask the iPhone or iPad named `hotspotSSID` to turn
+    /// its hotspot on (`SharingHotspotWaker`): one that serves no one does
+    /// not broadcast it. Its answer carries the password, so none is saved.
+    var wakeHotspot: Bool = true
     /// Automatic sessions are paused until this moment: the user chose a
     /// pause after ending one, or from the menu, and none starts before it
     /// (`AutoSessionPolicy`). nil: not paused. Saved, so a relaunch keeps it.
@@ -278,6 +282,7 @@ struct Config: Codable, Equatable, Sendable {
         lockAfterBlackout = try c.decodeIfPresent(TimeInterval.self, forKey: .lockAfterBlackout) ?? d.lockAfterBlackout
         autoPausedUntil = try c.decodeIfPresent(Date.self, forKey: .autoPausedUntil)
         returnToKnownWiFi = try c.decodeIfPresent(Bool.self, forKey: .returnToKnownWiFi) ?? d.returnToKnownWiFi
+        wakeHotspot = try c.decodeIfPresent(Bool.self, forKey: .wakeHotspot) ?? d.wakeHotspot
         imessageAlerts = try c.decodeIfPresent(Bool.self, forKey: .imessageAlerts) ?? d.imessageAlerts
         imessageHandle = try c.decodeIfPresent(String.self, forKey: .imessageHandle) ?? d.imessageHandle
         dockerAlerts = try c.decodeIfPresent(Bool.self, forKey: .dockerAlerts) ?? d.dockerAlerts

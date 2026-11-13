@@ -783,6 +783,14 @@ provided by the standalone backstop. Performance effects depend on workload.
     Check GUI agents."
 - Recommended one-time setting, documented in docs/extras.md: System Settings >
   Wi-Fi > "Ask to join hotspots" = Automatically.
+- Waking the hotspot (`Config.wakeHotspot`, default on; `HotspotWaker.swift`):
+  an idle iPhone or iPad does not broadcast its hotspot, so before each join
+  the device named like `hotspotSSID` (apostrophe shape ignored) is asked,
+  through the private Sharing framework as the Wi-Fi menu does, to turn it on.
+  Its answer carries the network name and password, used for that one join
+  and never stored. Without an answer, the saved password and an SSID-filtered
+  scan in each spelling of the name. Measured on macOS 26 only; elsewhere
+  nothing is called.
 
 ### 8. Reconcile and backstop (recovery goals)
 

@@ -24,10 +24,14 @@ struct CoreWLANHotspotJoiner: HotspotJoining {
         }
         // macOS may require Location Services permission for SSID visibility.
         // Keep this scan SSID-filtered: association works with the returned
-        // CWNetwork even when its `ssid` property is redacted.
-        let networks = try interface.scanForNetworks(withSSID: ssid.data(using: .utf8))
-        guard let network = networks.first else { return false }
-        try interface.associate(to: network, password: password)
-        return true
+        // CWNetwork even when its `ssid` property is redacted. The filter
+        // matches byte for byte, so each spelling of the name is asked for.
+        for spelling in HotspotSSID.spellings(ssid) {
+            let networks = try interface.scanForNetworks(withSSID: spelling.data(using: .utf8))
+            guard let network = networks.first else { continue }
+            try interface.associate(to: network, password: password)
+            return true
+        }
+        return false
     }
 }

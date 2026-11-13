@@ -34,7 +34,9 @@ enum WiFiReturnPolicy {
     static func decide(hotspot: String, seen: [Seen], known: [Known], minimumRSSI: Int = minimumRSSI) -> Decision {
         var knownBySSID: [String: Known] = [:]
         for network in known { knownBySSID[network.ssid] = knownBySSID[network.ssid] ?? network }
-        let inRange = seen.filter { $0.ssid != hotspot && knownBySSID[$0.ssid] != nil }
+        // The hotspot as configured and as the phone names it differ by the
+        // apostrophe's shape (`HotspotSSID.same`).
+        let inRange = seen.filter { !HotspotSSID.same($0.ssid, hotspot) && knownBySSID[$0.ssid] != nil }
         if let open = inRange.first(where: { $0.open || knownBySSID[$0.ssid]?.open == true }) {
             return .stay("bilinen parolasız bir ağ çevrede (\(open.ssid))")
         }
@@ -148,7 +150,8 @@ final class WiFiReturn {
         let hotspot = HotspotSSID.normalized(c.hotspotSSID)
         guard c.returnToKnownWiFi, !hotspot.isEmpty else { return }
         let radio = self.radio
-        guard await Task.detached(priority: .utility, operation: { radio.currentSSID() }).value == hotspot else {
+        guard let current = await Task.detached(priority: .utility, operation: { radio.currentSSID() }).value,
+              HotspotSSID.same(current, hotspot) else {
             lastStayReason = nil
             return
         }
@@ -191,7 +194,7 @@ final class WiFiReturn {
             Log.error("wifi return: macOS joined \(current), which has no password; leaving it for the hotspot")
             await Task.detached(priority: .utility) { radio.disassociate() }.value
             await rejoinHotspot()
-        case let (current?, _) where current == hotspot:
+        case let (current?, _) where HotspotSSID.same(current, hotspot):
             Log.info("wifi return: macOS went back to the hotspot; trying again in \(Int(Self.cooldown / 60)) min")
         case let (current?, _):
             Log.info("wifi return: now on \(current)\(current == target ? "" : " (macOS chose it over \(target))")")

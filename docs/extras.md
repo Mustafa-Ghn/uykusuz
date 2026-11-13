@@ -5,10 +5,30 @@
 ## iPhone kişisel erişim noktasına (hotspot) geçiş
 
 **Sistem Ayarları → Wi-Fi → "Erişim noktalarına katılmak için sor" (Ask to
-join hotspots) → Otomatik** ayarını yapın, ardından hotspot ağ adını (SSID) ve
-parolasını Uykusuz'un Ayarlar penceresine girin. Parola giriş anahtar
-zincirinde `uykusuz-hotspot` hizmet adıyla saklanır. Uykusuz, parolayı süreç
+join hotspots) → Otomatik** ayarını yapın, ardından hotspot ağ adını (SSID)
+Uykusuz'un Ayarlar penceresine girin.
+
+Kimseye bağlı olmayan bir iPhone ya da iPad hotspot'unu yayınlamaz; ağ adıyla
+yapılan bir tarama, telefon yanınızda dursa da hiçbir şey bulmaz. **Hotspot'u
+telefondan açtır** (varsayılan olarak açık) bunu aşar: her katılma denemesinden
+önce Uykusuz, Wi-Fi menüsünün kullandığı Sharing çerçevesiyle
+(`SFRemoteHotspotSession`) yakındaki cihazları sorar ve adı Ayarlar'daki adla
+aynı olan cihazdan hotspot'unu açmasını ister. Cihaz ağ adını ve parolayı
+verir; Uykusuz o ağa bu parolayla katılır. Parola yalnızca o katılma için
+bellekte tutulur, kaydedilmez ve günlüğe yazılmaz. Adlar kesme işaretinin
+biçimine bakılmadan karşılaştırılır: klavyeden yazılan `'` ile iOS'un cihaz
+adına koyduğu `’` aynı sayılır. Cihazın Mac'le aynı Apple hesabında (ya da Aile
+Paylaşımı'nda) olması ve iki tarafta Bluetooth'un açık olması gerekir. Bu yol
+yalnızca denendiği macOS sürümünde (26) kullanılır; başka bir sürümde ya da
+çerçeve değişmişse hiçbir çağrı yapılmaz ve aşağıdaki yol izlenir.
+
+Cihaz yanıt vermezse (başka marka bir telefon, kapalı Bluetooth, başka bir
+hesap) Uykusuz ağı adıyla tarar (adın her iki kesme işaretli yazımıyla) ve
+Ayarlar'a girdiğiniz parolayla katılır. Bu parola giriş anahtar zincirinde
+`uykusuz-hotspot` hizmet adıyla saklanır. Uykusuz, parolayı süreç
 argümanlarına koymadan o ağı bulmak ve ona katılmak için CoreWLAN kullanır.
+Cihaz yanıt vermediğinde kayıtlı parola da yoksa kesinti başına bir bildirim
+gelir; bu bir parola uyarısı sayılmaz ve menüde görünmez.
 Hotspot ayarlıyken Ayarlar bu macOS seçeneğini okur (Wi-Fi ayar ekranının
 kullandığı CoreWiFi'den, yalnızca okuyarak) ve Otomatik değilse uyarır; oturum
 başlarken de günlüğe yazar. Seçenek yalnızca denendiği macOS sürümünde (26)

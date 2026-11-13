@@ -96,6 +96,8 @@ Root olarak çalışan başka bir şey yoktur.
 - **Hotspot parolası:** Giriş Anahtar Zinciri'nde tek bir kayıt olarak
   saklanır (servis `uykusuz-hotspot`). Hiçbir zaman günlüğe yazılmaz ve komut
   satırına geçirilmez. Uygulama başka Anahtar Zinciri kayıtlarını okumaz.
+  Telefonun kendisinin verdiği parola (0.17.0) yalnızca o katılma için
+  bellekte tutulur; kaydedilmez ve günlüğe yazılmaz.
 - **Konum izni:** Yalnızca macOS'un Wi-Fi adlarını gösterebilmesi için
   istenir. Konum verisi okunmaz ya da saklanmaz.
 - **Ekran kaydı izni (0.12.0):** Yalnızca kullanıcı bir alan çizip dinlemek
@@ -329,6 +331,19 @@ macOS'un sorduğu Otomasyon (Mesajlar) iznidir.
   Claude Code'un deny ve ask kuralları onaylanan bir çağrıya yine uygulanır.
   Etkisi bypass moduna yakındır: Claude'u yönlendiren bir içerik zararlı bir
   komutu onaylatabilir.
+- **Hotspot'u telefondan açtırma (0.17.0):** Varsayılan olarak açıktır ve
+  Ayarlar'dan kapatılır. Wi-Fi kesintisinde, katılma denemesinden önce özel
+  Sharing çerçevesi (`SFRemoteHotspotSession`) sabit sistem yolundan `dlopen`
+  ile yüklenir; yakındaki, aynı Apple hesabındaki cihazlar sorulur ve yalnızca
+  adı ayardaki hotspot adıyla aynı olan cihazdan hotspot'unu açması istenir
+  (adlar kesme işaretinin biçimine bakılmadan karşılaştırılır). Cihazın verdiği
+  ağ adı ve parolayla CoreWLAN üzerinden katılınır. Yeni izin, ağ isteği, `sudo`
+  komutu ya da kalıcı bileşen yoktur; Bluetooth'u `sharingd` kullanır. Çağrı
+  yalnızca macOS 26'da yapılır ve sınıfın dört seçicisi de varsa başlar; yanıt
+  bloğunun biçimi (`SFRemoteHotspotInfo`, `NSError`) o sürümde ölçülmüştür.
+  Risk: belgelenmemiş bir arayüzdür, bir macOS güncellemesiyle bozulabilir;
+  yanlış biçimde gelen bir yanıt uygulamayı çökertebilir, bu yüzden başka
+  sürümlerde hiç çağrılmaz. Test çalıştırmaları gerçek cihaz aramaz.
 - **Ağ kesintisinden sonra kendiliğinden sürdürme (0.16.0):** Varsayılan olarak
   açıktır ve Ayarlar'dan kapatılır. `StopFailure` hook'u artık arka planda
   çalışır (`asyncRewake`, süre sınırı 24 saat) ve çıkış kodu Claude Code'a

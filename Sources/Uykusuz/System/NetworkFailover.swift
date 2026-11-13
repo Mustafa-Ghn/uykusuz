@@ -161,6 +161,36 @@ enum HotspotSSID {
     static func normalized(_ configured: String) -> String {
         configured.trimmingCharacters(in: .whitespacesAndNewlines)
     }
+
+    /// The apostrophe a keyboard types, and the one iOS puts in a device's
+    /// name ("Ada’nın iPhone’u"). A network name is matched byte for byte,
+    /// so a name typed with the first never finds a phone named with the
+    /// second.
+    static let typed: Character = "'"
+    static let typographic: Character = "\u{2019}"
+    /// Every mark read as an apostrophe.
+    static let apostrophes: Set<Character> = [typed, typographic, "\u{2018}", "\u{02BC}"]
+
+    /// `name` with every apostrophe as the typed one: what two spellings of
+    /// one name have in common.
+    static func plain(_ name: String) -> String {
+        String(name.map { apostrophes.contains($0) ? typed : $0 })
+    }
+
+    /// Whether two names are one name apart from the shape of an apostrophe.
+    static func same(_ a: String, _ b: String) -> Bool {
+        plain(normalized(a)) == plain(normalized(b))
+    }
+
+    /// The names to scan for, most likely first: as configured, then with
+    /// the typographic apostrophe, then with the typed one. A name without
+    /// an apostrophe has one spelling.
+    static func spellings(_ name: String) -> [String] {
+        let plain = plain(name)
+        let typographic = String(plain.map { $0 == typed ? Self.typographic : $0 })
+        var seen: Set<String> = []
+        return [name, typographic, plain].filter { seen.insert($0).inserted }
+    }
 }
 
 /// Why the failover has no hotspot password to join with. Shown in the
@@ -751,8 +781,9 @@ final class FakeKeychainStore: KeychainStoring, @unchecked Sendable {
 // MARK: - Driver
 
 /// NWPathMonitor on Wi-Fi, one retry timer that exists only during an
-/// outage, CoreWLAN for the join, handoffs.log, tmux nudge and a
-/// notification on recovery. Active only while a session is active.
+/// outage, the device asked to turn its hotspot on (`HotspotWaking`),
+/// CoreWLAN for the join, handoffs.log, tmux nudge and a notification on
+/// recovery. Active only while a session is active.
 @MainActor
 final class NetworkFailover {
     static let networksetup = "/usr/sbin/networksetup"
@@ -784,6 +815,7 @@ final class NetworkFailover {
     private let keychainQueue: KeychainQueue
     private let nudge: TmuxNudge
     private let hotspotJoiner: any HotspotJoining
+    private let hotspotWaker: any HotspotWaking
     private let notifier: any Notifying
     private let configProvider: @MainActor () -> Config
     private let clock: @Sendable () -> Date
@@ -810,6 +842,7 @@ final class NetworkFailover {
         keychainQueue: KeychainQueue = .shared,
         nudge: TmuxNudge = TmuxNudge(),
         hotspotJoiner: any HotspotJoining = CoreWLANHotspotJoiner(),
+        hotspotWaker: any HotspotWaking = SharingHotspotWaker(),
         notifier: any Notifying,
         wifiInterface: String? = nil,
         clock: @escaping @Sendable () -> Date = { Date() },
@@ -820,6 +853,7 @@ final class NetworkFailover {
         self.keychainQueue = keychainQueue
         self.nudge = nudge
         self.hotspotJoiner = hotspotJoiner
+        self.hotspotWaker = hotspotWaker
         self.notifier = notifier
         self.wifiInterface = wifiInterface
         self.clock = clock
@@ -1017,12 +1051,32 @@ final class NetworkFailover {
             Log.error("hotspot join skipped: no Wi-Fi interface")
             return
         }
+        let epoch = self.epoch
+        let outage = self.outage
+        // A phone that serves no one does not broadcast its hotspot, so
+        // the device is asked to turn it on first. Its answer carries the
+        // network's own name and password: that join needs nothing from
+        // the keychain. Without an answer the join goes on as it always
+        // did, with the saved password and a scan for the configured name.
+        var asked = false
+        if config.wakeHotspot {
+            let answer = await hotspotWaker.wake(named: ssid)
+            guard stillWanted(ssid, epoch: epoch, outage: outage, during: "while the device was asked") else { return }
+            switch answer {
+            case let .woken(wake):
+                passwordReport = nil
+                await join(wake.ssid, password: wake.password, on: iface)
+                return
+            case .noAnswer:
+                asked = true
+            case .unavailable:
+                break
+            }
+        }
         // Off the main actor, behind any save Settings has running, which
         // may be waiting on a keychain dialog. Everything the join depends
         // on is checked again after the wait: the session, the outage and
         // the configured SSID.
-        let epoch = self.epoch
-        let outage = self.outage
         let keychain = self.keychain
         let read: Result<String?, any Error>
         do {
@@ -1030,28 +1084,16 @@ final class NetworkFailover {
         } catch {
             read = .failure(error)
         }
-        guard !Task.isCancelled, self.epoch == epoch else {
-            Log.info("hotspot join dropped: the session ended during the keychain read")
-            return
-        }
-        guard self.outage == outage else {
-            Log.info("hotspot join dropped: Wi-Fi recovered during the keychain read")
-            return
-        }
-        // Settings may have changed the hotspot meanwhile. The answer, a
-        // password or a problem, is about the old one; the retry timer
-        // stays, and the next tick reads the hotspot configured then.
-        guard HotspotSSID.normalized(configProvider().hotspotSSID) == ssid else {
-            Log.info("hotspot join dropped: the hotspot SSID changed during the keychain read")
-            return
-        }
+        guard stillWanted(ssid, epoch: epoch, outage: outage, during: "during the keychain read") else { return }
         let password: String
         switch read {
         case let .success(p?):
             password = p
             passwordReport = nil
         case .success(nil):
-            report(.missing, for: ssid)
+            // Where the device can be asked, a hotspot without a saved
+            // password is a complete setup, not a missing one.
+            if asked { reportNoAnswer(for: ssid) } else { report(.missing, for: ssid) }
             return
         case let .failure(error as KeychainError):
             report(error.problem, for: ssid)
@@ -1060,6 +1102,32 @@ final class NetworkFailover {
             report(.error(error.localizedDescription), for: ssid)
             return
         }
+        await join(ssid, password: password, on: iface)
+    }
+
+    /// Whether a join that waited (on the device, on the keychain) is
+    /// still the one to make: the session, the outage and the configured
+    /// hotspot are what they were. Settings may have changed the hotspot
+    /// meanwhile; the answer, a password or a problem, is about the old
+    /// one, the retry timer stays, and the next tick reads the hotspot
+    /// configured then.
+    private func stillWanted(_ ssid: String, epoch: Int, outage: Int, during wait: String) -> Bool {
+        guard !Task.isCancelled, self.epoch == epoch else {
+            Log.info("hotspot join dropped: the session ended \(wait)")
+            return false
+        }
+        guard self.outage == outage else {
+            Log.info("hotspot join dropped: Wi-Fi recovered \(wait)")
+            return false
+        }
+        guard HotspotSSID.normalized(configProvider().hotspotSSID) == ssid else {
+            Log.info("hotspot join dropped: the hotspot SSID changed \(wait)")
+            return false
+        }
+        return true
+    }
+
+    private func join(_ ssid: String, password: String, on iface: String) async {
         Log.info("joining hotspot \(ssid) on \(iface) (attempt \(machine.joins))")
         do {
             let joined = try await hotspotJoiner.join(ssid: ssid, password: password, interfaceName: iface)
@@ -1069,6 +1137,20 @@ final class NetworkFailover {
         } catch {
             Log.error("CoreWLAN hotspot join failed: \(error.localizedDescription)")
         }
+    }
+
+    /// The notification when the device did not turn its hotspot on and
+    /// there is no saved password to scan with.
+    static let noAnswerExplanation = "Telefon hotspot'unu açmadı: yakında değil, Bluetooth kapalı ya da bu Mac'le aynı Apple hesabında değil. Başka bir telefonun hotspot'u için parolayı Ayarlar'da girin."
+
+    /// No answer from the device and nothing to fall back on: logged, and
+    /// notified once per outage and hotspot. Not a password problem, so
+    /// the menu and Settings show none.
+    private func reportNoAnswer(for ssid: String) {
+        Log.error("hotspot join skipped: the device did not turn its hotspot on and no password is saved")
+        passwordReport = nil
+        guard notifiedThisOutage.insert(ssid).inserted else { return }
+        notifier.post(title: "Hotspot'a bağlanılmadı", body: Self.noAnswerExplanation)
     }
 
     /// The join is skipped: log it, show it in the menu, and notify once per

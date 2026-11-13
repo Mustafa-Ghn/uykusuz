@@ -4,6 +4,23 @@ Uykusuz'un sürümleri, en yenisi en üstte. Sürüm numarası
 `Resources/Info.plist` dosyasından gelir; kurulu sürüm Ayarlar > Uygulama'da
 görünür.
 
+## 0.17.0 — 2026-11-13
+
+### Eklenenler
+
+- **Kapalı duran hotspot'u telefondan açtırır.** Kimseye bağlı olmayan bir iPhone ya da iPad hotspot'unu yayınlamadığı için Wi-Fi kopunca yapılan tarama onu bulamıyordu. Uykusuz artık, Wi-Fi menüsünün yaptığı gibi, Ayarlar'daki adı taşıyan ve Mac'le aynı Apple hesabındaki cihazdan Bluetooth üzerinden hotspot'unu açmasını ister, sonra o ağa katılır. macOS 26'da denendi; başka sürümlerde eski yol izlenir.
+- **Parola yazmak gerekmez.** Ağ adını ve parolayı cihaz verir; parola yalnızca o katılma için kullanılır, kaydedilmez. Kayıtlı parola artık yalnızca yanıt vermeyen cihazlar (başka marka bir telefon gibi) için kullanılır.
+- **Ayarlar > Ağ yedekleme'ye "Hotspot'u telefondan açtır" eklendi.** Varsayılan olarak açıktır.
+
+### Düzeltilenler
+
+- Hotspot adındaki kesme işaretinin biçimi artık fark etmez: klavyeden yazılan ' ile iOS'un cihaz adına koyduğu ’ aynı sayılır. Ad böyle yazıldığında hotspot hiç bulunamıyor, bilinen Wi-Fi ağına geri dönüş de hotspot'u tanımıyordu.
+- Cihaz yanıt vermediğinde ve kayıtlı parola da olmadığında "parola kayıtlı değil" uyarısı yerine cihazın hotspot'unu açmadığı bildirilir; menüde parola uyarısı çıkmaz.
+
+### Değişenler
+
+- README'deki güncelleme adımlarına uygulamayı yeniden açan komut ve eski sürümün elle silinmesinin gerekmediği notu eklendi.
+
 ## 0.16.0 — 2026-11-12
 
 ### Eklenenler

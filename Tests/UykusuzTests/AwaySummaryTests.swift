@@ -771,6 +771,14 @@ final class WiFiReturnPolicyTests: XCTestCase {
                        .leave("IkinciAg"), "the strongest")
     }
 
+    /// Settings holds the name as it was typed; the phone spells its
+    /// network with a typographic apostrophe. It is still the hotspot.
+    func testTheHotspotIsNoNetworkToReturnToWhateverItsApostrophe() {
+        let phone = "Ada\u{2019}n\u{131}n iPhone\u{2019}u"
+        XCTAssertEqual(P.decide(hotspot: "Ada'n\u{131}n iPhone'u", seen: [.init(ssid: phone, rssi: -30, open: false)], known: [P.Known(ssid: phone, open: false)]),
+                       .stay("çevrede yeterince güçlü, bilinen ve parolalı bir ağ yok"))
+    }
+
     func testStaysWhileAKnownNetworkWithoutAPasswordIsAround() {
         let known = [P.Known(ssid: "OrnekAg", open: false), P.Known(ssid: "Kafe Misafir", open: true)]
         XCTAssertEqual(P.decide(hotspot: "iPhone", seen: [.init(ssid: "OrnekAg", rssi: -50, open: false), .init(ssid: "Kafe Misafir", rssi: -85, open: true)], known: known),
@@ -833,6 +841,19 @@ final class WiFiReturnTests: XCTestCase {
         await make(radio).check(settle: .zero)
         XCTAssertEqual(radio.disassociations, 2, "left the hotspot, then the open network")
         XCTAssertEqual(rejoins, 1)
+    }
+
+    func testTheHotspotIsRecognisedWhateverItsApostrophe() async {
+        let phone = "Ada\u{2019}n\u{131}n iPhone\u{2019}u"
+        let radio = Radio()
+        radio.ssids = [phone, "OrnekAg"]
+        radio.seen = [.init(ssid: "OrnekAg", rssi: -55, open: false), .init(ssid: phone, rssi: -30, open: false)]
+        radio.knownNetworks = [.init(ssid: "OrnekAg", open: false), .init(ssid: phone, open: false)]
+        let back = make(radio)
+        config.hotspotSSID = "Ada'n\u{131}n iPhone'u"
+        await back.check(settle: .zero)
+        XCTAssertEqual(radio.disassociations, 1, "on the hotspot as the phone spells it, and home is in range")
+        XCTAssertEqual(rejoins, 0)
     }
 
     func testNothingOffTheHotspotOrWithTheSettingOff() async {
