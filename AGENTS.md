@@ -80,6 +80,43 @@ ver:
   okunamaz olur ve yeniden girilir. Claude Code hook'ları uygulama açılınca
   kendiliğinden yenilenir ve yalnızca sonradan açılan oturumlarda geçerlidir.
 
+## macOS ve iOS güncellemeleri
+
+Bazı özellikler macOS'in belgelenmemiş arayüzlerine dayanır ve bir macOS ya da
+iOS güncellemesiyle bozulabilir: hotspot'u telefondan açtırma (Sharing),
+hotspot katılma ayarını okuma (CoreWiFi), ekran ve klavye parlaklığı
+(DisplayServices, CoreBrightness), kararmış ekranı kilitleme (login).
+
+**Son denetim:** 2026-11-13 · macOS 26.6.2 (25G83) · iOS sürümü Mac'ten okunamıyor
+
+- Bu depoda bir geliştirmeye başlarken bugünün tarihini bu satırla
+  karşılaştır. 30 günden az geçtiyse denetleme, güncelleme çıkmış mı diye de
+  arama. Yalnızca soru yanıtlanan, dosya değişmeyen bir sohbette hiç denetleme.
+- 30 gün ya da daha fazla geçtiyse asıl işten önce denetle:
+  1. Kurulu macOS: `sw_vers` çıktısını satırdaki sürümle karşılaştır.
+  2. Yayımlanan sürümler: son denetim tarihinden beri yeni bir macOS ya da iOS
+     sürümü çıkmış mı diye web'de bir kez ara. Web erişimin yoksa bu adımı
+     atladığını söyle.
+  3. İkisinden biri değiştiyse arayüzleri yokla:
+     `swift test --filter "SystemInterfaceTests|PrivateDisplayGuardTests"`.
+     Başarısız test, güncellemenin neyi götürdüğünü adıyla söyler; atlanan
+     test, o özelliğin bu macOS sürümünde ölçülmediği için kapalı olduğunu
+     gösterir.
+  4. Hotspot'u telefondan açtırma için günlüğe bak
+     (`~/Library/Logs/Uykusuz/uykusuz.log`, `hotspot wake:` satırları):
+     güncellemeden sonra "turned its hotspot on" varsa çalışıyordur. Yoksa
+     çalıştığını ancak canlı deneme gösterir; o deneme ağı keser ve telefonu
+     etkiler, bu yüzden yalnızca kullanıcı izin verirse yap.
+  5. Yeni bir büyük macOS sürümünde ölçülmemiş yollar kendiliğinden kapalıdır
+     (`measuredMajorVersions`, `measuredDisplayServicesMajors`). Kullanıcıya
+     hangi özelliklerin kapalı kaldığını söyle; sürümü listeye ancak o sürümde
+     çağrıyı deneyip ölçtükten sonra ekle.
+- Sonucu kullanıcıya bir iki cümleyle bildir: ne değişmiş, bozulan var mı.
+  Bozulanı düzelt ya da düzeltmek için ne gerektiğini söyle.
+- Sonra "Son denetim" satırını bugünün tarihi ve gördüğün sürümlerle güncelle,
+  commit'le ve push'la. Hiçbir şey değişmemişse de tarihi güncelle: bir sonraki
+  denetim böylece 30 gün sonraya kalır.
+
 ## Aynı anda çalışan oturumlar
 
 Bu çalışma kopyasında birden fazla oturum aynı anda çalışabilir.
