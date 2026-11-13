@@ -4,9 +4,9 @@ import XCTest
 /// The undocumented macOS interfaces the app calls, looked up on the macOS
 /// the tests run on. Nothing is called and no device is reached: a class,
 /// a selector or a symbol is only asked for. After a macOS update, a
-/// failure here names what the update took away (AGENTS.md, "macOS ve iOS
-/// güncellemeleri"). The names are the ones the sources use; a name
-/// changed there is changed here.
+/// failure here names what the update took away (AGENTS.md, "macOS, iOS ve
+/// Claude Code güncellemeleri"). The names are the ones the sources use; a
+/// name changed there is changed here.
 final class SystemInterfaceTests: XCTestCase {
     private let major = ProcessInfo.processInfo.operatingSystemVersion.majorVersion
 

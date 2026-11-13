@@ -80,34 +80,50 @@ ver:
   okunamaz olur ve yeniden girilir. Claude Code hook'ları uygulama açılınca
   kendiliğinden yenilenir ve yalnızca sonradan açılan oturumlarda geçerlidir.
 
-## macOS ve iOS güncellemeleri
+## macOS, iOS ve Claude Code güncellemeleri
 
-Bazı özellikler macOS'in belgelenmemiş arayüzlerine dayanır ve bir macOS ya da
-iOS güncellemesiyle bozulabilir: hotspot'u telefondan açtırma (Sharing),
-hotspot katılma ayarını okuma (CoreWiFi), ekran ve klavye parlaklığı
-(DisplayServices, CoreBrightness), kararmış ekranı kilitleme (login).
+Bazı özellikler Uykusuz'un denetlemediği yazılımlara dayanır ve onların bir
+güncellemesiyle bozulabilir:
 
-**Son denetim:** 2026-11-13 · macOS 26.6.2 (25G83) · iOS sürümü Mac'ten okunamıyor
+- macOS'in belgelenmemiş arayüzleri: hotspot'u telefondan açtırma (Sharing),
+  hotspot katılma ayarını okuma (CoreWiFi), ekran ve klavye parlaklığı
+  (DisplayServices, CoreBrightness), kararmış ekranı kilitleme (login).
+  Hotspot'u açtırma iPhone'un iOS sürümüne de bağlıdır.
+- Claude Code'un hook sözleşmesi: ağ kesintisinden sonra sürdürme, `StopFailure`
+  hook'unun `asyncRewake` ile arka planda çalışmasına ve çıkış kodu 2'nin yeni
+  bir tur başlatmasına dayanır; Claude Code'un belgeleri bu hook'un çıkış
+  kodunu yok saydığını söyler.
+
+**Son denetim:** 2026-11-13 · macOS 26.6.2 (25G83) · Claude Code 2.1.321 · iOS sürümü Mac'ten okunamıyor
 
 - Bu depoda bir geliştirmeye başlarken bugünün tarihini bu satırla
   karşılaştır. 30 günden az geçtiyse denetleme, güncelleme çıkmış mı diye de
   arama. Yalnızca soru yanıtlanan, dosya değişmeyen bir sohbette hiç denetleme.
 - 30 gün ya da daha fazla geçtiyse asıl işten önce denetle:
   1. Kurulu macOS: `sw_vers` çıktısını satırdaki sürümle karşılaştır.
-  2. Yayımlanan sürümler: son denetim tarihinden beri yeni bir macOS ya da iOS
+  2. Kurulu Claude Code: `claude --version` çıktısına ve masaüstü uygulamasının
+     taşıdığı sürümlere (`ls "$HOME/Library/Application Support/Claude/claude-code"`)
+     bak, satırdakiyle karşılaştır.
+  3. Yayımlanan sürümler: son denetim tarihinden beri yeni bir macOS ya da iOS
      sürümü çıkmış mı diye web'de bir kez ara. Web erişimin yoksa bu adımı
      atladığını söyle.
-  3. İkisinden biri değiştiyse arayüzleri yokla:
+  4. macOS ya da iOS değiştiyse arayüzleri yokla:
      `swift test --filter "SystemInterfaceTests|PrivateDisplayGuardTests"`.
      Başarısız test, güncellemenin neyi götürdüğünü adıyla söyler; atlanan
      test, o özelliğin bu macOS sürümünde ölçülmediği için kapalı olduğunu
      gösterir.
-  4. Hotspot'u telefondan açtırma için günlüğe bak
+  5. Claude Code değiştiyse `Tests/live/claude-outage-check.sh` betiğini
+     çalıştır (bir dakika kadar sürer). Gerçek bir Claude Code oturumunu bu
+     Mac'teki sahte bir API'ye karşı çalıştırır; Anthropic'e istek gitmez,
+     açık oturumlara ve kullanıcının ayarlarına dokunmaz. Her satırı "tamam"
+     olmalıdır. Ardından
+     `swift test --filter "ClaudeOutageResumeTests|ClaudeHooksSettingsTests|ClaudeHookCommandTests"`.
+  6. Hotspot'u telefondan açtırma için günlüğe bak
      (`~/Library/Logs/Uykusuz/uykusuz.log`, `hotspot wake:` satırları):
      güncellemeden sonra "turned its hotspot on" varsa çalışıyordur. Yoksa
      çalıştığını ancak canlı deneme gösterir; o deneme ağı keser ve telefonu
      etkiler, bu yüzden yalnızca kullanıcı izin verirse yap.
-  5. Yeni bir büyük macOS sürümünde ölçülmemiş yollar kendiliğinden kapalıdır
+  7. Yeni bir büyük macOS sürümünde ölçülmemiş yollar kendiliğinden kapalıdır
      (`measuredMajorVersions`, `measuredDisplayServicesMajors`). Kullanıcıya
      hangi özelliklerin kapalı kaldığını söyle; sürümü listeye ancak o sürümde
      çağrıyı deneyip ölçtükten sonra ekle.
